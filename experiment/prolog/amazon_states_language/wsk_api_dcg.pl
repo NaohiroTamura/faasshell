@@ -51,6 +51,7 @@ param(get, upto=N)      --> { number_string(N,S) }, ["upto",  "=", S].
 param(get, docs=B)      --> { atom_string(B,S)   }, ["docs",  "=", S].
 param(post, blocking=B) --> { atom_string(B,S)   }, ["blocking", "=", S].
 param(post, result=B)   --> { atom_string(B,S)   }, ["result", "=", S].
+param(post, timeout=N)  --> { number_string(N,S) }, ["timeout", "=", S].
 
 resource(logs)   --> ["/", "logs"].
 resource(result) --> ["/", "result"].
@@ -109,14 +110,19 @@ test(query, Xs == ["post", "/", "namespaces", "/", "guest", "/", "actions",
     phrase(url(post, guest, actions, hello, [result=true]), Xs, []).
 
 test(query, Xs == ["post", "/", "namespaces", "/", "guest", "/", "actions",
+                  "/", "hello", "?", "timeout", "=", "600"]) :-
+    phrase(url(post, guest, actions, hello, [timeout=600]), Xs, []).
+
+test(query, Xs == ["post", "/", "namespaces", "/", "guest", "/", "actions",
                    "/", "hello", "?", "blocking", "=", "true", "&", "result",
                    "=", "true"]) :-
     phrase(url(post, guest, actions, hello, [blocking=true, result=true]), Xs, []).
 
 test(query, Xs == ["post", "/", "namespaces", "/", "guest", "/", "actions",
                    "/", "hello", "?", "blocking", "=", "true", "&", "result",
-                   "=", "true"]) :-
-    phrase(url(post, guest, actions, hello, [blocking=true, result=true]), Xs, []).
+                   "=", "true", "&", "timeout", "=", "600"]) :-
+    phrase(url(post, guest, actions, hello,
+               [blocking=true, result=true, timeout=600]), Xs, []).
 
 test(illegal_query, fail) :-
     phrase(url(post, guest, actions, hello, [limit=1]), _Xs, []).
