@@ -7,8 +7,7 @@
 
 :- use_module(library(http/json)).
 
-debugln(_).
-%%debugln(Msg) :- writeln(Msg).
+gencode(Msg) :- writeln(Msg).
 
 graphdot([]).
 graphdot([A>B|Gs]) :-
@@ -22,11 +21,7 @@ graphviz(Graph) :-
 
 main(File, Graph) :-
     load_json(File, Asl),
-    parse(Asl, Graph),
-    %
-    %json_write_dict(user_output, Asl, []),
-    debugln("Done!").
-    %halt.
+    parse(Asl, Graph).
 
 load_json(File, Asl) :-
     open(File, read, S, []),
@@ -38,15 +33,16 @@ parse(Asl, Graph) :-
     _{'StartAt':StartAt, 'States':States} :< Asl,
     string(StartAt),
     atom_string(StartAtKey, StartAt),
-    debugln(start(state(StartAt))),
+    gencode( 'dsl( ' ),
     parse(States, StartAtKey, G1),
-    Graph = ['Start'>StartAtKey | G1].
-
+    Graph = ['Start'>StartAtKey | G1],
+    gencode( ' ) ' ).
+    
 parse(States, StateKey, Graph) :-
     _{'Type':"Pass",'Next':Next} :< States.StateKey,
     string(Next),
     atom_string(NextKey, Next),
-    debugln((state(StateKey):type(pass):next(Next))),
+    gencode(pass(StateKey)),
     parse(States, NextKey, G1),
     Graph = [StateKey>NextKey | G1].
 
@@ -54,66 +50,76 @@ parse(States, StateKey, Graph) :-
     _{'Type':"Task", 'Resource':Resource, 'Next':Next} :< States.StateKey,
     string(Next),
     atom_string(NextKey, Next),
-    debugln((state(StateKey):type(task):next(Next))),
+    gencode(task(StateKey, Resource)),
     parse(States, NextKey, G1),
     Graph = [StateKey>NextKey | G1].
 
 parse(States, StateKey, [StateKey>'End']) :-
     _{'Type':"Task", 'Resource':Resource, 'End':End} :< States.StateKey,
-    debugln((state(StateKey):type(task):end(End))).
+    gencode(task(StateKey, Resource)).
 
 parse(States, StateKey, Graph) :-
     _{'Type':"Choice", 'Choices':Choices} :< States.StateKey,
+    gencode('choices( ' ),
     choices(States, StateKey, Choices, G1),
     (  _{'Default':Default} :< States.StateKey
     -> string(Default),
        atom_string(DefaultKey, Default),
-       debugln((state(StateKey):type(choice):default(Default))),
+       gencode('default( '),
        parse(States, DefaultKey, G2),
+       gencode(' ) '),
        append(G1, [StateKey>DefaultKey | G2], Graph)
-    ; Graph = G1).
+     ; Graph = G1),
+    gencode(' ) ' ).
 
 parse(States, StateKey, Graph) :-
     _{'Type':"Wait", 'Next':Next} :< States.StateKey,
     string(Next),
     atom_string(NextKey, Next),
-    debugln((state(StateKey):type(wait):next(Next))),
+    gencode(wait(StateKey)),
     parse(States, NextKey, G1),
     Graph = [StateKey>NextKey | G1].
 
 parse(States, StateKey, [StateKey>'Succeed']) :-
     _{'Type':"Succeed"} :< States.StateKey,
-    debugln((state(StateKey):type(succeed))).
+    gencode(succeed(StateKey)).
 
 parse(States, StateKey, [StateKey>'Fail']) :-
     _{'Type':"Fail"} :< States.StateKey,
-    write((state(StateKey):type(fail))),
-    (_{'Cause':Cause} :< States.StateKey -> write(:),write(cause(Cause)); true),
-    (_{'Error':Error} :< States.StateKey -> write(:),write(error(Error)); true),
-    debugln(.).
+    (_{'Error':Error} :< States.StateKey -> true; Error = unknown),
+    (_{'Cause':Cause} :< States.StateKey -> true; Cause = unknown),
+    gencode(fail(StateKey, Error, Cause)).
 
 parse(States, StateKey, Graph) :-
     _{'Type':"Parallel",'Branches':Branches,'Next':Next} :< States.StateKey,
-    branches(States, StateKey, Branches),
+    gencode(parallel(StateKey)),
+    gencode( 'branches( ' ),
+    branches(States, StateKey, Branches, G1),
+    gencode( ' ), ' ),
     string(Next),
     atom_string(NextKey, Next),
-    debugln((state(StateKey):type(parallel):next(Next))),
-    parse(States, NextKey, G1),
-    Graph = [StateKey>NextKey | G1].
+    parse(States, NextKey, G2),
+    append(G1, [StateKey>NextKey | G2], Graph).
+
 
 parse(States, StateKey,  Graph) :-
     _{'Type':"Parallel",'Branches':Branches,'End':End} :< States.StateKey,
+    gencode(parallel(StateKey)),
+    gencode( 'branches( ' ),
     branches(States, StateKey, Branches, G1),
+    gencode( ' 7) ' ),
     Graph = [StateKey>'End' | G1],
-    debugln((state(StateKey):type(parallel):end(End))).
+    gencode( ' 8) ' ).
 
 choices(_States, _StateKey, [], []).
 choices(States, StateKey, [C|Cs], Graph) :-
-    _{'Next':Next} :< C,
+    _{'Next':Next, 'Variable': Variable, 'NumericEquals': Num} :< C,
+    gencode( if(Variable == Num) ),
+    gencode( 'then (' ),
     string(Next),
     atom_string(NextKey, Next),
-    debugln((state(StateKey):type(choice):next(Next))),
     parse(States, NextKey, G1),
+    gencode( ' ) '),
     choices(States, StateKey, Cs, G2),
     append([StateKey>NextKey | G1], G2, Graph).
 
@@ -122,7 +128,6 @@ branches(States, StateKey, [B|Bs], Graph) :-
     _{'StartAt':StartAt,'States':PStates} :< B,
     string(StartAt),
     atom_string(StartAtKey, StartAt),
-    debugln((state(StateKey):type(parallel):startat(StartAt))),
     parse(PStates, StartAtKey, G1),
     branches(States, StateKey, Bs, G2),
     append([PStates>StartAtKey | G1], G2, Graph).
