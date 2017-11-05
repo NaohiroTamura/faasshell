@@ -7,7 +7,7 @@
 
 :- use_module(library(http/json)).
 
-gencode(Msg) :- writeln(Msg).
+gencode(Code) :- writeln(Code).
 
 graphdot([]).
 graphdot([A>B|Gs]) :-
@@ -29,15 +29,22 @@ load_json(File, Asl) :-
     close(S).
 
 parse(Asl, Graph) :-
-    %Asl = _{'Comment':Comment, 'StartAt':StartAt, 'States':States},
     _{'StartAt':StartAt, 'States':States} :< Asl,
     string(StartAt),
     atom_string(StartAtKey, StartAt),
-    gencode( 'dsl( ' ),
+    gencode( 'dsl([' ),
     parse(States, StartAtKey, G1),
     Graph = ['Start'>StartAtKey | G1],
-    gencode( ' ) ' ).
+    gencode( ']) ' ).
     
+parse(States, StateKey, [StateKey>'End']) :-
+    _{'Type':"Pass", 'End':true} :< States.StateKey,
+    del_dict('Type', States.StateKey, _, J1),
+    del_dict('End', J1, _, J2),
+    atom_json_dict(J4, J2, []),
+    format(string(StateStr), "'~a'", [StateKey]),
+    gencode(pass([StateStr, J4])).
+
 parse(States, StateKey, Graph) :-
     _{'Type':"Pass",'Next':Next} :< States.StateKey,
     string(Next),
@@ -55,7 +62,7 @@ parse(States, StateKey, Graph) :-
     Graph = [StateKey>NextKey | G1].
 
 parse(States, StateKey, [StateKey>'End']) :-
-    _{'Type':"Task", 'Resource':Resource, 'End':End} :< States.StateKey,
+    _{'Type':"Task", 'Resource':Resource, 'End':true} :< States.StateKey,
     gencode(task(StateKey, Resource)).
 
 parse(States, StateKey, Graph) :-
@@ -103,7 +110,7 @@ parse(States, StateKey, Graph) :-
 
 
 parse(States, StateKey,  Graph) :-
-    _{'Type':"Parallel",'Branches':Branches,'End':End} :< States.StateKey,
+    _{'Type':"Parallel",'Branches':Branches,'End':true} :< States.StateKey,
     gencode(parallel(StateKey)),
     gencode( 'branches( ' ),
     branches(States, StateKey, Branches, G1),
@@ -137,8 +144,29 @@ branches(States, StateKey, [B|Bs], Graph) :-
 %%
 :- use_module(library(plunit)).
 
-test1 :- main('example.json').
-test2 :- main('test/has-dupes.json').
-test3 :- main('test/linked-parallel.json').
-test4 :- main('test/minimal-fail-state.json').
-test5 :- main('test/no-terminal.json').
+:- begin_tests(blueprints).
+
+test(hello) :- main('blueprints/hello_world.json',_G).
+
+test(choice) :- main('blueprints/choice_state.json',_G).
+
+test(choice) :- main('blueprints/catch_failure.json',_G).
+
+test(choice) :- main('blueprints/job_status_poller.json',_G).
+
+test(choice) :- main('blueprints/parallel.json',_G).
+
+test(choice) :- main('blueprints/retry_failure.json',_G).
+
+test(choice) :- main('blueprints/task_timer.json',_G).
+
+test(choice) :- main('blueprints/wait_state.json',_G).
+
+:- end_tests(blueprints).
+
+:- begin_tests(actions).
+%test(abnormal) :- main('test/has-dupes.json').
+%test(abnormal) :- main('test/linked-parallel.json').
+%test(abnormal) :- main('test/minimal-fail-state.json').
+%test(abnormal) :- main('test/no-terminal.json').
+:- end_tests(actions).
