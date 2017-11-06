@@ -67,7 +67,13 @@ parse(States, StateKey, Graph) :-
 
 parse(States, StateKey, [StateKey>'End']) :-
     _{'Type':"Task", 'Resource':Resource, 'End':true} :< States.StateKey,
-    gencode(task(StateKey, Resource), end).
+    (
+        _{'Retry': Retriers} :< States.StateKey
+        ->  retry_rules_next(Retriers, RetriersTerm),
+            gencode(task(StateKey, Resource, retry(RetriersTerm)), end)
+        ;   gencode(task(StateKey, Resource), end)
+    ).
+    
 
 %% Choice State
 parse(States, StateKey, Graph) :-
@@ -151,6 +157,7 @@ branches(States, StateKey, [B|Bs], Graph) :-
     branches(States, StateKey, Bs, G2),
     append([PStates>StartAtKey | G1], G2, Graph).
 
+%%
 choice_rules(Rules) :-
     _{'Variable': Variable, 'BooleanEquals': Bool} :< Rules,
     gencode( 'BooleanEquals'(Variable, Bool) ).
@@ -215,7 +222,6 @@ choice_rules(Rules) :-
     _{'Variable': Variable, 'TimestampLessThanEquals': Time} :< Rules,
     gencode( 'TimestampLessThanEquals'(Variable, Time) ).
 
-%%
 %% the value of a Not operator must be a single Choice Rule
 %% that must not contain Next fields. 
 choice_rules(Rules) :-
@@ -235,7 +241,7 @@ choice_rules(Rules) :-
     gencode( "'Or'(" ),
     choice_rules_next(Conds),
     gencode( ') /* Or */' ).
-
+%%
 choice_rules_next([C]) :-
     choice_rules(C), !.
 
@@ -244,6 +250,15 @@ choice_rules_next([C|Cs]) :-
     gencode( ',' ),
     choice_rules_next(Cs).
 
+%%
+retry_rules(R, 'ErrorEquals'(ErrorCodes)) :-
+    _{'ErrorEquals': ErrorCodes} :< R.
+
+retry_rules_next([], []).
+retry_rules_next([R|Rs], [T|Ts]) :-
+    retry_rules(R, T),
+    retry_rules_next(Rs, Ts).
+    
 %%
 %% Unit Tests
 %%
