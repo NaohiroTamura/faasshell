@@ -7,10 +7,6 @@
 
 :- use_module(library(http/json)).
 
-gencode(Code) :- format("~w~n", [Code]).
-gencode(Code, next) :- format("~p,~n", [Code]).
-gencode(Code, end) :- format("~p~n", [Code]).
-
 graphdot([]).
 graphdot([A>B|Gs]) :-
     format("     ~w -> ~w ;~n", [A,B]),
@@ -21,9 +17,9 @@ graphviz(Graph) :-
     graphdot(GraphSet),
     writeln("}").
 
-main(File, Graph) :-
+main(File, Dsl, Graph) :-
     load_json(File, Asl),
-    parse(Asl, Graph).
+    parse(Asl, Dsl, Graph).
 
 load_json(File, Asl) :-
     open(File, read, S, []),
@@ -31,224 +27,190 @@ load_json(File, Asl) :-
     close(S).
 
 %% Asl Root
-parse(Asl, Graph) :-
+parse(Asl, dsl(Dsl), Graph) :-
     _{'StartAt':StartAt, 'States':States} :< Asl,
     string(StartAt),
     atom_string(StartAtKey, StartAt),
-    gencode( 'dsl([' ),
-    parse(States, StartAtKey, G1),
-    Graph = ['Start'>StartAtKey | G1],
-    gencode( ']) /* dsl */' ).
+    parse(States, StartAtKey, Dsl, G1),
+    Graph = ['Start'>StartAtKey | G1].
 
 %% Pass State
-parse(States, StateKey, [StateKey>'End']) :-
+parse(States, StateKey, pass([StateKey, Opts]), [StateKey>'End']) :-
     _{'Type':"Pass", 'End':true} :< States.StateKey,
     del_dict('Type', States.StateKey, _, J1),
     del_dict('End', J1, _, J2),
-    atom_json_dict(J4, J2, []),
-    gencode(pass([StateKey, J4])).
+    atom_json_dict(Opts, J2, []).
 
-parse(States, StateKey, Graph) :-
+parse(States, StateKey, Dsl, Graph) :-
     _{'Type':"Pass",'Next':Next} :< States.StateKey,
     string(Next),
     atom_string(NextKey, Next),
-    gencode(pass(StateKey)),
-    parse(States, NextKey, G1),
+    parse(States, NextKey, D1, G1),
+    del_dict('Type', States.StateKey, _, J1),
+    del_dict('Next', J1, _, J2),
+    atom_json_dict(Opts, J2, []),
+    Dsl = [pass([StateKey, Opts]) | D1],
     Graph = [StateKey>NextKey | G1].
 
 %% Task State
-parse(States, StateKey, Graph) :-
+parse(States, StateKey, Dsl, Graph) :-
     _{'Type':"Task", 'Resource':Resource, 'Next':Next} :< States.StateKey,
     string(Next),
     atom_string(NextKey, Next),
-    gencode(task(StateKey, Resource), next),
-    parse(States, NextKey, G1),
+    parse(States, NextKey, D1, G1),
+    Dsl = [task(StateKey, Resource) | D1],
     Graph = [StateKey>NextKey | G1].
 
-parse(States, StateKey, [StateKey>'End']) :-
+parse(States, StateKey, Dsl, [StateKey>'End']) :-
     _{'Type':"Task", 'Resource':Resource, 'End':true} :< States.StateKey,
     (
         _{'Retry': Retriers} :< States.StateKey
         ->  retry_rules_next(Retriers, RetriersTerm),
-            gencode(task(StateKey, Resource, retry(RetriersTerm)), end)
-        ;   gencode(task(StateKey, Resource), end)
+            Dsl = [task(StateKey, Resource, retry(RetriersTerm))]
+        ;   Dsl = [task(StateKey, Resource)]
     ).
     
-
 %% Choice State
-parse(States, StateKey, Graph) :-
+parse(States, StateKey, [choices(StateKey, Dsl)], Graph) :-
     _{'Type':"Choice", 'Choices':Choices} :< States.StateKey,
-    gencode( 'choices(' ),
-    gencode( StateKey, next ),
-    gencode( '[' ),
-    choices(States, StateKey, Choices, G1),
-    (  _{'Default':Default} :< States.StateKey
-    -> string(Default),
-       atom_string(DefaultKey, Default),
-       gencode( 'default(' ),
-       parse(States, DefaultKey, G2),
-       gencode( ')'),
-       append(G1, [StateKey>DefaultKey | G2], Graph)
-     ; Graph = G1),
-    gencode( ']) /* choices */' ).
+    choices(States, StateKey, Choices, D1, G1),
+    (
+        _{'Default':Default} :< States.StateKey
+        -> string(Default),
+           atom_string(DefaultKey, Default),
+           parse(States, DefaultKey, D2, G2),
+           append(D1, [default(D2)], Dsl),
+           append(G1, [StateKey>DefaultKey | G2], Graph)
+        ;  Dsl = D1, Graph = G1
+    ).
 
 %% Wait State
-parse(States, StateKey, Graph) :-
+parse(States, StateKey, Dsl, Graph) :-
     _{'Type':"Wait", 'Next':Next} :< States.StateKey,
     string(Next),
     atom_string(NextKey, Next),
-    gencode(wait(StateKey)),
-    parse(States, NextKey, G1),
+    parse(States, NextKey, D1, G1),
+    Dsl = [wait(StateKey) | D1],
     Graph = [StateKey>NextKey | G1].
 
+parse(States, StateKey, [wait(StateKey)], [StateKey>'End']) :-
+    _{'Type':"Wait", 'End':true} :< States.StateKey.
+
 %% Succeed State
-parse(States, StateKey, [StateKey>'Succeed']) :-
-    _{'Type':"Succeed"} :< States.StateKey,
-    gencode(succeed(StateKey)).
+parse(States, StateKey, [succeed(StateKey)], [StateKey>'Succeed']) :-
+    _{'Type':"Succeed"} :< States.StateKey.
 
 %% Fail State
-parse(States, StateKey, [StateKey>'Fail']) :-
+parse(States, StateKey, [fail(StateKey, Error, Cause)], [StateKey>'Fail']) :-
     _{'Type':"Fail"} :< States.StateKey,
     (_{'Error':Error} :< States.StateKey -> true; Error = unknown),
-    (_{'Cause':Cause} :< States.StateKey -> true; Cause = unknown),
-    gencode(fail(StateKey, Error, Cause), end).
+    (_{'Cause':Cause} :< States.StateKey -> true; Cause = unknown).
 
 %% Parallel State
-parse(States, StateKey, Graph) :-
+parse(States, StateKey, Dsl, Graph) :-
     _{'Type':"Parallel",'Branches':Branches,'Next':Next} :< States.StateKey,
-    gencode(parallel(StateKey)),
-    gencode( 'branches( ' ),
-    branches(States, StateKey, Branches, G1),
-    gencode( ' ), ' ),
     string(Next),
+    branches(States, StateKey, Branches, D1, G1),
     atom_string(NextKey, Next),
-    parse(States, NextKey, G2),
+    parse(States, NextKey, D2, G2),
+    Dsl = [parallel(StateKey, branches(D1), D2)],
     append(G1, [StateKey>NextKey | G2], Graph).
 
-
-parse(States, StateKey,  Graph) :-
+parse(States, StateKey,  Dsl, Graph) :-
     _{'Type':"Parallel",'Branches':Branches,'End':true} :< States.StateKey,
-    gencode(parallel(StateKey)),
-    gencode( 'branches( ' ),
-    branches(States, StateKey, Branches, G1),
-    gencode( ' 7) ' ),
-    Graph = [StateKey>'End' | G1],
-    gencode( ' 8) ' ).
+    branches(States, StateKey, Branches, D1, G1),
+    Dls = [parallel(StateKey, branches(D1))],
+    Graph = [StateKey>'End' | G1].
 
-choices(_States, _StateKey, [], []).
-choices(States, StateKey, [C|Cs], Graph) :-
+%%
+choices(_States, _StateKey, [], [], []).
+choices(States, StateKey, [C|Cs], Dsl, Graph) :-
     _{'Next':Next} :< C,
     string(Next),
     atom_string(NextKey, Next),
-    gencode( 'case(' ),
-    choice_rules(C),
-    gencode( ',' ),
-    parse(States, NextKey, G1),
-    gencode( '), /* case */' ),
-    choices(States, StateKey, Cs, G2),
+    choice_rules(C, T),
+    parse(States, NextKey, D1, G1),
+    choices(States, StateKey, Cs, D2, G2),
+    Dsl = [case(T, D1) | D2],
     append([StateKey>NextKey | G1], G2, Graph).
 
-branches(_States, _StateKey, [], []).
-branches(States, StateKey, [B|Bs], Graph) :-
+%%
+branches(_States, _StateKey, [], [], []).
+branches(States, StateKey, [B|Bs], [D|Ds], Graph) :-
     _{'StartAt':StartAt,'States':PStates} :< B,
     string(StartAt),
     atom_string(StartAtKey, StartAt),
-    parse(PStates, StartAtKey, G1),
-    branches(States, StateKey, Bs, G2),
+    parse(PStates, StartAtKey, D, G1),
+    branches(States, StateKey, Bs, Ds, G2),
     append([PStates>StartAtKey | G1], G2, Graph).
 
 %%
-choice_rules(Rules) :-
-    _{'Variable': Variable, 'BooleanEquals': Bool} :< Rules,
-    gencode( 'BooleanEquals'(Variable, Bool) ).
+choice_rules(Rules, 'BooleanEquals'(Variable, Bool)) :-
+    _{'Variable': Variable, 'BooleanEquals': Bool} :< Rules.
 
-choice_rules(Rules) :-
-    _{'Variable': Variable, 'NumericEquals': Num} :< Rules,
-    gencode( 'NumericEquals'(Variable, Num) ).
+choice_rules(Rules, 'NumericEquals'(Variable, Num)) :-
+    _{'Variable': Variable, 'NumericEquals': Num} :< Rules.
 
-choice_rules(Rules) :-
-    _{'Variable': Variable, 'NumericGreaterThan': Num} :< Rules,
-    gencode( 'NumericGreaterThan'(Variable, Num) ).
+choice_rules(Rules, 'NumericGreaterThan'(Variable, Num)) :-
+    _{'Variable': Variable, 'NumericGreaterThan': Num} :< Rules.
 
-choice_rules(Rules) :-
-    _{'Variable': Variable, 'NumericGreaterThanEquals': Num} :< Rules,
-    gencode( 'NumericGreaterThanEquals'(Variable, Num) ).
+choice_rules(Rules, 'NumericGreaterThanEquals'(Variable, Num)) :-
+    _{'Variable': Variable, 'NumericGreaterThanEquals': Num} :< Rules.
 
-choice_rules(Rules) :-
-    _{'Variable': Variable, 'NumericLessThan': Num} :< Rules,
-    gencode( 'NumericLessThan'(Variable, Num) ).
+choice_rules(Rules, 'NumericLessThan'(Variable, Num)) :-
+    _{'Variable': Variable, 'NumericLessThan': Num} :< Rules.
 
-choice_rules(Rules) :-
-    _{'Variable': Variable, 'NumericLessThanEquals': Num} :< Rules,
-    gencode( 'NumericLessThanEquals'(Variable, Num) ).
+choice_rules(Rules, 'NumericLessThanEquals'(Variable, Num)) :-
+    _{'Variable': Variable, 'NumericLessThanEquals': Num} :< Rules.
 
-choice_rules(Rules) :-
-    _{'Variable': Variable, 'StringEquals': Str} :< Rules,
-    gencode( 'StringEquals'(Variable, Str) ).
+choice_rules(Rules, 'StringEquals'(Variable, Str)) :-
+    _{'Variable': Variable, 'StringEquals': Str} :< Rules.
 
-choice_rules(Rules) :-
-    _{'Variable': Variable, 'StringGreaterThan': Str} :< Rules,
-    gencode( 'StringGreaterThan'(Variable, Str) ).
+choice_rules(Rules, 'StringGreaterThan'(Variable, Str)) :-
+    _{'Variable': Variable, 'StringGreaterThan': Str} :< Rules.
 
-choice_rules(Rules) :-
-    _{'Variable': Variable, 'StringGreaterThanEquals': Str} :< Rules,
-    gencode( 'StringGreaterThanEquals'(Variable, Str) ).
+choice_rules(Rules, 'StringGreaterThanEquals'(Variable, Str)) :-
+    _{'Variable': Variable, 'StringGreaterThanEquals': Str} :< Rules.
 
-choice_rules(Rules) :-
-    _{'Variable': Variable, 'StringLessThan': Str} :< Rules,
-    gencode( 'StringLessThan'(Variable, Str) ).
+choice_rules(Rules, 'StringLessThan'(Variable, Str)) :-
+    _{'Variable': Variable, 'StringLessThan': Str} :< Rules.
 
-choice_rules(Rules) :-
-    _{'Variable': Variable, 'StringLessThanEquals': Str} :< Rules,
-    gencode( 'StringLessThanEquals'(Variable, Str) ).
+choice_rules(Rules, 'StringLessThanEquals'(Variable, Str)) :-
+    _{'Variable': Variable, 'StringLessThanEquals': Str} :< Rules.
 
-choice_rules(Rules) :-
-    _{'Variable': Variable, 'TimestampEquals': Time} :< Rules,
-    gencode( 'TimestampEquals'(Variable, Time), next ).
+choice_rules(Rules, 'TimestampEquals'(Variable, Time)) :-
+    _{'Variable': Variable, 'TimestampEquals': Time} :< Rules.
 
-choice_rules(Rules) :-
-    _{'Variable': Variable, 'TimestampGreaterThan': Time} :< Rules,
-    gencode( 'TimestampGreaterThan'(Variable, Time), next ).
+choice_rules(Rules, 'TimestampGreaterThan'(Variable, Time)) :-
+    _{'Variable': Variable, 'TimestampGreaterThan': Time} :< Rules.
 
-choice_rules(Rules) :-
-    _{'Variable': Variable, 'TimestampGreaterThanEquals': Time} :< Rules,
-    gencode( 'TimestampGreaterThanEquals'(Variable, Time), next ).
+choice_rules(Rules, 'TimestampGreaterThanEquals'(Variable, Time)) :-
+    _{'Variable': Variable, 'TimestampGreaterThanEquals': Time} :< Rules.
 
-choice_rules(Rules) :-
-    _{'Variable': Variable, 'TimestampLessThan': Time} :< Rules,
-    gencode( 'TimestampLessThan'(Variable, Time) ).
+choice_rules(Rules, 'TimestampLessThan'(Variable, Time)) :-
+    _{'Variable': Variable, 'TimestampLessThan': Time} :< Rules.
 
-choice_rules(Rules) :-
-    _{'Variable': Variable, 'TimestampLessThanEquals': Time} :< Rules,
-    gencode( 'TimestampLessThanEquals'(Variable, Time) ).
+choice_rules(Rules, 'TimestampLessThanEquals'(Variable, Time)) :-
+    _{'Variable': Variable, 'TimestampLessThanEquals': Time} :< Rules.
 
 %% the value of a Not operator must be a single Choice Rule
 %% that must not contain Next fields. 
-choice_rules(Rules) :-
+choice_rules(Rules, 'Not'(Term)) :-
     _{'Not': Cond} :< Rules,
-    gencode( "'Not'(" ),
-    choice_rules(Cond),
-    gencode( ')' ).
+    choice_rules(Cond, Term).
 
-choice_rules(Rules) :-
+choice_rules(Rules, 'And'(Terms)) :-
     _{'And': Conds} :< Rules,
-    gencode( "'And'("),
-    choice_rules_next(Conds),
-    gencode( ') /* And */' ).
+    choice_rules_next(Conds, Terms).
 
-choice_rules(Rules) :-
+choice_rules(Rules, 'Or'(Terms)) :-
     _{'Or': Conds} :< Rules,
-    gencode( "'Or'(" ),
-    choice_rules_next(Conds),
-    gencode( ') /* Or */' ).
+    choice_rules_next(Conds, Terms).
 %%
-choice_rules_next([C]) :-
-    choice_rules(C), !.
-
-choice_rules_next([C|Cs]) :-
-    choice_rules(C),
-    gencode( ',' ),
-    choice_rules_next(Cs).
+choice_rules_next([], []).
+choice_rules_next([C|Cs], [T|Ts]) :-
+    choice_rules(C, T),
+    choice_rules_next(Cs, Ts).
 
 %%
 retry_rules(R, 'ErrorEquals'(ErrorCodes)) :-
@@ -266,23 +228,23 @@ retry_rules_next([R|Rs], [T|Ts]) :-
 
 :- begin_tests(blueprints).
 
-test(hello) :- main('blueprints/hello_world.json',_G).
+test(hello) :- main('blueprints/hello_world.json', D, G).
 
-test(choice) :- main('blueprints/choice_state.json',_G).
+test(choice) :- main('blueprints/choice_state.json', D, G).
 
-test(choice) :- main('blueprints/choice_statex.json',_G).
+test(choice) :- main('blueprints/choice_statex.json', D, G).
 
-test(choice) :- main('blueprints/catch_failure.json',_G).
+test(choice) :- main('blueprints/catch_failure.json', D, G).
 
-test(choice) :- main('blueprints/job_status_poller.json',_G).
+test(choice) :- main('blueprints/job_status_poller.json', D, G).
 
-test(choice) :- main('blueprints/parallel.json',_G).
+test(choice) :- main('blueprints/parallel.json', D, G).
 
-test(choice) :- main('blueprints/retry_failure.json',_G).
+test(choice) :- main('blueprints/retry_failure.json', D, G).
 
-test(choice) :- main('blueprints/task_timer.json',_G).
+test(choice) :- main('blueprints/task_timer.json', D, G).
 
-test(choice) :- main('blueprints/wait_state.json',_G).
+test(choice) :- main('blueprints/wait_state.json', D, G).
 
 :- end_tests(blueprints).
 
