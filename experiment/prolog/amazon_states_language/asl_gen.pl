@@ -11,7 +11,7 @@
 
 graphdot([]).
 graphdot([A>B|Gs]) :-
-    format("     ~w -> ~w ;~n", [A,B]),
+    format('     "~w" -> "~w" ;~n', [A,B]),
     graphdot(Gs).
 graphviz(Graph) :- 
     writeln("digraph graph_name {"),
@@ -21,7 +21,7 @@ graphviz(Graph) :-
 
 main(File, Dsl, Graph) :-
     load_json(File, Asl),
-    parse(Asl, Dsl, Graph).
+    parse(Asl, Dsl, Graph, []).
 
 load_json(File, Asl) :-
     open(File, read, S, []),
@@ -29,119 +29,124 @@ load_json(File, Asl) :-
     close(S).
 
 %% Asl Root
-parse(Asl, asl(Dsl), Graph) :-
+parse(Asl, asl(Dsl), Graph, Path) :-
     _{'StartAt':StartAt, 'States':States} :< Asl,
     string(StartAt),
     atom_string(StartAtKey, StartAt),
-    parse(States, StartAtKey, Dsl, G1),
+    parse(States, StartAtKey, Dsl, G1, ['Start'>StartAtKey | Path]),
     Graph = ['Start'>StartAtKey | G1].
 
 %% Pass State
-parse(States, StateKey, [pass([StateKey, Opts])], [StateKey>'End']) :-
-    _{'Type':"Pass", 'End':true} :< States.StateKey,
-    del_dict('Type', States.StateKey, _, J1),
-    del_dict('End', J1, _, J2),
-    atom_json_dict(Opts, J2, []).
+parse(States, StateKey, Dsl, Graph, _Path) :-
+    select_dict(_{'Type':"Pass", 'End':true}, States.StateKey, Rest),
+    atom_json_dict(Opts, Rest, []),
+    Dsl = [pass([StateKey, Opts])],
+    Graph = [StateKey>'End'].
 
-parse(States, StateKey, Dsl, Graph) :-
-    _{'Type':"Pass",'Next':Next} :< States.StateKey,
+parse(States, StateKey, Dsl, Graph, Path) :-
+    select_dict(_{'Type':"Pass",'Next':Next}, States.StateKey, Rest),
     string(Next),
     atom_string(NextKey, Next),
-    parse(States, NextKey, D1, G1),
-    del_dict('Type', States.StateKey, _, J1),
-    del_dict('Next', J1, _, J2),
-    atom_json_dict(Opts, J2, []),
-    Dsl = [pass([StateKey, Opts]) | D1],
-    Graph = [StateKey>NextKey | G1].
+    atom_json_dict(Opts, Rest, []),
+    parse_next(States, StateKey, NextKey, pass([StateKey, Opts]), Dsl, Graph, Path).
 
 %% Task State
-parse(States, StateKey, Dsl, Graph) :-
+parse(States, StateKey, Dsl, Graph, Path) :-
     _{'Type':"Task", 'Resource':Resource, 'Next':Next} :< States.StateKey,
     string(Next),
     atom_string(NextKey, Next),
-    parse(States, NextKey, D1, G1),
-    Dsl = [task(StateKey, Resource) | D1],
-    Graph = [StateKey>NextKey | G1].
+    parse_next(States, StateKey, NextKey, task(StateKey, Resource),
+               Dsl, Graph, Path).
 
-parse(States, StateKey, [Dsl], [StateKey>'End' | G1]) :-
+parse(States, StateKey, [Dsl], [StateKey>'End' | G1], Path) :-
     _{'Type':"Task", 'Resource':Resource, 'End':true} :< States.StateKey,
-    task_fallback(States, StateKey, D1, G1),
+    task_fallback(States, StateKey, D1, G1, Path),
     task_retry(States, StateKey, D2),
     append(D1, D2, D3),
     Dsl =.. [task, StateKey, Resource | D3].
     
 %% Choice State
-parse(States, StateKey, [choices(StateKey, Dsl)], Graph) :-
+parse(States, StateKey, [choices(StateKey, Dsl)], Graph, Path) :-
     _{'Type':"Choice", 'Choices':Choices} :< States.StateKey,
-    choices(States, StateKey, Choices, D1, G1),
+    choices(States, StateKey, Choices, D1, G1, Path),
     (
         _{'Default':Default} :< States.StateKey
         -> string(Default),
            atom_string(DefaultKey, Default),
-           parse(States, DefaultKey, D2, G2),
+           parse(States, DefaultKey, D2, G2, [StateKey>DefaultKey | Path]),
            append(D1, [default(D2)], Dsl),
            append(G1, [StateKey>DefaultKey | G2], Graph)
         ;  Dsl = D1, Graph = G1
     ).
 
 %% Wait State
-parse(States, StateKey, Dsl, Graph) :-
+parse(States, StateKey, Dsl, Graph, Path) :-
     _{'Type':"Wait", 'Next':Next} :< States.StateKey,
     string(Next),
     atom_string(NextKey, Next),
-    parse(States, NextKey, D1, G1),
-    Dsl = [wait(StateKey) | D1],
-    Graph = [StateKey>NextKey | G1].
+    parse_next(States, StateKey, NextKey, wait(StateKey), Dsl, Graph, Path).
 
-parse(States, StateKey, [wait(StateKey)], [StateKey>'End']) :-
+parse(States, StateKey, [wait(StateKey)], [StateKey>'End'], _Path) :-
     _{'Type':"Wait", 'End':true} :< States.StateKey.
 
 %% Succeed State
-parse(States, StateKey, [succeed(StateKey)], [StateKey>'Succeed']) :-
+parse(States, StateKey, [succeed(StateKey)], [StateKey>'Succeed'], _Path) :-
     _{'Type':"Succeed"} :< States.StateKey.
 
 %% Fail State
-parse(States, StateKey, [fail(StateKey, Error, Cause)], [StateKey>'Fail']) :-
+parse(States, StateKey, [fail(StateKey, Error, Cause)], [StateKey>'Fail'], _Path) :-
     _{'Type':"Fail"} :< States.StateKey,
     (_{'Error':Error} :< States.StateKey -> true; Error = unknown),
     (_{'Cause':Cause} :< States.StateKey -> true; Cause = unknown).
 
 %% Parallel State
-parse(States, StateKey, Dsl, Graph) :-
+parse(States, StateKey, Dsl, Graph, Path) :-
     _{'Type':"Parallel",'Branches':Branches,'Next':Next} :< States.StateKey,
-    string(Next),
-    branches(States, StateKey, Branches, D1, G1),
+    string(Next), 
+    branches(States, StateKey, Branches, D1, G1, [StateKey>NextKey | Path]),
     atom_string(NextKey, Next),
-    parse(States, NextKey, D2, G2),
+    parse(States, NextKey, D2, G2, [StateKey>NextKey |Path]),
     Dsl = [parallel(StateKey, branches(D1), D2)],
     append(G1, [StateKey>NextKey | G2], Graph).
 
-parse(States, StateKey,  Dsl, Graph) :-
+parse(States, StateKey,  Dsl, Graph, _Path) :-
     _{'Type':"Parallel",'Branches':Branches,'End':true} :< States.StateKey,
     branches(States, StateKey, Branches, D1, G1),
-    Dls = [parallel(StateKey, branches(D1))],
+    Dsl = [parallel(StateKey, branches(D1))],
     Graph = [StateKey>'End' | G1].
 
 %%
-choices(_States, _StateKey, [], [], []).
-choices(States, StateKey, [C|Cs], Dsl, Graph) :-
+%% parse next unless cycled
+parse_next(States, StateKey, NextKey, Term, Dsl, Graph, Path) :-
+    (
+        memberchk(StateKey>NextKey, Path)
+     -> Dsl = [Term],
+        Graph = [StateKey>NextKey]
+     ;  parse(States, NextKey, D1, G1, [StateKey>NextKey | Path]),
+        Dsl = [Term | D1],
+        Graph = [StateKey>NextKey | G1]
+    ).
+
+%%
+choices(_States, _StateKey, [], [], [], _Path).
+choices(States, StateKey, [C|Cs], Dsl, Graph, Path) :-
     _{'Next':Next} :< C,
     string(Next),
     atom_string(NextKey, Next),
     choice_rules(C, T),
-    parse(States, NextKey, D1, G1),
-    choices(States, StateKey, Cs, D2, G2),
+    parse(States, NextKey, D1, G1, [StateKey>NextKey | Path]),
+    choices(States, StateKey, Cs, D2, G2, Path),
     Dsl = [case(T, D1) | D2],
     append([StateKey>NextKey | G1], G2, Graph).
 
 %%
-branches(_States, _StateKey, [], [], []).
-branches(States, StateKey, [B|Bs], [D|Ds], Graph) :-
+branches(_States, _StateKey, [], [], [], _Path).
+branches(States, StateKey, [B|Bs], [D|Ds], Graph, Path) :-
     _{'StartAt':StartAt,'States':PStates} :< B,
     string(StartAt),
     atom_string(StartAtKey, StartAt),
-    parse(PStates, StartAtKey, D, G1),
-    branches(States, StateKey, Bs, Ds, G2),
+    parse(PStates, StartAtKey, D, G1, [StateKey>StartAtKey | Path]),
+    branches(States, StateKey, Bs, Ds, G2, Path),
     append([PStates>StartAtKey | G1], G2, Graph).
 
 %%
@@ -228,26 +233,26 @@ task_retry(States, StateKey, Dsl) :-
         ;   Dsl = [].
 
 %% 
-fallback_rules(States, StateKey, Rule, Dsl, Graph) :-
+fallback_rules(States, StateKey, Rule, Dsl, Graph, Path) :-
     _{'ErrorEquals':ErrorCodes, 'Next':Next} :< Rule,
     string(Next),
     atom_string(NextKey, Next),
-    parse(States, NextKey, D1, G1),
+    parse(States, NextKey, D1, G1, [StateKey>NextKey | Path]),
     Dsl = [case('ErrorEquals'(ErrorCodes), D1)],
     Graph = [StateKey>NextKey | G1].
 
-fallback_rules_next(_, _, [], [], []).
-fallback_rules_next(States, StateKey, [R|Rs], Dsl, Graph) :-
-    fallback_rules(States, StateKey, R, D1, G1),
-    fallback_rules_next(States, StateKey, Rs, D2, G2),
+fallback_rules_next(_, _, [], [], [], _).
+fallback_rules_next(States, StateKey, [R|Rs], Dsl, Graph, Path) :-
+    fallback_rules(States, StateKey, R, D1, G1, Path),
+    fallback_rules_next(States, StateKey, Rs, D2, G2, Path),
     append(D1, D2, Dsl),
     append(G1, G2, Graph).
 
-task_fallback(States, StateKey, Dsl, Graph) :-
+task_fallback(States, StateKey, Dsl, Graph, Path) :-
     _{'Catch': Catchers} :< States.StateKey
-    ->  fallback_rules_next(States, StateKey, Catchers, D2, G2),
+    ->  fallback_rules_next(States, StateKey, Catchers, D2, G2, Path),
             Dsl = [fallback(D2)], Graph = G2
-        ;   D3 = [], Graph = [].
+        ;   Dsl = [], Graph = [].
 
 %%
 %% Unit Tests
@@ -256,23 +261,23 @@ task_fallback(States, StateKey, Dsl, Graph) :-
 
 :- begin_tests(blueprints).
 
-test(hello) :- main('blueprints/hello_world.json', D, G).
+test(hello) :- main('blueprints/hello_world.json', _D, _G).
 
-test(choice) :- main('blueprints/choice_state.json', D, G).
+test(choice) :- main('blueprints/choice_state.json', _D, _G).
 
-test(choice) :- main('blueprints/choice_statex.json', D, G).
+test(choicex) :- main('blueprints/choice_statex.json', _D, _G).
 
-test(choice) :- main('blueprints/catch_failure.json', D, G).
+test(catch) :- main('blueprints/catch_failure.json', _D, _G).
 
-test(choice) :- main('blueprints/job_status_poller.json', D, G).
+test(poller) :- main('blueprints/job_status_poller.json', _D, _G).
 
-test(choice) :- main('blueprints/parallel.json', D, G).
+test(parallel) :- main('blueprints/parallel.json', _D, _G).
 
-test(choice) :- main('blueprints/retry_failure.json', D, G).
+test(retry) :- main('blueprints/retry_failure.json', _D, _G).
 
-test(choice) :- main('blueprints/task_timer.json', D, G).
+test(timer) :- main('blueprints/task_timer.json', _D, _G).
 
-test(choice) :- main('blueprints/wait_state.json', D, G).
+test(wait) :- main('blueprints/wait_state.json', _D, _G).
 
 :- end_tests(blueprints).
 
