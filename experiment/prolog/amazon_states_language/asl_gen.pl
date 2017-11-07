@@ -2,8 +2,10 @@
 %%
 %% $Id$
 %%
-%% $ swipl -o exec -g main --stand_alone=true -c asl_validate.pl
+%% Amazon State Language (ALS) Parser, DSL and Graph Generator
 %%
+
+%%:- module(asl_gen, [validate/1, dsl/2, dot/2]).
 
 :- use_module(library(http/json)).
 
@@ -27,7 +29,7 @@ load_json(File, Asl) :-
     close(S).
 
 %% Asl Root
-parse(Asl, dsl(Dsl), Graph) :-
+parse(Asl, asl(Dsl), Graph) :-
     _{'StartAt':StartAt, 'States':States} :< Asl,
     string(StartAt),
     atom_string(StartAtKey, StartAt),
@@ -35,7 +37,7 @@ parse(Asl, dsl(Dsl), Graph) :-
     Graph = ['Start'>StartAtKey | G1].
 
 %% Pass State
-parse(States, StateKey, pass([StateKey, Opts]), [StateKey>'End']) :-
+parse(States, StateKey, [pass([StateKey, Opts])], [StateKey>'End']) :-
     _{'Type':"Pass", 'End':true} :< States.StateKey,
     del_dict('Type', States.StateKey, _, J1),
     del_dict('End', J1, _, J2),
@@ -61,14 +63,12 @@ parse(States, StateKey, Dsl, Graph) :-
     Dsl = [task(StateKey, Resource) | D1],
     Graph = [StateKey>NextKey | G1].
 
-parse(States, StateKey, Dsl, [StateKey>'End']) :-
+parse(States, StateKey, [Dsl], [StateKey>'End' | G1]) :-
     _{'Type':"Task", 'Resource':Resource, 'End':true} :< States.StateKey,
-    (
-        _{'Retry': Retriers} :< States.StateKey
-        ->  retry_rules_next(Retriers, RetriersTerm),
-            Dsl = [task(StateKey, Resource, retry(RetriersTerm))]
-        ;   Dsl = [task(StateKey, Resource)]
-    ).
+    task_fallback(States, StateKey, D1, G1),
+    task_retry(States, StateKey, D2),
+    append(D1, D2, D3),
+    Dsl =.. [task, StateKey, Resource | D3].
     
 %% Choice State
 parse(States, StateKey, [choices(StateKey, Dsl)], Graph) :-
@@ -212,15 +212,43 @@ choice_rules_next([C|Cs], [T|Ts]) :-
     choice_rules(C, T),
     choice_rules_next(Cs, Ts).
 
-%%
-retry_rules(R, 'ErrorEquals'(ErrorCodes)) :-
-    _{'ErrorEquals': ErrorCodes} :< R.
+%% 
+retry_rules(Rule, 'ErrorEquals'(ErrorCodes)) :-
+    _{'ErrorEquals':ErrorCodes} :< Rule.
 
 retry_rules_next([], []).
 retry_rules_next([R|Rs], [T|Ts]) :-
     retry_rules(R, T),
     retry_rules_next(Rs, Ts).
-    
+
+task_retry(States, StateKey, Dsl) :-
+    _{'Retry': Retriers} :< States.StateKey
+    ->  retry_rules_next(Retriers, RetriersTerm),
+            Dsl = [retry(RetriersTerm)]
+        ;   Dsl = [].
+
+%% 
+fallback_rules(States, StateKey, Rule, Dsl, Graph) :-
+    _{'ErrorEquals':ErrorCodes, 'Next':Next} :< Rule,
+    string(Next),
+    atom_string(NextKey, Next),
+    parse(States, NextKey, D1, G1),
+    Dsl = [case('ErrorEquals'(ErrorCodes), D1)],
+    Graph = [StateKey>NextKey | G1].
+
+fallback_rules_next(_, _, [], [], []).
+fallback_rules_next(States, StateKey, [R|Rs], Dsl, Graph) :-
+    fallback_rules(States, StateKey, R, D1, G1),
+    fallback_rules_next(States, StateKey, Rs, D2, G2),
+    append(D1, D2, Dsl),
+    append(G1, G2, Graph).
+
+task_fallback(States, StateKey, Dsl, Graph) :-
+    _{'Catch': Catchers} :< States.StateKey
+    ->  fallback_rules_next(States, StateKey, Catchers, D2, G2),
+            Dsl = [fallback(D2)], Graph = G2
+        ;   D3 = [], Graph = [].
+
 %%
 %% Unit Tests
 %%
