@@ -5,6 +5,7 @@
         "HelloWorld": {
             "Type": "Pass",
             "Result": "Hello World!",
+            "ResultPath": "$.message",
             "End": true
         }
     }
