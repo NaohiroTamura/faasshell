@@ -13,17 +13,19 @@
 
 :- use_module(library(http/json)).
 
-api_key('23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP').
-
 api_key(Key, ID, PW) :-
     split_string(Key, ':', "", [ID, PW]).
 
 openwhisk(Options) :-
-    api_key(Key),
+    %% prerequisite
+    %% $ export $(grep AUTH ~/.wskprops)
+    %% $ export $(grep APIHOST ~/.wskprops)
+    getenv('AUTH',Key),
     api_key(Key, ID, PW),
+    getenv('APIHOST',HOST),
     Options = [
         api_key(ID, PW),
-        api_host("172.17.0.1"),
+        api_host(HOST),
         protocol(https),
         port(443),
         namespace(default)
