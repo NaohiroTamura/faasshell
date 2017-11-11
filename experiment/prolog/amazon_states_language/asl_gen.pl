@@ -5,20 +5,41 @@
 %% Amazon State Language (ALS) Parser, DSL and Graph Generator
 %%
 
-%%:- module(asl_gen, [validate/1, dsl/2, dot/2]).
+:- module(asl_gen,
+          [ validate/1,
+            gen_dsl/1,
+            gen_dot/1
+         ]).
 
 :- use_module(library(http/json)).
 
+%% swipl -q -l asl_gen.pl -g 'validate("blueprints/hello_world.json")' -t halt
+validate(File) :-
+    main(File, _Dsl, _Graph),
+    writeln(current_output, ok).
+
+%% swipl -q -l asl_gen.pl -g 'gen_dsl("blueprints/hello_world.json")' -t halt
+gen_dsl(File) :-
+    main(File, Dsl, _Graph),
+    format(current_output, '~p.~n', [Dsl]).
+
+%% swipl -q -l asl_gen.pl -g 'gen_dot("blueprints/hello_world.json")' -t halt
+gen_dot(File) :-
+    main(File, _Dsl, Graph),
+    graphdot(Graph).
+
 graphdot([]).
 graphdot([A>B|Gs]) :-
-    format('     "~w" -> "~w" ;~n', [A,B]),
+    format(current_output, '     "~w" -> "~w" ;~n', [A,B]),
     graphdot(Gs).
-graphviz(Graph) :- 
-    writeln("digraph graph_name {"),
+
+graphdot(Graph) :- 
+    writeln(current_output, "digraph graph_name {"),
     list_to_set(Graph, GraphSet),
     graphdot(GraphSet),
-    writeln("}").
+    writeln(current_output, "}").
 
+%%
 main(File, Dsl, Graph) :-
     load_json(File, Asl),
     parse(Asl, Dsl, Graph, []).
@@ -40,7 +61,7 @@ parse(Asl, asl(Dsl), Graph, Path) :-
 parse(States, StateKey, Dsl, Graph, _Path) :-
     select_dict(_{'Type':"Pass", 'End':true}, States.StateKey, Rest),
     atom_json_dict(Opts, Rest, []),
-    Dsl = [pass([StateKey, Opts])],
+    Dsl = [pass(StateKey, Opts)],
     Graph = [StateKey>'End'].
 
 parse(States, StateKey, Dsl, Graph, Path) :-
@@ -48,7 +69,7 @@ parse(States, StateKey, Dsl, Graph, Path) :-
     string(Next),
     atom_string(NextKey, Next),
     atom_json_dict(Opts, Rest, []),
-    parse_next(States, StateKey, NextKey, pass([StateKey, Opts]), Dsl, Graph, Path).
+    parse_next(States, StateKey, NextKey, pass(StateKey, Opts), Dsl, Graph, Path).
 
 %% Task State
 parse(States, StateKey, Dsl, Graph, Path) :-
