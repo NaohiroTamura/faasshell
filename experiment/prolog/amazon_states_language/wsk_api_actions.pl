@@ -4,11 +4,11 @@
 %%
 
 :- module(wsk_api_actions,
-          [list/3
-           %invoke/2
+          [list/3,
+           invoke/4
          ]).
 
-%:- use_module(wsk_api_dcg).
+:- use_module(wsk_api_dcg).
 :- use_module(wsk_api_utils).
 
 :- use_module(library(http/http_open)).
@@ -25,9 +25,9 @@ list(ActionName, Options, Reply) :-
     option(query(Query), Options, []),
     wsk_api_utils:api_url(HostName, 
                           wsk_api_dcg:path(get, NS, actions, ActionName, Query),
-                          URL, Options), writeln(url(URL)),
+                          URL, Options),
     option(api_key(ID, PW), Options),
-    http_get(URL, Reply, [authorization(basic(ID,PW)),
+    http_get(URL, Reply, [authorization(basic(ID, PW)),
                           cert_verify_hook(cert_accept_any)]).
 
 invoke(ActionName, Options, Payload, Reply) :-
@@ -36,10 +36,10 @@ invoke(ActionName, Options, Payload, Reply) :-
     option(query(Query), Options, [blocking=true,result=true]),
     wsk_api_utils:api_url(HostName, 
                           wsk_api_dcg:path(post, NS, actions, ActionName, Query),
-                          URL, Options), writeln(url(URL)),
+                          URL, Options),
     option(api_key(ID, PW), Options),
     wsk_api_utils:term_json_dict(Json, Payload),
-    http_post(URL, json(Json), Reply, [authorization(basic(ID,PW)),
+    http_post(URL, json(Json), Reply, [authorization(basic(ID, PW)),
                                        cert_verify_hook(cert_accept_any)]).
 
 
