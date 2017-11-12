@@ -29,6 +29,7 @@ start(File, I, O) :-
 %%
 %% Meta Circular Interpreter
 %% reduce(+DSL, +Input, -Output, +Environment)
+%%
 reduce(asl(DSL), I, O, E) :- 
     !,
     mydebug(reduce(asl(in)), (I, O)),
@@ -48,6 +49,7 @@ reduce(A, I, O, E) :-
     A =.. L, append(L, [I, O, E], L1),
     Q =.. L1, Q,
     mydebug(reduce(op(out)), (I, O)).
+%%
 
 %% pass state
 pass(State, Options, I, O, _E) :- 
@@ -64,7 +66,7 @@ task(State, Action, I, O, E) :-
     catch(
             wsk_api_actions:invoke(hello, E.openwhisk, I, O),
             Err,
-            O = Err), % print_message(error,Err)),
+            O = _{type: "Private", value: 40}), %Err), % print_message(error,Err)),
     mydebug(task(out), (I, O)).
 
 %% choices state
@@ -80,10 +82,10 @@ choices(State, [case(Cond,States)|Cases], I, O, E) :-
         M == true
         -> mydebug(choices(M), (State, case(Cond), I, O)),
            case(States, I, O, E)
-        ;  mydebug(choices(M), (State, Case, I, O)),
+        ;  mydebug(choices(M), (State, case(Cond), I, O)),
            choices(State, Cases, I, O, E)
     ),
-    mydebug(choices(out), (State, Case, I, O)).
+    mydebug(choices(out), (State, case(Cond), I, O)).
 
 case([], O, O, _E) :-
     mydebug(case(true(done)), O).
@@ -101,18 +103,53 @@ default([State|States], I, O, E) :-
     default(States, M, O, E),
     mydebug(default(out), (State, I, O)).
 
+'Not'(Cond, I, O, E) :-
+    mydebug('Not'(in), (Cond, I, O)),
+    reduce(Cond, I, M, E),
+    not(M, O),
+    mydebug('Not'(out), (Cond, I, O)).
+
+'And'([], _I, true, _E) :-
+    mydebug('And'(done), true).
+'And'([Cond|Conds], I, O, E) :-
+    mydebug('And'(in), ([Cond|Conds], I, O)),
+    reduce(Cond, I, M1, E),
+    'And'(Conds, I, M2, E),
+    and(M1, M2, O),
+    mydebug('And'(out), ([Cond|Conds], I, O)).
+
+'Or'([], _I, false, _E) :-
+    mydebug('Or'(done), false).
+'Or'([Cond|Conds], I, O, E) :-
+    mydebug('Or'(in), ([Cond|Conds], I, O)),
+    reduce(Cond, I, M1, E),
+    'Or'(Conds, I, M2, E),
+    or(M1, M2, O),
+    mydebug('Or'(out), ([Cond|Conds], I, O)).
+
 'NumericEquals'(DollarVar, Value, I, O, _E) :-
     mydebug('NumericEquals'(in), (DollarVar, Value, I, O)),
     dollarvar_key(DollarVar, Key),
-    (
-        I.Key == Value
-        ->  O = true,
-            mydebug('NumericEquals'(true), (DollarVar, Value, I, O))
-        ;   O = false,
-            mydebug('NumericEquals'(false), (DollarVar, Value, I, O))
-    ),
+    ( I.Key == Value ->  O = true; O = false ),
     mydebug('NumericEquals'(out), (DollarVar, Value, I, O)).
 
+'NumericGreaterThanEquals'(DollarVar, Value, I, O, _E) :-
+    mydebug('NumericGreaterThanEquals'(in), (DollarVar, Value, I, O)),
+    dollarvar_key(DollarVar, Key),
+    ( I.Key >= Value ->  O = true; O = false ),
+    mydebug('NumericGreaterThanEquals'(out), (DollarVar, Value, I, O)).
+
+'NumericLessThan'(DollarVar, Value, I, O, _E) :-
+    mydebug('NumericLessThan'(in), (DollarVar, Value, I, O)),
+    dollarvar_key(DollarVar, Key),
+    ( I.Key < Value ->  O = true; O = false ),
+    mydebug('NumericLessThan'(out), (DollarVar, Value, I, O)).
+
+'StringEquals'(DollarVar, Value, I, O, _E) :-
+    mydebug('StringEquals'(in), (DollarVar, Value, I, O)),
+    dollarvar_key(DollarVar, Key),
+    ( I.Key == Value ->  O = true; O = false ),
+    mydebug('StringEquals'(out), (DollarVar, Value, I, O)).
 
 %%
 %% fail state
@@ -123,9 +160,23 @@ fail(State, Error, Reason, I, O, _E) :-
 
 %%
 %% misc.
+%%
 dollarvar_key(DollarVar, Key) :-
     string_concat("$.", KeyStr, DollarVar),
     atom_string(Key, KeyStr).
+
+not(true, false).
+not(false, true).
+
+and(true, true, true).
+and(true, false, false).
+and(false, true, false).
+and(false, false, false).
+
+or(true, true, true).
+or(true, false, true).
+or(false, true, true).
+or(false, false, false).
 
 %%
 %% Unit Tests
