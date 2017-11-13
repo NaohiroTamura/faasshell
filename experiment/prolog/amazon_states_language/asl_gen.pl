@@ -168,7 +168,7 @@ branches(States, StateKey, [B|Bs], [D|Ds], Graph, Path) :-
     atom_string(StartAtKey, StartAt),
     parse(PStates, StartAtKey, D, G1, [StateKey>StartAtKey | Path]),
     branches(States, StateKey, Bs, Ds, G2, Path),
-    append([PStates>StartAtKey | G1], G2, Graph).
+    append([StateKey>StartAtKey | G1], G2, Graph).
 
 %%
 choice_rules(Rules, 'BooleanEquals'(Variable, Bool)) :-
