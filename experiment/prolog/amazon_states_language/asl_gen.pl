@@ -65,32 +65,33 @@ parse(Asl, asl(Dsl), Graph, Path) :-
 
 %% Pass State
 parse(States, StateKey, Dsl, Graph, _Path) :-
-    select_dict(_{'Type':"Pass", 'End':true}, States.StateKey, Rest),
-    atom_json_dict(Opts, Rest, []),
-    Dsl = [pass(StateKey, Opts)],
+    _{'Type':"Pass", 'End':true} :<States.StateKey,
+    pass_optional(States.StateKey, Optional),
+    Dsl = [pass(StateKey, Optional)],
     Graph = [StateKey>'End'].
 
 parse(States, StateKey, Dsl, Graph, Path) :-
-    select_dict(_{'Type':"Pass",'Next':Next}, States.StateKey, Rest),
+    _{'Type':"Pass",'Next':Next} :< States.StateKey,
     string(Next),
     atom_string(NextKey, Next),
-    atom_json_dict(Opts, Rest, []),
-    parse_next(States, StateKey, NextKey, pass(StateKey, Opts), Dsl, Graph, Path).
+    pass_optional(States.StateKey, Optional),
+    parse_next(States, StateKey, NextKey, pass(StateKey, Optional),
+               Dsl, Graph, Path).
 
 %% Task State
 parse(States, StateKey, Dsl, Graph, Path) :-
     _{'Type':"Task", 'Resource':Resource, 'Next':Next} :< States.StateKey,
     string(Next),
     atom_string(NextKey, Next),
-    parse_next(States, StateKey, NextKey, task(StateKey, Resource),
-               Dsl, Graph, Path).
+    task_optional(States, StateKey, Optional, G1, Path),
+    parse_next(States, StateKey, NextKey, task(StateKey, Resource, Optional),
+               Dsl, G2, Path),
+    append(G1, G2, Graph).
 
-parse(States, StateKey, [Dsl], [StateKey>'End' | G1], Path) :-
+parse(States, StateKey, [Dsl], [StateKey>'End' | Graph], Path) :-
     _{'Type':"Task", 'Resource':Resource, 'End':true} :< States.StateKey,
-    task_fallback(States, StateKey, D1, G1, Path),
-    task_retry(States, StateKey, D2),
-    append(D1, D2, D3),
-    Dsl =.. [task, StateKey, Resource | D3].
+    task_optional(States, StateKey, Optional, Graph, Path),
+    Dsl = task(StateKey, Resource, Optional).
     
 %% Choice State
 parse(States, StateKey, [choices(StateKey, Dsl)], Graph, Path) :-
@@ -111,20 +112,26 @@ parse(States, StateKey, Dsl, Graph, Path) :-
     _{'Type':"Wait", 'Next':Next} :< States.StateKey,
     string(Next),
     atom_string(NextKey, Next),
-    parse_next(States, StateKey, NextKey, wait(StateKey), Dsl, Graph, Path).
+    wait_required(States.StateKey, Wait, Optional),
+    parse_next(States, StateKey, NextKey, wait(StateKey, Wait, Optional),
+               Dsl, Graph, Path).
 
-parse(States, StateKey, [wait(StateKey)], [StateKey>'End'], _Path) :-
-    _{'Type':"Wait", 'End':true} :< States.StateKey.
+%% Should Wait State with End be error?
+parse(States, StateKey, [wait(StateKey, Wait, Optional)],
+                        [StateKey>'End'], _Path) :-
+    _{'Type':"Wait", 'End':true} :< States.StateKey,
+    wait_required(States.StateKey, Wait, Optional).
 
 %% Succeed State
-parse(States, StateKey, [succeed(StateKey)], [StateKey>'Succeed'], _Path) :-
-    _{'Type':"Succeed"} :< States.StateKey.
+parse(States, StateKey,
+      [succeed(StateKey, Optional)], [StateKey>'Succeed'], _Path) :-
+    _{'Type':"Succeed"} :< States.StateKey,
+    common_optional(States.StateKey, Optional).
 
 %% Fail State
-parse(States, StateKey, [fail(StateKey, Error, Cause)], [StateKey>'Fail'], _Path) :-
+parse(States, StateKey, [fail(StateKey, Optional)], [StateKey>'Fail'], _Path) :-
     _{'Type':"Fail"} :< States.StateKey,
-    (_{'Error':Error} :< States.StateKey -> true; Error = unknown),
-    (_{'Cause':Cause} :< States.StateKey -> true; Cause = unknown).
+    fail_optional(States.StateKey, Optional).
 
 %% Parallel State
 parse(States, StateKey, Dsl, Graph, Path) :-
@@ -153,6 +160,45 @@ parse_next(States, StateKey, NextKey, Term, Dsl, Graph, Path) :-
         Dsl = [Term | D1],
         Graph = [StateKey>NextKey | G1]
     ).
+
+%%
+wait_required(State, Wait, Optional) :-
+    ((_{'Seconds': Seconds} :< State, !, Wait = seconds(Seconds));
+     (_{'Timestamp': Timestamp} :< State, !, Wait = timestamp(Timestamp));
+     (_{'SecondsPath': SecondsPath} :< State, !, Wait = seconds_path(SecondsPath));
+     (_{'TimestampPath': TimestampPath} :< State, !,
+                                            Wait = timestamp_path(TimestampPath));
+     (throw(syntax_error("Wait State doesn't have either Seconds, \c
+                                      Timestamp, Timestamp, or TimestampPath")))),
+    common_optional(State, Optional).
+
+common_optional(State, Optional) :-
+    ( _{'Comment': Comment} :< State, O1 = comment(Comment); O1 = [] ),
+    ( _{'InputPath': InputPath} :< State, O2 = input_path(InputPath); O2 = [] ),
+    ( _{'OutputPath': OutputPath} :< State, O3 = output_path(OutputPath); O3 = [] ),
+    flatten([O1, O2, O3], Optional).
+
+pass_optional(State, Optional) :-
+    ( _{'Result': Result} :< State
+      -> O1 = result(Result); O1 = [] ),
+    ( _{'ResultPath': ResultPath} :< State
+      -> O2 = result_path(ResultPath); O2 = [] ),
+    common_optional(State, O3),
+    flatten([O1, O2, O3], Optional).
+
+task_optional(States, StateKey, Optional, Graph, Path) :-
+    ( _{'ResultPath': ResultPath} :< States.StateKey
+      -> O1 = result_path(ResultPath); O1 = [] ),
+    common_optional(States.StateKey, O2),
+    task_fallback(States, StateKey, O3, Graph, Path),
+    task_retry(States.StateKey, O4),
+    flatten([O1, O2, O3, O4], Optional).
+
+fail_optional(State, Optional) :-
+    ( _{'Error':Error} :< State -> O1 = error(Error); O1 = [] ),
+    ( _{'Cause':Cause} :< State -> O2 = cause(Cause); O2 = [] ),
+    common_optional(State, O3),
+    flatten([O1, O2, O3], Optional).
 
 %%
 choices(_States, _StateKey, [], [], [], _Path).
@@ -245,16 +291,19 @@ choice_rules_next([C|Cs], [T|Ts]) :-
     choice_rules_next(Cs, Ts).
 
 %% 
-retry_rules(Rule, 'ErrorEquals'(ErrorCodes)) :-
-    _{'ErrorEquals':ErrorCodes} :< Rule.
+retry_rules(Rule, 'ErrorEquals'(ErrorCodes, I, M, B)) :-
+    _{'ErrorEquals':ErrorCodes} :< Rule,
+    ( _{'IntervalSeconds': I} :< Rule; I = 1 ),
+    ( _{'MaxAttempts': M} :< Rule; M = 3 ),
+    ( _{'BackoffRate': B} :< Rule; B = 2.0 ).
 
 retry_rules_next([], []).
 retry_rules_next([R|Rs], [T|Ts]) :-
     retry_rules(R, T),
     retry_rules_next(Rs, Ts).
 
-task_retry(States, StateKey, Dsl) :-
-    _{'Retry': Retriers} :< States.StateKey
+task_retry(State, Dsl) :-
+    _{'Retry': Retriers} :< State
     ->  retry_rules_next(Retriers, RetriersTerm),
             Dsl = [retry(RetriersTerm)]
         ;   Dsl = [].
@@ -308,9 +357,18 @@ test(wait) :- main('blueprints/wait_state.json', _D, _G).
 
 :- end_tests(blueprints).
 
-:- begin_tests(actions).
-%test(abnormal) :- main('test/has-dupes.json').
-%test(abnormal) :- main('test/linked-parallel.json').
-%test(abnormal) :- main('test/minimal-fail-state.json').
-%test(abnormal) :- main('test/no-terminal.json').
-:- end_tests(actions).
+:- begin_tests(invalid).
+
+test(abnormal) :-
+    main('test/has-dupes.json', _D, _G).
+
+test(abnormal) :-
+    main('test/linked-parallel.json', _D, _G).
+
+test(abnormal) :-
+    main('test/minimal-fail-state.json', _D, _G).
+
+test(abnormal) :-
+    main('test/no-terminal.json', _D, _G).
+
+:- end_tests(invalid).
