@@ -15,28 +15,34 @@
 
 %% swipl -q -l asl_gen.pl -g 'validate("blueprints/hello_world.json")' -t halt
 validate(File) :-
-    main(File, _Dsl, _Graph),
+    catch(main(File, _Dsl, _Graph),
+          Err,
+          (print_message(error, Err), fail)), !,
     writeln(current_output, ok).
 
 %% swipl -q -l asl_gen.pl -g 'gen_dsl("blueprints/hello_world.json")' -t halt
 gen_dsl(File) :-
-    main(File, Dsl, _Graph),
+    catch(main(File, Dsl, _Graph),
+          Err,
+          (print_message(error, Err), fail)), !,
     format(current_output, '~p.~n', [Dsl]).
 
 %% swipl -q -l asl_gen.pl -g 'gen_dot("blueprints/hello_world.json")' -t halt
 gen_dot(File) :-
-    main(File, _Dsl, Graph),
+    catch(main(File, _Dsl, Graph),
+          Err,
+          (print_message(error, Err), fail)), !,
     graphdot(Graph).
 
-graphdot([]).
-graphdot([A>B|Gs]) :-
+edgedot([]).
+edgedot([A>B|Gs]) :-
     format(current_output, '     "~w" -> "~w" ;~n', [A,B]),
-    graphdot(Gs).
+    edgedot(Gs).
 
 graphdot(Graph) :- 
     writeln(current_output, "digraph graph_name {"),
     list_to_set(Graph, GraphSet),
-    graphdot(GraphSet),
+    edgedot(GraphSet),
     writeln(current_output, "}").
 
 %%
