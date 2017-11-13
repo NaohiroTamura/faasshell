@@ -52,22 +52,30 @@ reduce(A, I, O, E) :-
 %%
 
 %% pass state
-pass(State, Options, I, O, _E) :- 
-    mydebug(pass(in), (State, Options, I, O)),
-    atom_json_dict(Options, J, []),
-    dollarvar_key(J.'ResultPath', Key),
-    Dict = I.put(Key, J.'Result'),
+pass(State, Optional, I, O, _E) :- 
+    mydebug(pass(in), (State, Optional, I, O)),
+    option(result_path(ResultPath), Optional),
+    option(result(Result), Optional),
+    dollarvar_key(ResultPath, ResultPathKey),
+    Dict = I.put(ResultPathKey, Result),
     wsk_api_utils:term_json_dict(O, Dict),
     mydebug(pass(out), (State, I, O)).
 
 %% task state
-task(State, Action, I, O, E) :-
-    mydebug(task(in), (State, Action, I, O)),
-    catch(
-            wsk_api_actions:invoke(hello, E.openwhisk, I, O),
-            Err,
-            O = _{type: "Private", value: 40}), %Err), % print_message(error,Err)),
+task(State, Action, Optional, I, O, E) :-
+    mydebug(task(in), (State, Action, Optional, I, O)),
+    option(retry(R), Optional, []),
+    option(fallback(F), Optional, []),
+    retry(Action, R, I, O, E),
     mydebug(task(out), (I, O)).
+
+retry(Action, Retry, I, O, E) :-
+    mydebug(task(retry(in)), (I, O)),
+    catch(
+            wsk_api_actions:invoke(Action, E.openwhisk, I, O),
+            Err,
+            O = Err), % print_message(error,Err)),
+    mydebug(task(retry(out)), (I, O)).
 
 %% choices state
 choices(State, [], O, O, _E) :-
