@@ -27,9 +27,9 @@ start(File, I, O) :-
     mydebug(start(out), (I, O)).
               
 %%
-%% Meta Circular Interpreter
-%% reduce(+DSL, +Input, -Output, +Environment)
+%% begin of iterpreter
 %%
+%% reduce(+DSL, +Input, -Output, +Environment)
 reduce(asl(DSL), I, O, E) :- 
     !,
     mydebug(reduce(asl(in)), (I, O)),
@@ -49,32 +49,53 @@ reduce(A, I, O, E) :-
     A =.. L, append(L, [I, O, E], L1),
     Q =.. L1, Q,
     mydebug(reduce(op(out)), (I, O)).
+%% end of interpreter
 %%
 
+%%
+%% begin of state
+%%
 %% pass state
 pass(State, Optional, I, O, _E) :- 
     mydebug(pass(in), (State, Optional, I, O)),
-    option(result_path(ResultPath), Optional),
-    option(result(Result), Optional),
-    Dict = I.put(ResultPath, Result),
-    wsk_api_utils:term_json_dict(O, Dict),
+    ( option(result(Result), Optional)
+      -> process_output(I, Result, O, Optional)
+      ;  O = I
+    ),
     mydebug(pass(out), (State, I, O)).
 
 %% task state
 task(State, Action, Optional, I, O, E) :-
     mydebug(task(in), (State, Action, Optional, I, O)),
     option(retry(R), Optional, []),
+    retry(Action, R, Optional, I, O1, E),
     option(fallback(F), Optional, []),
-    retry(Action, R, I, O, E),
+    fallback(F, O1, O, E),
     mydebug(task(out), (I, O)).
 
-retry(Action, Retry, I, O, E) :-
+retry(Action, Retry, Optional, I, O, E) :-
     mydebug(task(retry(in)), (I, O)),
+    process_input(I, I1, Optional),
     catch(
-            wsk_api_actions:invoke(Action, E.openwhisk, I, O),
+            wsk_api_actions:invoke(Action, E.openwhisk, I1, O1),
             Err,
-            O = Err), %I.put(foo,1)), %_{type:"Private",value:40}),
+            O1 = error), %Err), %I.put(foo,1)), %_{type:"Private",value:40}),
+    process_output(I, O1, O, Optional),
     mydebug(task(retry(out)), (I, O)).
+
+fallback([], O, O, _E) :-
+    mydebug(fallback(done), O).
+fallback([case(Cond, States)|Cases], I, O, E) :-
+    mydebug(fallback(in), (case(Cond), I, O)),
+    reduce(Cond, I, M, E),
+    (
+        M == true
+        -> mydebug(fallback(true), (case(Cond), I, O)),
+           reduce(States, I, O, E)
+        ;  mydebug(fallback(false), (case(Cond), I, O)),
+           fallback(Cases, I, O, E)
+    ),
+    mydebug(fallback(out), (case(Cond), I, O)).
 
 %% choices state
 choices(State, [], Optional, I, O, E) :-
@@ -86,7 +107,7 @@ choices(State, [], Optional, I, O, E) :-
        O = I,
        mydebug(choices(done(out)), (State, I, O)).
 
-choices(State, [case(Cond,States)|Cases], Optional, I, O, E) :-
+choices(State, [case(Cond, States)|Cases], Optional, I, O, E) :-
     mydebug(choices(in), (State, case(Cond), I, O)),
     reduce(Cond, I, M, E),
     (
@@ -98,6 +119,29 @@ choices(State, [case(Cond,States)|Cases], Optional, I, O, E) :-
     ),
     mydebug(choices(out), (State, case(Cond), I, O)).
 
+%% fail state
+fail(State, Optional, I, O, _E) :-
+    mydebug(fail(in), (State, Optional, I, O)),
+    (option(cause(Cause), Optional) -> O1 = I.put(cause, Cause); O1 = I),
+    (option(error(Error), Optional) -> O2 = O1.put(error, Error); O2 = O1),
+    O = O2,
+    mydebug(fail(out), (State, I, O)).
+%% end of state
+%%
+
+%%
+%% fallback conditions
+%%
+'ErrorEquals'(["States.ALL"], I, true, _E) :- !,
+    mydebug('ErrorEquals'("States.ALL"), (I, true)).
+'ErrorEquals'(ErrorNames, I, O, _E) :-
+    mydebug('ErrorEquals'(in), (ErrorNames, I, O)),
+    (memberchk(I, ErrorNames) -> O = true; O = false),
+    mydebug('ErrorEquals'(out), (ErrorNames, I, O)).
+
+%%
+%% choice conditions
+%%
 'Not'(Cond, I, O, E) :-
     mydebug('Not'(in), (Cond, I, O)),
     reduce(Cond, I, M, E),
@@ -212,14 +256,18 @@ choices(State, [case(Cond,States)|Cases], Optional, I, O, E) :-
     ( I.VariableStamp =< ValueStamp ->  O = true; O = false ),
     mydebug('TimestampLessThanEquals'(out), (Variable, Value, I, O)).
 
-%%
-%% fail state
-fail(State, Optional, I, O, _E) :-
-    mydebug(fail(in), (State, Optional, I, O)),
-    (option(cause(Cause), Optional) -> O1 = I.put(cause, Cause); O1 = I),
-    (option(error(Error), Optional) -> O2 = O1.put(error, Error); O2 = O1),
-    O = O2,
-    mydebug(fail(out), (State, I, O)).
+%% Input and Output Processing
+%% (TODO: full JsonPath syntax support)
+process_input(OriginalInput, Input, Optional) :-
+    option(input_path(InputPath), Optional)
+    -> Input = OriginalInput.InputPath
+    ;  Input = OriginalInput.
+
+process_output(OriginalInput, Result, Output, Optional) :-
+    ( option(result_path(ResultPath), Optional)
+      -> I = OriginalInput.put(ResultPath, Result);  I = Result ),
+    ( option(output_path(OutputPath), Optional)
+      -> Output = I.OutputPath;  Output = I ).
 
 %%
 %% misc.
@@ -240,6 +288,20 @@ or(false, false, false).
 %%
 %% Unit Tests
 %%
+:- begin_tests(process_io).
+
+test(input, Input = _{val1:3, val2:4}) :-
+    OriginalInput = _{title: "Numbers to add", numbers: _{val1:3, val2:4}},
+    Optional = [input_path(numbers)],
+    process_input(OriginalInput, Input, Optional).
+
+test(output, Output = 7) :-
+    OriginalInput = _{title: "Numbers to add", numbers: _{val1:3, val2:4}},
+    Optional = [input_path(numbers), result_path(sum), output_path(sum)],
+    process_output(OriginalInput, 7, Output, Optional).
+
+:- end_tests(process_io).
+
 :- begin_tests(pass).
 
 test(hello, O = json([message='Hello World!', name=wsk])) :-
