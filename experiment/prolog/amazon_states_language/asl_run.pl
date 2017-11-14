@@ -56,8 +56,7 @@ pass(State, Optional, I, O, _E) :-
     mydebug(pass(in), (State, Optional, I, O)),
     option(result_path(ResultPath), Optional),
     option(result(Result), Optional),
-    dollarvar_key(ResultPath, ResultPathKey),
-    Dict = I.put(ResultPathKey, Result),
+    Dict = I.put(ResultPath, Result),
     wsk_api_utils:term_json_dict(O, Dict),
     mydebug(pass(out), (State, I, O)).
 
@@ -74,19 +73,18 @@ retry(Action, Retry, I, O, E) :-
     catch(
             wsk_api_actions:invoke(Action, E.openwhisk, I, O),
             Err,
-            O = Err), %_{type:"Private",value:25}),  % print_message(error,Err)),
+            O = _{type:"Private",value:40}), %I.put(foo,3)), %Err), 
     mydebug(task(retry(out)), (I, O)).
 
 %% choices state
 choices(State, [], Optional, I, O, E) :-
-    ( option(default(States), Optional)
-      -> mydebug(choices(default(in)), (State, I, O)),
-         reduce(States, I, O, E),
-         mydebug(choices(default(out)), (State, I, O))
-      ;  mydebug(choices(done(in)), (State, I, O)),
-         O = I,
-         mydebug(choices(done(out)), (State, I, O))
-    ).
+    option(default(States), Optional)
+    -> mydebug(choices(default(in)), (State, I, O)),
+       reduce(States, I, O, E),
+       mydebug(choices(default(out)), (State, I, O))
+    ;  mydebug(choices(done(in)), (State, I, O)),
+       O = I,
+       mydebug(choices(done(out)), (State, I, O)).
 
 choices(State, [case(Cond,States)|Cases], Optional, I, O, E) :-
     mydebug(choices(in), (State, case(Cond), I, O)),
@@ -132,29 +130,25 @@ case([State|States], I, O, E) :-
     or(M1, M2, O),
     mydebug('Or'(out), ([Cond|Conds], I, O)).
 
-'NumericEquals'(DollarVar, Value, I, O, _E) :-
-    mydebug('NumericEquals'(in), (DollarVar, Value, I, O)),
-    dollarvar_key(DollarVar, Key),
-    ( I.Key == Value ->  O = true; O = false ),
-    mydebug('NumericEquals'(out), (DollarVar, Value, I, O)).
+'NumericEquals'(Variable, Value, I, O, _E) :-
+    mydebug('NumericEquals'(in), (Variable, Value, I, O)),
+    ( I.Variable == Value ->  O = true; O = false ),
+    mydebug('NumericEquals'(out), (Variable, Value, I, O)).
 
-'NumericGreaterThanEquals'(DollarVar, Value, I, O, _E) :-
-    mydebug('NumericGreaterThanEquals'(in), (DollarVar, Value, I, O)),
-    dollarvar_key(DollarVar, Key),
-    ( I.Key >= Value ->  O = true; O = false ),
-    mydebug('NumericGreaterThanEquals'(out), (DollarVar, Value, I, O)).
+'NumericGreaterThanEquals'(Variable, Value, I, O, _E) :-
+    mydebug('NumericGreaterThanEquals'(in), (Variable, Value, I, O)),
+    ( I.Variable >= Value ->  O = true; O = false ),
+    mydebug('NumericGreaterThanEquals'(out), (Variable, Value, I, O)).
 
-'NumericLessThan'(DollarVar, Value, I, O, _E) :-
-    mydebug('NumericLessThan'(in), (DollarVar, Value, I, O)),
-    dollarvar_key(DollarVar, Key),
-    ( I.Key < Value ->  O = true; O = false ),
-    mydebug('NumericLessThan'(out), (DollarVar, Value, I, O)).
+'NumericLessThan'(Variable, Value, I, O, _E) :-
+    mydebug('NumericLessThan'(in), (Variable, Value, I, O)),
+    ( I.Variable < Value ->  O = true; O = false ),
+    mydebug('NumericLessThan'(out), (Variable, Value, I, O)).
 
-'StringEquals'(DollarVar, Value, I, O, _E) :-
-    mydebug('StringEquals'(in), (DollarVar, Value, I, O)),
-    dollarvar_key(DollarVar, Key),
-    ( I.Key == Value ->  O = true; O = false ),
-    mydebug('StringEquals'(out), (DollarVar, Value, I, O)).
+'StringEquals'(Variable, Value, I, O, _E) :-
+    mydebug('StringEquals'(in), (Variable, Value, I, O)),
+    ( I.Variable == Value ->  O = true; O = false ),
+    mydebug('StringEquals'(out), (Variable, Value, I, O)).
 
 %%
 %% fail state
@@ -168,10 +162,6 @@ fail(State, Optional, I, O, _E) :-
 %%
 %% misc.
 %%
-dollarvar_key(DollarVar, Key) :-
-    string_concat("$.", KeyStr, DollarVar),
-    atom_string(Key, KeyStr).
-
 not(true, false).
 not(false, true).
 

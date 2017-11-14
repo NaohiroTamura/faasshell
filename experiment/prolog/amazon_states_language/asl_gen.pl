@@ -161,30 +161,38 @@ parse_next(States, StateKey, NextKey, Term, Dsl, Graph, Path) :-
 wait_required(State, Wait, Optional) :-
     ((_{'Seconds': Seconds} :< State, !, Wait = seconds(Seconds));
      (_{'Timestamp': Timestamp} :< State, !, Wait = timestamp(Timestamp));
-     (_{'SecondsPath': SecondsPath} :< State, !, Wait = seconds_path(SecondsPath));
+     (_{'SecondsPath': SecondsPath} :< State, !,
+        dollarvar_key(SecondsPath, SecondsPathKey), 
+        Wait = seconds_path(SecondsPathKey));
      (_{'TimestampPath': TimestampPath} :< State, !,
-                                            Wait = timestamp_path(TimestampPath));
+        dollarvar_key(TimestampPath, TimestampPathKey), 
+        Wait = timestamp_path(TimestampPathKey));
      (throw(syntax_error("Wait State doesn't have either Seconds, \c
                                       Timestamp, Timestamp, or TimestampPath")))),
     common_optional(State, Optional).
 
 common_optional(State, Optional) :-
-    ( _{'Comment': Comment} :< State, O1 = comment(Comment); O1 = [] ),
-    ( _{'InputPath': InputPath} :< State, O2 = input_path(InputPath); O2 = [] ),
-    ( _{'OutputPath': OutputPath} :< State, O3 = output_path(OutputPath); O3 = [] ),
+    ( _{'Comment': Comment} :< State -> O1 = comment(Comment); O1 = [] ),
+    ( _{'InputPath': InputPath} :< State
+      -> dollarvar_key(InputPath, InputPathKey), O2 = input_path(InputPathKey)
+      ;  O2 = [] ),
+    ( _{'OutputPath': OutputPath} :< State
+      -> dollarvar_key(OutputPath, OutputPathKey), O3 = output_path(OutputPathKey)
+      ;  O3 = [] ),
     flatten([O1, O2, O3], Optional).
 
 pass_optional(State, Optional) :-
-    ( _{'Result': Result} :< State
-      -> O1 = result(Result); O1 = [] ),
+    ( _{'Result': Result} :< State -> O1 = result(Result); O1 = [] ),
     ( _{'ResultPath': ResultPath} :< State
-      -> O2 = result_path(ResultPath); O2 = [] ),
+      -> dollarvar_key(ResultPath, ResultPathKey), O2 = result_path(ResultPathKey)
+      ;  O2 = [] ),
     common_optional(State, O3),
     flatten([O1, O2, O3], Optional).
 
 task_optional(States, StateKey, Optional, Graph, Path) :-
     ( _{'ResultPath': ResultPath} :< States.StateKey
-      -> O1 = result_path(ResultPath); O1 = [] ),
+      -> dollarvar_key(ResultPath, ResultPathKey), O1 = result_path(ResultPathKey)
+      ;  O1 = [] ),
     common_optional(States.StateKey, O2),
     task_fallback(States, StateKey, O3, Graph, Path),
     task_retry(States.StateKey, O4),
@@ -231,53 +239,69 @@ branches(States, StateKey, [B|Bs], [D|Ds], Graph, Path) :-
     append([StateKey>StartAtKey | G1], G2, Graph).
 
 %%
-choice_rules(Rules, 'BooleanEquals'(Variable, Bool)) :-
-    _{'Variable': Variable, 'BooleanEquals': Bool} :< Rules.
+choice_rules(Rules, 'BooleanEquals'(VariableKey, Bool)) :-
+    _{'Variable': Variable, 'BooleanEquals': Bool} :< Rules,
+    dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'NumericEquals'(Variable, Num)) :-
-    _{'Variable': Variable, 'NumericEquals': Num} :< Rules.
+choice_rules(Rules, 'NumericEquals'(VariableKey, Num)) :-
+    _{'Variable': Variable, 'NumericEquals': Num} :< Rules,
+    dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'NumericGreaterThan'(Variable, Num)) :-
-    _{'Variable': Variable, 'NumericGreaterThan': Num} :< Rules.
+choice_rules(Rules, 'NumericGreaterThan'(VariableKey, Num)) :-
+    _{'Variable': Variable, 'NumericGreaterThan': Num} :< Rules,
+    dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'NumericGreaterThanEquals'(Variable, Num)) :-
-    _{'Variable': Variable, 'NumericGreaterThanEquals': Num} :< Rules.
+choice_rules(Rules, 'NumericGreaterThanEquals'(VariableKey, Num)) :-
+    _{'Variable': Variable, 'NumericGreaterThanEquals': Num} :< Rules,
+    dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'NumericLessThan'(Variable, Num)) :-
-    _{'Variable': Variable, 'NumericLessThan': Num} :< Rules.
+choice_rules(Rules, 'NumericLessThan'(VariableKey, Num)) :-
+    _{'Variable': Variable, 'NumericLessThan': Num} :< Rules,
+    dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'NumericLessThanEquals'(Variable, Num)) :-
-    _{'Variable': Variable, 'NumericLessThanEquals': Num} :< Rules.
+choice_rules(Rules, 'NumericLessThanEquals'(VariableKey, Num)) :-
+    _{'Variable': Variable, 'NumericLessThanEquals': Num} :< Rules,
+    dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'StringEquals'(Variable, Str)) :-
-    _{'Variable': Variable, 'StringEquals': Str} :< Rules.
+choice_rules(Rules, 'StringEquals'(VariableKey, Str)) :-
+    _{'Variable': Variable, 'StringEquals': Str} :< Rules,
+    dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'StringGreaterThan'(Variable, Str)) :-
-    _{'Variable': Variable, 'StringGreaterThan': Str} :< Rules.
+choice_rules(Rules, 'StringGreaterThan'(VariableKey, Str)) :-
+    _{'Variable': Variable, 'StringGreaterThan': Str} :< Rules,
+    dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'StringGreaterThanEquals'(Variable, Str)) :-
-    _{'Variable': Variable, 'StringGreaterThanEquals': Str} :< Rules.
+choice_rules(Rules, 'StringGreaterThanEquals'(VariableKey, Str)) :-
+    _{'Variable': Variable, 'StringGreaterThanEquals': Str} :< Rules,
+    dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'StringLessThan'(Variable, Str)) :-
-    _{'Variable': Variable, 'StringLessThan': Str} :< Rules.
+choice_rules(Rules, 'StringLessThan'(VariableKey, Str)) :-
+    _{'Variable': Variable, 'StringLessThan': Str} :< Rules,
+    dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'StringLessThanEquals'(Variable, Str)) :-
-    _{'Variable': Variable, 'StringLessThanEquals': Str} :< Rules.
+choice_rules(Rules, 'StringLessThanEquals'(VariableKey, Str)) :-
+    _{'Variable': Variable, 'StringLessThanEquals': Str} :< Rules,
+    dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'TimestampEquals'(Variable, Time)) :-
-    _{'Variable': Variable, 'TimestampEquals': Time} :< Rules.
+choice_rules(Rules, 'TimestampEquals'(VariableKey, Time)) :-
+    _{'Variable': Variable, 'TimestampEquals': Time} :< Rules,
+    dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'TimestampGreaterThan'(Variable, Time)) :-
-    _{'Variable': Variable, 'TimestampGreaterThan': Time} :< Rules.
+choice_rules(Rules, 'TimestampGreaterThan'(VariableKey, Time)) :-
+    _{'Variable': Variable, 'TimestampGreaterThan': Time} :< Rules,
+    dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'TimestampGreaterThanEquals'(Variable, Time)) :-
-    _{'Variable': Variable, 'TimestampGreaterThanEquals': Time} :< Rules.
+choice_rules(Rules, 'TimestampGreaterThanEquals'(VariableKey, Time)) :-
+    _{'Variable': Variable, 'TimestampGreaterThanEquals': Time} :< Rules,
+    dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'TimestampLessThan'(Variable, Time)) :-
-    _{'Variable': Variable, 'TimestampLessThan': Time} :< Rules.
+choice_rules(Rules, 'TimestampLessThan'(VariableKey, Time)) :-
+    _{'Variable': Variable, 'TimestampLessThan': Time} :< Rules,
+    dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'TimestampLessThanEquals'(Variable, Time)) :-
-    _{'Variable': Variable, 'TimestampLessThanEquals': Time} :< Rules.
+choice_rules(Rules, 'TimestampLessThanEquals'(VariableKey, Time)) :-
+    _{'Variable': Variable, 'TimestampLessThanEquals': Time} :< Rules,
+    dollarvar_key(Variable, VariableKey).
 
 %% the value of a Not operator must be a single Choice Rule
 %% that must not contain Next fields. 
@@ -337,6 +361,13 @@ task_fallback(States, StateKey, Dsl, Graph, Path) :-
     ->  fallback_rules_next(States, StateKey, Catchers, D2, G2, Path),
             Dsl = [fallback(D2)], Graph = G2
         ;   Dsl = [], Graph = [].
+%%
+%% Misc.
+%%
+dollarvar_key(DollarVar, Key) :-
+    string_concat("$.", KeyStr, DollarVar)
+    -> atom_string(Key, KeyStr)
+    ;  atom_string(Key, DollarVar).
 
 %%
 %% Unit Tests
