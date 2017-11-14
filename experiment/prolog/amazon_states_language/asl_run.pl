@@ -91,20 +91,12 @@ choices(State, [case(Cond,States)|Cases], Optional, I, O, E) :-
     reduce(Cond, I, M, E),
     (
         M == true
-        -> mydebug(choices(M), (State, case(Cond), I, O)),
-           case(States, I, O, E)
-        ;  mydebug(choices(M), (State, case(Cond), I, O)),
+        -> mydebug(choices(true), (State, case(Cond), I, O)),
+           reduce(States, I, O, E)
+        ;  mydebug(choices(false), (State, case(Cond), I, O)),
            choices(State, Cases, Optional, I, O, E)
     ),
     mydebug(choices(out), (State, case(Cond), I, O)).
-
-case([], O, O, _E) :-
-    mydebug(case(true(done)), O).
-case([State|States], I, O, E) :-
-    mydebug(case(true(in)), (State, I, O)),
-    reduce(State, I, M, E),
-    case(States, M, O, E),
-    mydebug(case(true(out)), (State, I, O)).
 
 'Not'(Cond, I, O, E) :-
     mydebug('Not'(in), (Cond, I, O)),
