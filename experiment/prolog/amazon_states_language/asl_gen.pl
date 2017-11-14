@@ -88,24 +88,18 @@ parse(States, StateKey, Dsl, Graph, Path) :-
                Dsl, G2, Path),
     append(G1, G2, Graph).
 
-parse(States, StateKey, [Dsl], [StateKey>'End' | Graph], Path) :-
+parse(States, StateKey, Dsl, [StateKey>'End' | Graph], Path) :-
     _{'Type':"Task", 'Resource':Resource, 'End':true} :< States.StateKey,
     task_optional(States, StateKey, Optional, Graph, Path),
-    Dsl = task(StateKey, Resource, Optional).
+    Dsl = [task(StateKey, Resource, Optional)].
     
 %% Choice State
-parse(States, StateKey, [choices(StateKey, Dsl)], Graph, Path) :-
+parse(States, StateKey, Dsl, Graph, Path) :-
     _{'Type':"Choice", 'Choices':Choices} :< States.StateKey,
     choices(States, StateKey, Choices, D1, G1, Path),
-    (
-        _{'Default':Default} :< States.StateKey
-        -> string(Default),
-           atom_string(DefaultKey, Default),
-           parse(States, DefaultKey, D2, G2, [StateKey>DefaultKey | Path]),
-           append(D1, [default(D2)], Dsl),
-           append(G1, [StateKey>DefaultKey | G2], Graph)
-        ;  Dsl = D1, Graph = G1
-    ).
+    choice_optional(States, StateKey, Optional, G2, Path),
+    Dsl = [choices(StateKey, D1, Optional)],
+    append(G1, G2, Graph).
 
 %% Wait State
 parse(States, StateKey, Dsl, Graph, Path) :-
@@ -139,15 +133,17 @@ parse(States, StateKey, Dsl, Graph, Path) :-
     string(Next), 
     branches(States, StateKey, Branches, D1, G1, [StateKey>NextKey | Path]),
     atom_string(NextKey, Next),
-    parse(States, NextKey, D2, G2, [StateKey>NextKey |Path]),
-    Dsl = [parallel(StateKey, branches(D1), D2)],
-    append(G1, [StateKey>NextKey | G2], Graph).
+    task_optional(States, StateKey, Optional, G2, Path),
+    parse_next(States, StateKey, NextKey,
+               parallel(StateKey, branches(D1), Optional), Dsl, G3, Path),
+    flatten([G1, G2, G3], Graph).
 
-parse(States, StateKey,  Dsl, Graph, _Path) :-
+parse(States, StateKey,  Dsl, Graph, Path) :-
     _{'Type':"Parallel",'Branches':Branches,'End':true} :< States.StateKey,
     branches(States, StateKey, Branches, D1, G1),
-    Dsl = [parallel(StateKey, branches(D1))],
-    Graph = [StateKey>'End' | G1].
+    task_optional(States, StateKey, Optional, G2, Path),
+    Dsl = [parallel(StateKey, branches(D1), Optional)],
+    flatten([[StateKey>'End'], G1, G2], Graph).
 
 %%
 %% parse next unless cycled
@@ -193,6 +189,18 @@ task_optional(States, StateKey, Optional, Graph, Path) :-
     task_fallback(States, StateKey, O3, Graph, Path),
     task_retry(States.StateKey, O4),
     flatten([O1, O2, O3, O4], Optional).
+
+choice_optional(States, StateKey, Optional, Graph, Path) :-
+    common_optional(States.StateKey, O1),
+    ( _{'Default':Default} :< States.StateKey
+      -> string(Default),
+         atom_string(DefaultKey, Default),
+         parse(States, DefaultKey, Dsl, G1, [StateKey>DefaultKey | Path]),
+         Optional = [default(Dsl) | O1],
+         Graph = [StateKey>DefaultKey | G1]
+      ;  Optional = [O1],
+         Graph = []
+    ).
 
 fail_optional(State, Optional) :-
     ( _{'Error':Error} :< State -> O1 = error(Error); O1 = [] ),
