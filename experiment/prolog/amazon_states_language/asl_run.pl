@@ -74,16 +74,21 @@ retry(Action, Retry, I, O, E) :-
     catch(
             wsk_api_actions:invoke(Action, E.openwhisk, I, O),
             Err,
-            O = Err), % print_message(error,Err)),
+            O = Err), %_{type:"Private",value:25}),  % print_message(error,Err)),
     mydebug(task(retry(out)), (I, O)).
 
 %% choices state
-choices(State, [], O, O, _E) :-
-    mydebug(choices(done), (State, O)).
-choices(State, [default(States)], I, O, E) :-
-    mydebug(choices(default), (State, I, O)),
-    default(States, I, O, E).
-choices(State, [case(Cond,States)|Cases], I, O, E) :-
+choices(State, [], Optional, I, O, E) :-
+    ( option(default(States), Optional)
+      -> mydebug(choices(default(in)), (State, I, O)),
+         reduce(States, I, O, E),
+         mydebug(choices(default(out)), (State, I, O))
+      ;  mydebug(choices(done(in)), (State, I, O)),
+         O = I,
+         mydebug(choices(done(out)), (State, I, O))
+    ).
+
+choices(State, [case(Cond,States)|Cases], Optional, I, O, E) :-
     mydebug(choices(in), (State, case(Cond), I, O)),
     reduce(Cond, I, M, E),
     (
@@ -91,7 +96,7 @@ choices(State, [case(Cond,States)|Cases], I, O, E) :-
         -> mydebug(choices(M), (State, case(Cond), I, O)),
            case(States, I, O, E)
         ;  mydebug(choices(M), (State, case(Cond), I, O)),
-           choices(State, Cases, I, O, E)
+           choices(State, Cases, Optional, I, O, E)
     ),
     mydebug(choices(out), (State, case(Cond), I, O)).
 
@@ -102,14 +107,6 @@ case([State|States], I, O, E) :-
     reduce(State, I, M, E),
     case(States, M, O, E),
     mydebug(case(true(out)), (State, I, O)).
-
-default([], O, O, _E) :-
-    mydebug(default(done), O).
-default([State|States], I, O, E) :-
-    mydebug(default(in), (State, I, O)),
-    reduce(State, I, M, E),
-    default(States, M, O, E),
-    mydebug(default(out), (State, I, O)).
 
 'Not'(Cond, I, O, E) :-
     mydebug('Not'(in), (Cond, I, O)),
@@ -161,9 +158,11 @@ default([State|States], I, O, E) :-
 
 %%
 %% fail state
-fail(State, Error, Reason, I, O, _E) :-
-    mydebug(fail(in), (State, Error, Reason, I, O)),
-    O = (Error, Reason),
+fail(State, Optional, I, O, _E) :-
+    mydebug(fail(in), (State, Optional, I, O)),
+    (option(cause(Cause), Optional) -> O1 = I.put(cause, Cause); O1 = I),
+    (option(error(Error), Optional) -> O2 = O1.put(error, Error); O2 = O1),
+    O = O2,
     mydebug(fail(out), (State, I, O)).
 
 %%
