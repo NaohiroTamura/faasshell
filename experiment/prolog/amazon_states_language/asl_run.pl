@@ -73,7 +73,7 @@ retry(Action, Retry, I, O, E) :-
     catch(
             wsk_api_actions:invoke(Action, E.openwhisk, I, O),
             Err,
-            O = _{type:"Private",value:40}), %I.put(foo,3)), %Err), 
+            O = Err), %I.put(foo,1)), %_{type:"Private",value:40}),
     mydebug(task(retry(out)), (I, O)).
 
 %% choices state
@@ -130,10 +130,20 @@ case([State|States], I, O, E) :-
     or(M1, M2, O),
     mydebug('Or'(out), ([Cond|Conds], I, O)).
 
+'BooleanEquals'(Variable, Value, I, O, _E) :-
+    mydebug('BooleanEquals'(in), (Variable, Value, I, O)),
+    ( I.Variable == Value ->  O = true; O = false ),
+    mydebug('BooleanEquals'(out), (Variable, Value, I, O)).
+
 'NumericEquals'(Variable, Value, I, O, _E) :-
     mydebug('NumericEquals'(in), (Variable, Value, I, O)),
-    ( I.Variable == Value ->  O = true; O = false ),
+    ( I.Variable =:= Value ->  O = true; O = false ),
     mydebug('NumericEquals'(out), (Variable, Value, I, O)).
+
+'NumericGreaterThan'(Variable, Value, I, O, _E) :-
+    mydebug('NumericGreaterThan'(in), (Variable, Value, I, O)),
+    ( I.Variable > Value ->  O = true; O = false ),
+    mydebug('NumericGreaterThan'(out), (Variable, Value, I, O)).
 
 'NumericGreaterThanEquals'(Variable, Value, I, O, _E) :-
     mydebug('NumericGreaterThanEquals'(in), (Variable, Value, I, O)),
@@ -145,10 +155,70 @@ case([State|States], I, O, E) :-
     ( I.Variable < Value ->  O = true; O = false ),
     mydebug('NumericLessThan'(out), (Variable, Value, I, O)).
 
+'NumericLessThanEquals'(Variable, Value, I, O, _E) :-
+    mydebug('NumericLessThanEquals'(in), (Variable, Value, I, O)),
+    ( I.Variable =< Value ->  O = true; O = false ),
+    mydebug('NumericLessThanEquals'(out), (Variable, Value, I, O)).
+
 'StringEquals'(Variable, Value, I, O, _E) :-
     mydebug('StringEquals'(in), (Variable, Value, I, O)),
     ( I.Variable == Value ->  O = true; O = false ),
     mydebug('StringEquals'(out), (Variable, Value, I, O)).
+
+'StringGreaterThan'(Variable, Value, I, O, _E) :-
+    mydebug('StringGreaterThan'(in), (Variable, Value, I, O)),
+    ( I.Variable @> Value ->  O = true; O = false ),
+    mydebug('StringGreaterThan'(out), (Variable, Value, I, O)).
+
+'StringGreaterThanEquals'(Variable, Value, I, O, _E) :-
+    mydebug('StringGreaterThanEquals'(in), (Variable, Value, I, O)),
+    ( I.Variable @>= Value ->  O = true; O = false ),
+    mydebug('StringGreaterThanEquals'(out), (Variable, Value, I, O)).
+
+'StringLessThan'(Variable, Value, I, O, _E) :-
+    mydebug('StringLessThan'(in), (Variable, Value, I, O)),
+    ( I.Variable @< Value ->  O = true; O = false ),
+    mydebug('StringLessThan'(out), (Variable, Value, I, O)).
+
+'StringLessThanEquals'(Variable, Value, I, O, _E) :-
+    mydebug('StringLessThanEquals'(in), (Variable, Value, I, O)),
+    ( I.Variable @=< Value ->  O = true; O = false ),
+    mydebug('StringLessThanEquals'(out), (Variable, Value, I, O)).
+
+'TimestampEquals'(Variable, Value, I, O, _E) :-
+    mydebug('TimestampEquals'(in), (Variable, Value, I, O)),
+    parse_time(Variable, VariableStamp),
+    parse_time(Value, ValueStamp),
+    ( I.VariableStamp =:= ValueStamp ->  O = true; O = false ),
+    mydebug('TimestampEquals'(out), (Variable, Value, I, O)).
+
+'TimestampGreaterThan'(Variable, Value, I, O, _E) :-
+    mydebug('TimestampGreaterThan'(in), (Variable, Value, I, O)),
+    parse_time(Variable, VariableStamp),
+    parse_time(Value, ValueStamp),
+    ( I.VariableStamp > ValueStamp ->  O = true; O = false ),
+    mydebug('TimestampGreaterThan'(out), (Variable, Value, I, O)).
+
+'TimestampGreaterThanEquals'(Variable, Value, I, O, _E) :-
+    mydebug('TimestampGreaterThanEquals'(in), (Variable, Value, I, O)),
+    parse_time(Variable, VariableStamp),
+    parse_time(Value, ValueStamp),
+    ( I.VariableStamp >= ValueStamp ->  O = true; O = false ),
+    mydebug('TimestampGreaterThanEquals'(out), (Variable, Value, I, O)).
+
+'TimestampLessThan'(Variable, Value, I, O, _E) :-
+    mydebug('TimestampLessThan'(in), (Variable, Value, I, O)),
+    parse_time(Variable, VariableStamp),
+    parse_time(Value, ValueStamp),
+    ( I.VariableStamp < ValueStamp ->  O = true; O = false ),
+    mydebug('TimestampLessThan'(out), (Variable, Value, I, O)).
+
+'TimestampLessThanEquals'(Variable, Value, I, O, _E) :-
+    mydebug('TimestampLessThanEquals'(in), (Variable, Value, I, O)),
+    parse_time(Variable, VariableStamp),
+    parse_time(Value, ValueStamp),
+    ( I.VariableStamp =< ValueStamp ->  O = true; O = false ),
+    mydebug('TimestampLessThanEquals'(out), (Variable, Value, I, O)).
 
 %%
 %% fail state
