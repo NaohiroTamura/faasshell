@@ -69,15 +69,13 @@ task(State, Action, Optional, I, O, E) :-
     mydebug(task(in), (State, Action, Optional, I, O)),
     process_input(I, I1, Optional),
     execute(Action, I1, M1, E),
-    ( M1 = error(Error1)
-      -> option(retry(R), Optional),
-         retry(Action, R, Error1, M2, E),
-         ( M2 = error(Error2)
-           -> option(fallback(F), Optional, []),
-              fallback(State, F, Error2, M3, E)
-           ; M3 = M2
-         )
-      ; M3 = M1
+    ( option(retry(R), Optional), is_dict(M1), get_dict(error, M1, Error1)
+      -> retry(Action, R, Error1, M2, E.put(_{action_input:I1}))
+      ;  M2 = M1
+    ),
+    ( option(fallback(F), Optional), is_dict(M2), get_dict(error, M2, Error2)
+      -> fallback(State, F, Error2, M3, E)
+      ;  M3 = M2
     ),
     process_output(I, M3, O, Optional),
     mydebug(task(out), (I, O)).
@@ -85,9 +83,11 @@ task(State, Action, Optional, I, O, E) :-
 execute(Action, I, O, E) :-
     mydebug(task(execute(in)), (I, O)),
     catch(
-            wsk_api_actions:invoke(Action, E.openwhisk, I, O),
-            Err,
-            O = error("States.TaskFailed")), %Err), %I.put(foo,1)), %_{type:"Private",value:40}),
+            call_with_time_limit(1, sleep(2)),
+            %% O = _{error: "xStates.TaskFailed"})), %% for test
+            %% wsk_api_actions:invoke(Action, E.openwhisk, I, O),
+            %% Err, print_message(error,Err)),
+            Err, O = _{error: Err}), 
     mydebug(task(execute(out)), (I, O)).
 
 retry(_Action, [], O, O, _E) :-
@@ -113,13 +113,13 @@ retry(Action, [case(Cond, Optional)|Cases], I, O, E) :-
            ( CurrentAttempt < MaxAttempts
              -> NewAttempt is CurrentAttempt + 1,
                 merge_options([current_attempt(NewAttempt)], Optional, NewOptional),
-                execute(Action, I, M1, E),
-                ( M1 = error(Err)
+                execute(Action, E.action_input, M1, E),
+                ( _{error: Err} :< M1 
                   -> mydebug(task(retry(again)), new_optional(NewOptional)),
                      retry(Action, [case(Cond, NewOptional)|Cases], Err, O, E)
                   ;  retry(Action, [], M1, O, E)
                 )
-             ; retry(Action, [], I, O, E)
+             ; retry(Action, [], _{error:I}, O, E)
            )
         ;  mydebug(task(retry(false)), (case(Cond), I, O)),
            retry(Action, Cases, I, O, E)
