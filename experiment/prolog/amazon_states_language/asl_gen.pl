@@ -323,11 +323,12 @@ choice_rules_next([C|Cs], [T|Ts]) :-
     choice_rules_next(Cs, Ts).
 
 %% 
-retry_rules(Rule, 'ErrorEquals'(ErrorCodes, I, M, B)) :-
+retry_rules(Rule, case('ErrorEquals'(ErrorCodes), Optional)) :-
     _{'ErrorEquals':ErrorCodes} :< Rule,
     ( _{'IntervalSeconds': I} :< Rule; I = 1 ),
     ( _{'MaxAttempts': M} :< Rule; M = 3 ),
-    ( _{'BackoffRate': B} :< Rule; B = 2.0 ).
+    ( _{'BackoffRate': B} :< Rule; B = 2.0 ),
+    Optional = [interval_seconds(I), max_attempts(M), backoff_rate(B)].
 
 retry_rules_next([], []).
 retry_rules_next([R|Rs], [T|Ts]) :-
