@@ -67,35 +67,78 @@ pass(State, Optional, I, O, _E) :-
 %% task state
 task(State, Action, Optional, I, O, E) :-
     mydebug(task(in), (State, Action, Optional, I, O)),
-    option(retry(R), Optional, []),
-    retry(Action, R, Optional, I, O1, E),
-    option(fallback(F), Optional, []),
-    fallback(F, O1, O, E),
+    process_input(I, I1, Optional),
+    execute(Action, I1, M1, E),
+    ( M1 = error(Error1)
+      -> option(retry(R), Optional),
+         retry(Action, R, Error1, M2, E),
+         ( M2 = error(Error2)
+           -> option(fallback(F), Optional, []),
+              fallback(State, F, Error2, M3, E)
+           ; M3 = M2
+         )
+      ; M3 = M1
+    ),
+    process_output(I, M3, O, Optional),
     mydebug(task(out), (I, O)).
 
-retry(Action, Retry, Optional, I, O, E) :-
-    mydebug(task(retry(in)), (I, O)),
-    process_input(I, I1, Optional),
+execute(Action, I, O, E) :-
+    mydebug(task(execute(in)), (I, O)),
     catch(
-            wsk_api_actions:invoke(Action, E.openwhisk, I1, O1),
+            wsk_api_actions:invoke(Action, E.openwhisk, I, O),
             Err,
-            O1 = error), %Err), %I.put(foo,1)), %_{type:"Private",value:40}),
-    process_output(I, O1, O, Optional),
-    mydebug(task(retry(out)), (I, O)).
+            O = error("States.TaskFailed")), %Err), %I.put(foo,1)), %_{type:"Private",value:40}),
+    mydebug(task(execute(out)), (I, O)).
 
-fallback([], O, O, _E) :-
-    mydebug(fallback(done), O).
-fallback([case(Cond, States)|Cases], I, O, E) :-
-    mydebug(fallback(in), (case(Cond), I, O)),
+retry(_Action, [], O, O, _E) :-
+    mydebug(retry(done), O).
+retry(Action, [case(Cond, Optional)|Cases], I, O, E) :-
+    mydebug(task(retry(in)), (I, O)),
     reduce(Cond, I, M, E),
     (
         M == true
-        -> mydebug(fallback(true), (case(Cond), I, O)),
+        -> mydebug(task(retry(true)), (case(Cond), I, O)),
+           option(interval_seconds(IntervalSeconds), Optional, 1),
+           option(max_attempts(MaxAttempts), Optional, 3),
+           option(backoff_rate(BackoffRate), Optional, 2.0),
+           option(current_attempt(CurrentAttempt), Optional, 0),
+           mydebug(task(retry(sleep)), current_attempt(CurrentAttempt)),
+           ( CurrentAttempt =:= 0
+             -> sleep(IntervalSeconds),
+                mydebug(task(retry(sleep)), first_interval(IntervalSeconds))
+             ;  NewInterval is IntervalSeconds * BackoffRate^CurrentAttempt,
+                sleep(NewInterval),
+                mydebug(task(retry(sleep)), new_interval(NewInterval))
+           ),
+           ( CurrentAttempt < MaxAttempts
+             -> NewAttempt is CurrentAttempt + 1,
+                merge_options([current_attempt(NewAttempt)], Optional, NewOptional),
+                execute(Action, I, M1, E),
+                ( M1 = error(Err)
+                  -> mydebug(task(retry(again)), new_optional(NewOptional)),
+                     retry(Action, [case(Cond, NewOptional)|Cases], Err, O, E)
+                  ;  retry(Action, [], M1, O, E)
+                )
+             ; retry(Action, [], I, O, E)
+           )
+        ;  mydebug(task(retry(false)), (case(Cond), I, O)),
+           retry(Action, Cases, I, O, E)
+    ),
+    mydebug(task(retry(out)), (I, O)).
+
+fallback(State, [], O, O, _E) :-
+    mydebug(task(fallback(done)), (State, O)).
+fallback(State, [case(Cond, States)|Cases], I, O, E) :-
+    mydebug(task(fallback(in)), (State, case(Cond), I, O)),
+    reduce(Cond, I, M, E),
+    (
+        M == true
+        -> mydebug(task(fallback(true)), (State, case(Cond), I, O)),
            reduce(States, I, O, E)
-        ;  mydebug(fallback(false), (case(Cond), I, O)),
+        ;  mydebug(task(fallback(false)), (State, case(Cond), I, O)),
            fallback(Cases, I, O, E)
     ),
-    mydebug(fallback(out), (case(Cond), I, O)).
+    mydebug(task(fallback(out)), (State, case(Cond), I, O)).
 
 %% choices state
 choices(State, [], Optional, I, O, E) :-
@@ -130,7 +173,7 @@ fail(State, Optional, I, O, _E) :-
 %%
 
 %%
-%% fallback conditions
+%% retry and fallback conditions
 %%
 'ErrorEquals'(["States.ALL"], I, true, _E) :- !,
     mydebug('ErrorEquals'("States.ALL"), (I, true)).
