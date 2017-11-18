@@ -196,7 +196,13 @@ task_optional(States, StateKey, Optional, Graph, Path) :-
     common_optional(States.StateKey, O2),
     task_fallback(States, StateKey, O3, Graph, Path),
     task_retry(States.StateKey, O4),
-    flatten([O1, O2, O3, O4], Optional).
+    ( _{'TimeoutSeconds': TimeoutSeconds} :< States.StateKey
+      -> O5 = timeout_seconds(TimeoutSeconds)
+      ; O5 = [] ),
+    ( _{'HeartbeatSeconds': HeartbeatSeconds} :< States.StateKey
+      -> O6 = heartbeat_seconds(HeartbeatSeconds)
+      ; O6 = [] ),
+    flatten([O1, O2, O3, O4, O5, O6], Optional).
 
 choice_optional(States, StateKey, Optional, Graph, Path) :-
     common_optional(States.StateKey, O1),

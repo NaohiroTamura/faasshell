@@ -68,7 +68,7 @@ pass(State, Optional, I, O, _E) :-
 task(State, Action, Optional, I, O, E) :-
     mydebug(task(in), (State, Action, Optional, I, O)),
     process_input(I, I1, Optional),
-    execute(Action, I1, M1, E),
+    execute(Action, Optional, I1, M1, E),
     ( option(retry(R), Optional), is_dict(M1), get_dict(error, M1, Error1)
       -> retry(Action, R, Error1, M2, E.put(_{action_input:I1}))
       ;  M2 = M1
@@ -80,28 +80,63 @@ task(State, Action, Optional, I, O, E) :-
     process_output(I, M3, O, Optional),
     mydebug(task(out), (I, O)).
 
-execute(Action, I, O, E) :-
-    mydebug(task(execute(in)), (I, O)),
+error_code(time_limit_exceeded, _{error: "States.Timeout"}) :-
+    mydebug(error_code, time_limit_exceeded), !.
+
+error_code(heartbeat_error, _{error: "States.TaskFailed"}) :-
+    mydebug(error_code, heartbeat_error), !.
+
+error_code(Error, O) :-
+    Error = error(permission_error(_, _), context(_, Status)), !,
+    mydebug(error_code(permission(in)), (Status, O)),
+    print_message(error, Error),
+    O = _{error: "States.Permissions"},
+    mydebug(error_code(permission(out)), (Status, O)).
+
+error_code(Error, _{error: Error}) :-
+    print_message(error, Error).
+
+heartbeat(Optional) :-
+    mydebug(heartbeat, in),
     catch(
-            call_with_time_limit(1, sleep(2)),
-            %% O = _{error: "xStates.TaskFailed"})), %% for test
-            %% wsk_api_actions:invoke(Action, E.openwhisk, I, O),
-            %% Err, print_message(error,Err)),
-            Err, O = _{error: Err}), 
+            option(heartbeat_seconds(HeartbeatSeconds), Optional)
+            -> mydebug(heartbeat, throw),
+               throw(heartbeat_error)
+            ;  mydebug(heartbeat, out),
+               Error,
+               error_code(Error, O)
+        ).
+
+execute(Action, Optional, I, O, E) :-
+    mydebug(task(execute(in)), (I, O)),
+    ( option(timeout_seconds(TimeoutSeconds), Optional)
+      -> WskEnv = [timeout(TimeoutSeconds) | E.openwhisk],
+         mydebug(task(execute(timeout)), TimeoutSeconds)
+      ;  WskEnv = E.openwhisk
+    ),
+    %thread_create(heartbeat(Optional), Id),
+    %heartbeat(Optional),
+    catch(
+            call_with_time_limit(
+                    TimeoutSeconds,
+                    wsk_api_actions:invoke(Action, WskEnv, I, O)),
+            Error,
+            error_code(Error, O)
+        ),
     mydebug(task(execute(out)), (I, O)).
 
 retry(_Action, [], O, O, _E) :-
     mydebug(retry(done), O).
-retry(Action, [case(Cond, Optional)|Cases], I, O, E) :-
+retry(Action, [case(Cond, Params)|Cases], Optional, I, O, E) :-
     mydebug(task(retry(in)), (I, O)),
     reduce(Cond, I, M, E),
     (
         M == true
         -> mydebug(task(retry(true)), (case(Cond), I, O)),
-           option(interval_seconds(IntervalSeconds), Optional, 1),
-           option(max_attempts(MaxAttempts), Optional, 3),
-           option(backoff_rate(BackoffRate), Optional, 2.0),
-           option(current_attempt(CurrentAttempt), Optional, 0),
+           option(interval_seconds(IntervalSeconds), Params, 1),
+           option(max_attempts(MaxAttempts), Params, 3),
+           option(backoff_rate(BackoffRate), Params, 2.0),
+           option(current_attempt(CurrentAttempt), Params, 0),
            mydebug(task(retry(sleep)), current_attempt(CurrentAttempt)),
            ( CurrentAttempt =:= 0
              -> sleep(IntervalSeconds),
@@ -112,17 +147,18 @@ retry(Action, [case(Cond, Optional)|Cases], I, O, E) :-
            ),
            ( CurrentAttempt < MaxAttempts
              -> NewAttempt is CurrentAttempt + 1,
-                merge_options([current_attempt(NewAttempt)], Optional, NewOptional),
-                execute(Action, E.action_input, M1, E),
+                merge_options([current_attempt(NewAttempt)], Params, NewParams),
+                execute(Action, Optional, E.action_input, M1, E),
                 ( _{error: Err} :< M1 
-                  -> mydebug(task(retry(again)), new_optional(NewOptional)),
-                     retry(Action, [case(Cond, NewOptional)|Cases], Err, O, E)
-                  ;  retry(Action, [], M1, O, E)
+                  -> mydebug(task(retry(again)), new_optional(NewParams)),
+                     retry(Action, [case(Cond, NewParams)|Cases],
+                           Optional, Err, O, E)
+                  ;  retry(Action, [], Optional, M1, O, E)
                 )
              ; retry(Action, [], _{error:I}, O, E)
            )
         ;  mydebug(task(retry(false)), (case(Cond), I, O)),
-           retry(Action, Cases, I, O, E)
+           retry(Action, Cases, Optional, I, O, E)
     ),
     mydebug(task(retry(out)), (I, O)).
 
