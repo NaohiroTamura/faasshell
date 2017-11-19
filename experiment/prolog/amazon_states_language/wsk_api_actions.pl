@@ -27,8 +27,10 @@ list(ActionName, Options, Reply) :-
                           wsk_api_dcg:path(get, NS, actions, ActionName, Query),
                           URL, Options),
     option(api_key(ID, PW), Options),
+    option(timeout(Timeout), Options, 99999999),
     http_get(URL, R1,
              [%% status_code(_Code),
+              timeout(Timeout),
               authorization(basic(ID, PW)),
               cert_verify_hook(cert_accept_any)]),
     wsk_api_utils:term_json_dict(R1, Reply).
@@ -41,9 +43,11 @@ invoke(ActionName, Options, Payload, Reply) :-
                           wsk_api_dcg:path(post, NS, actions, ActionName, Query),
                           URL, Options),
     option(api_key(ID, PW), Options),
+    option(timeout(Timeout), Options, 99999999),
     wsk_api_utils:term_json_dict(Json, Payload),
     http_post(URL, json(Json), R1,
               [%% status_code(_Code),
+               timeout(Timeout),
                authorization(basic(ID, PW)),
                cert_verify_hook(cert_accept_any)]),
     wsk_api_utils:term_json_dict(R1, Reply).
