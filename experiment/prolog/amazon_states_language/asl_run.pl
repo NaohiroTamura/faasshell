@@ -83,6 +83,9 @@ task(State, Action, Optional, I, O, E) :-
 error_code(time_limit_exceeded, _{error: "States.Timeout"}) :-
     mydebug(error_code, time_limit_exceeded), !.
 
+error_code(error(timeout_error(_, _), _), _{error: "States.Timeout"}) :-
+    mydebug(error_code, timeout_error), !.
+
 error_code(heartbeat_error, _{error: "States.TaskFailed"}) :-
     mydebug(error_code, heartbeat_error), !.
 
@@ -96,32 +99,75 @@ error_code(Error, O) :-
 error_code(Error, _{error: Error}) :-
     print_message(error, Error).
 
-heartbeat(Optional) :-
-    mydebug(heartbeat, in),
-    catch(
-            option(heartbeat_seconds(HeartbeatSeconds), Optional)
-            -> mydebug(heartbeat, throw),
-               throw(heartbeat_error)
-            ;  mydebug(heartbeat, out),
-               Error,
-               error_code(Error, O)
+recv_task_heartbeat(MBox, _TaskToken) :-
+    mydebug(recv_task_heartbeat, in),
+    catch( ( repeat,
+             %% TODO: get_heartbeat(TaskToken)
+             sleep(1),
+             %% 
+             thread_send_message(MBox, heartbeat),
+             false
+           ),
+           Error,
+           mydebug(recv_task_heartbeat, out(Error))
+         ).
+
+heartbeat(MBox, HeartbeatSeconds) :-
+    mydebug(heartbeat(in), HeartbeatSeconds),
+    %% TODO: token
+    thread_create(recv_task_heartbeat(MBox, token), RecvHeartBeatId),
+    call_cleanup( 
+            ( repeat,
+              mydebug(heartbeat(repeat), in),
+              catch( ( thread_get_message(MBox, Msg, [timeout(HeartbeatSeconds)])
+                       -> ( Msg = stop
+                            -> mydebug(heartbeat(repeat), stop),
+                               Ret = true
+                            ;  mydebug(heartbeat(repeat), continue(Msg)),
+                               Ret = false
+                          )
+                       ;  ( mydebug(heartbeat(repeat), timeout(HeartbeatSeconds)),
+                            %% task failed to send heartbeat
+                            %% TODO:
+                            %% send a message to stop waiting for task completion
+                            Ret = true
+                          )
+                     ),
+                     Error,
+                     ( mydebug(heartbeat(repeat), out(Error)),
+                       Ret = true
+                     )
+                   ),
+              Ret
+            ),
+            ( thread_signal(RecvHeartBeatId, throw(kill)),
+              thread_join(RecvHeartBeatId, RecvHeartBeatStatus),
+              mydebug(heartbeat(cleanup), recv_heartbeat(RecvHeartBeatStatus))
+            )
         ).
 
 execute(Action, Optional, I, O, E) :-
     mydebug(task(execute(in)), (I, O)),
-    ( option(timeout_seconds(TimeoutSeconds), Optional)
-      -> WskEnv = [timeout(TimeoutSeconds) | E.openwhisk],
-         mydebug(task(execute(timeout)), TimeoutSeconds)
-      ;  WskEnv = E.openwhisk
+    ( option(heartbeat_seconds(HeartbeatSeconds), Optional)
+      -> message_queue_create(MBox),
+         thread_create(heartbeat(MBox, HeartbeatSeconds), HeartBeatId)
+      ;  MBox
     ),
-    %thread_create(heartbeat(Optional), Id),
-    %heartbeat(Optional),
-    catch(
-            call_with_time_limit(
-                    TimeoutSeconds,
-                    wsk_api_actions:invoke(Action, WskEnv, I, O)),
-            Error,
-            error_code(Error, O)
+    call_cleanup(
+            ( option(timeout_seconds(TimeoutSeconds), Optional, 99999999),
+              mydebug(task(execute(timeout)), TimeoutSeconds),
+              WskApiEnv = [timeout(TimeoutSeconds) | E.openwhisk],
+              catch( wsk_api_actions:invoke(Action, WskApiEnv, I, O),
+                     Error,
+                     error_code(Error, O)
+                   )
+            ),
+            ( ground(MBox),
+              thread_send_message(MBox, stop),
+              thread_join(HeartBeatId, HeartBeatStatus),
+              message_queue_destroy(MBox),
+              mydebug(task(execute(cleanup)), heart_beat_status(HeartBeatStatus))
+            )
         ),
     mydebug(task(execute(out)), (I, O)).
 
