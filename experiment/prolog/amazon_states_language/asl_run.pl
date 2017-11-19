@@ -68,7 +68,7 @@ pass(State, Optional, I, O, _E) :-
 task(State, Action, Optional, I, O, E) :-
     mydebug(task(in), (State, Action, Optional, I, O)),
     process_input(I, I1, Optional),
-    execute(Action, Optional, I1, M1, E),
+    task_control(Action, Optional, I1, M1, E),
     ( option(retry(R), Optional), is_dict(M1), get_dict(error, M1, Error1)
       -> retry(Action, R, Error1, M2, E.put(_{action_input:I1}))
       ;  M2 = M1
@@ -99,77 +99,128 @@ error_code(Error, O) :-
 error_code(Error, _{error: Error}) :-
     print_message(error, Error).
 
-recv_task_heartbeat(MBox, _TaskToken) :-
-    mydebug(recv_task_heartbeat, in),
+heartbeat(HeartBeatMBox, _TaskToken) :-
+    mydebug(heartbeat, in),
     catch( ( repeat,
              %% TODO: get_heartbeat(TaskToken)
-             sleep(1),
+             sleep(5),
              %% 
-             thread_send_message(MBox, heartbeat),
+             thread_send_message(HeartBeatMBox, heartbeat),
              false
            ),
            Error,
-           mydebug(recv_task_heartbeat, out(Error))
+           mydebug(heartbeat(catch), Error)
          ).
 
-heartbeat(MBox, HeartbeatSeconds) :-
-    mydebug(heartbeat(in), HeartbeatSeconds),
-    %% TODO: token
-    thread_create(recv_task_heartbeat(MBox, token), RecvHeartBeatId),
-    call_cleanup( 
-            ( repeat,
-              mydebug(heartbeat(repeat), in),
-              catch( ( thread_get_message(MBox, Msg, [timeout(HeartbeatSeconds)])
-                       -> ( Msg = stop
-                            -> mydebug(heartbeat(repeat), stop),
-                               Ret = true
-                            ;  mydebug(heartbeat(repeat), continue(Msg)),
-                               Ret = false
-                          )
-                       ;  ( mydebug(heartbeat(repeat), timeout(HeartbeatSeconds)),
-                            %% task failed to send heartbeat
-                            %% TODO:
-                            %% send a message to stop waiting for task completion
-                            Ret = true
-                          )
-                     ),
-                     Error,
-                     ( mydebug(heartbeat(repeat), out(Error)),
-                       Ret = true
-                     )
-                   ),
-              Ret
-            ),
-            ( thread_signal(RecvHeartBeatId, throw(kill)),
-              thread_join(RecvHeartBeatId, RecvHeartBeatStatus),
-              mydebug(heartbeat(cleanup), recv_heartbeat(RecvHeartBeatStatus))
-            )
-        ).
+heartbeat_message(stop, true) :- !,
+    mydebug(task_heartbeat(repeat), stop).
 
-execute(Action, Optional, I, O, E) :-
-    mydebug(task(execute(in)), (I, O)),
-    ( option(heartbeat_seconds(HeartbeatSeconds), Optional)
-      -> message_queue_create(MBox),
-         thread_create(heartbeat(MBox, HeartbeatSeconds), HeartBeatId)
-      ;  MBox
+heartbeat_message(Msg, false) :-
+    mydebug(task_heartbeat(repeat), continue(Msg)).
+
+task_heartbeat(TaskControlMBox, TaskToken, HeartbeatSeconds) :-
+    mydebug(task_heartbeat(in), HeartbeatSeconds),
+    %% TODO: token
+    message_queue_create(HeartBeatMBox),
+    thread_create(heartbeat(HeartBeatMBox, TaskToken), HeartBeatId),
+    catch( ( repeat,
+             mydebug(task_heartbeat(repeat), in),
+             ( thread_get_message(HeartBeatMBox, Msg,
+                                  [timeout(HeartbeatSeconds)])
+               -> heartbeat_message(Msg, Ret)
+               ;  ( mydebug(task_heartbeat(repeat), timeout(HeartbeatSeconds)),
+                    %% task failed to send heartbeat within HeartbeatSeconds
+                    error_code(heartbeat_error, O),
+                    thread_send_message(TaskControlMBox, task_failed(O)),
+                    Ret = true
+                  )
+             ),
+             Ret
+           ),
+           Error,
+           mydebug(task_heartbeat(catch), Error)
+         ),
+    !,
+    ( is_thread(HeartBeatId),
+      thread_property(HeartBeatId, status(running))
+      -> thread_signal(HeartBeatId, throw(heart_beat_kill)),
+         thread_join(HeartBeatId, HeartBeatStatus)
+      ; true
     ),
-    call_cleanup(
-            ( option(timeout_seconds(TimeoutSeconds), Optional, 99999999),
-              mydebug(task(execute(timeout)), TimeoutSeconds),
-              WskApiEnv = [timeout(TimeoutSeconds) | E.openwhisk],
-              catch( wsk_api_actions:invoke(Action, WskApiEnv, I, O),
-                     Error,
-                     error_code(Error, O)
-                   )
-            ),
-            ( ground(MBox),
-              thread_send_message(MBox, stop),
-              thread_join(HeartBeatId, HeartBeatStatus),
-              message_queue_destroy(MBox),
-              mydebug(task(execute(cleanup)), heart_beat_status(HeartBeatStatus))
-            )
-        ),
-    mydebug(task(execute(out)), (I, O)).
+    message_queue_destroy(HeartBeatMBox),
+    mydebug(task_heartbeat(out), heartbeat(HeartBeatStatus)).
+
+
+task_control_message(task_completed(O), true, O) :- !,
+    mydebug(task_control_message(task_completed(O)), true).
+
+task_control_message(task_failed(O), true, O) :- !,
+    mydebug(task_control_message(task_failed(O)), true).
+
+task_control_message(Message, false, _) :-
+    mydebug(task_control_message(Message), false).
+
+task_control(Action, Optional, I, O, E) :-
+    mydebug(task_control(in), (I, O)),
+    message_queue_create(TaskControlMBox),
+    %% TODO: generate TaskToken
+    ( option(heartbeat_seconds(HeartbeatSeconds), Optional)
+      -> thread_create(task_heartbeat(TaskControlMBox, TaskToken, HeartbeatSeconds),
+                       TaskHeartBeatId)
+      ;  TaskHeartBeatId
+    ),
+    thread_create(task_execute(Action,
+                               [task_control_mbox(TaskControlMBox) | Optional],
+                               I, O, E), TaskExecuteId),
+    catch( ( ( repeat,
+               mydebug(task_control(repeat), in),
+               ( thread_get_message(TaskControlMBox, Msg),
+                 task_control_message(Msg, Ret, O)
+               ),
+               Ret
+             ),
+             mydebug(task_control(out), (I, O))
+           ),
+           Error,
+           mydebug(task_control(catch), Error)
+         ),
+    !,
+    ( is_thread(TaskExecuteId),
+      thread_property(TaskExecuteId, status(running))
+      -> thread_signal(TaskExecuteId, throw(task_execute_kill)),
+         thread_join(TaskExecuteId, TaskExecuteStatus)
+      ;  true
+    ),
+    mydebug(task_control(cleanup), task_execute(TaskExecuteStatus)),
+    ( ground(TaskHeartBeatId),
+      is_thread(TaskHeartBeatId),
+      thread_property(TaskHeartBeatId, status(running))
+      -> thread_signal(TaskHeartBeatId, throw(task_heartbeat_kill)),
+         thread_join(TaskHeartBeatId, TaskHeartBeatStatus)
+      ;  true
+    ),
+    message_queue_destroy(TaskControlMBox),
+    mydebug(task_control(cleanup), task_heartbeat(TaskHeartBeatStatus)).
+
+
+task_execute(Action, Optional, I, O, E) :-
+    option(task_control_mbox(TaskControlMBox), Optional),
+    option(timeout_seconds(TimeoutSeconds), Optional, 99999999),
+    mydebug(task_execute(timeout), TimeoutSeconds),
+    WskApiEnv = [timeout(TimeoutSeconds) | E.openwhisk],
+    catch( ( wsk_api_actions:invoke(Action, WskApiEnv, I, O),
+             thread_send_message(TaskControlMBox, task_completed(O)),
+             mydebug(task_execute(out), (I, O))
+           ),
+           Error,
+           ( error_code(Error, O),
+             mydebug(task_execute(catch), Error),
+             ( Error = task_execute_kill
+              -> true
+              ;  thread_send_message(TaskControlMBox, task_failed(O))
+             )
+           )
+         ).
 
 retry(_Action, [], O, O, _E) :-
     mydebug(retry(done), O).
