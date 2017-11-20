@@ -6,6 +6,7 @@
 :- module(wsk_api_utils,
           [ openwhisk/1,
             api_url/4,
+            api_action_name/3,
             term_json_dict/2
          ]).
 
@@ -50,6 +51,11 @@ api_url(ApiHost, Gen, URL, Options) :-
     append([Protocol, "://", ApiHost, ":", Port, "/api/", Ver], Path, URLList),
     atomics_to_string(URLList, URL).
 
+api_action_name(Action, NS, ActionName) :-
+    split_string(Action, "/", "", ["", NS | AN])
+    -> atomics_to_string(AN, "/", ActionName)
+    ; ActionName = Action,
+      NS = default.
 
 term_json_dict(Term, Dict) :-
     ground(Term), !,
@@ -64,6 +70,12 @@ term_json_dict(Term, Dict) :-
 :- use_module(library(plunit)).
 
 :- begin_tests(utils).
+
+test(ns_echo, (NS, ActionName) = ("whisk.system", "utils/echo")) :-
+    api_action_name("/whisk.system/utils/echo", NS, ActionName).
+
+test(echo, (NS, ActionName) = (default, "utils/echo")) :-
+    api_action_name("utils/echo", NS, ActionName).
 
 test(json_term_to_dict, Name  == "openwhisk") :-
     term_json_dict(json([name=openwhisk]), Dict), Name = Dict.name.
