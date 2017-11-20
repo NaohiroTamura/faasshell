@@ -27,7 +27,7 @@ list(ActionName, Options, Reply) :-
                           wsk_api_dcg:path(get, NS, actions, ActionName, Query),
                           URL, Options),
     option(api_key(ID, PW), Options),
-    option(timeout(Timeout), Options, 99999999),
+    option(timeout(Timeout), Options, infinite),
     http_get(URL, R1,
              [%% status_code(_Code),
               timeout(Timeout),
@@ -43,7 +43,7 @@ invoke(ActionName, Options, Payload, Reply) :-
                           wsk_api_dcg:path(post, NS, actions, ActionName, Query),
                           URL, Options),
     option(api_key(ID, PW), Options),
-    option(timeout(Timeout), Options, 99999999),
+    option(timeout(Timeout), Options, infinite),
     wsk_api_utils:term_json_dict(Json, Payload),
     http_post(URL, json(Json), R1,
               [%% status_code(_Code),
@@ -73,7 +73,7 @@ test(action_list, true) :-
 
 :- begin_tests(invoke).
 %% 
-test(action_invoke, R = json([payload='Hello, wsk!'])) :-
+test(action_invoke, R = _{payload:"Hello, wsk!"}) :-
     wsk_api_utils:openwhisk(Options), 
     wsk_api_actions:invoke(hello,Options,_{name:"wsk"}, R).
 
