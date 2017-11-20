@@ -70,7 +70,7 @@ task(State, Action, Optional, I, O, E) :-
     process_input(I, I1, Optional),
     task_control(Action, Optional, I1, M1, E),
     ( option(retry(R), Optional), is_dict(M1), get_dict(error, M1, Error1)
-      -> retry(Action, R, Error1, M2, E.put(_{action_input:I1}))
+      -> retry(Action, R, Optional, Error1, M2, E.put(_{action_input:I1}))
       ;  M2 = M1
     ),
     ( option(fallback(F), Optional), is_dict(M2), get_dict(error, M2, Error2)
@@ -130,19 +130,21 @@ task_heartbeat(TaskControlMBox, TaskToken, HeartbeatSeconds) :-
     %% TODO: token
     message_queue_create(HeartBeatMBox),
     thread_create(heartbeat(HeartBeatMBox, TaskToken), HeartBeatId),
-    catch( ( repeat,
-             mydebug(task_heartbeat(repeat), in),
-             ( thread_get_message(HeartBeatMBox, Msg,
-                                  [timeout(HeartbeatSeconds)])
-               -> heartbeat_message(Msg, Ret)
-               ;  ( mydebug(task_heartbeat(repeat), timeout(HeartbeatSeconds)),
-                    %% task failed to send heartbeat within HeartbeatSeconds
-                    error_code(heartbeat_error, O),
-                    thread_send_message(TaskControlMBox, task_failed(O)),
-                    Ret = true
-                  )
+    catch( ( ( repeat,
+               mydebug(task_heartbeat(repeat), in),
+               ( thread_get_message(HeartBeatMBox, Msg,
+                                    [timeout(HeartbeatSeconds)])
+                 -> heartbeat_message(Msg, Ret)
+                 ;  ( mydebug(task_heartbeat(repeat), timeout(HeartbeatSeconds)),
+                      %% task failed to send heartbeat within HeartbeatSeconds
+                      error_code(heartbeat_error, O),
+                      thread_send_message(TaskControlMBox, task_failed(O)),
+                      Ret = true
+                    )
+               ),
+               Ret
              ),
-             Ret
+             mydebug(task_heartbeat(repeat), out)
            ),
            Error,
            mydebug(task_heartbeat(catch), Error)
@@ -151,11 +153,12 @@ task_heartbeat(TaskControlMBox, TaskToken, HeartbeatSeconds) :-
     ( is_thread(HeartBeatId),
       thread_property(HeartBeatId, status(running))
       -> thread_signal(HeartBeatId, throw(heart_beat_kill)),
-         thread_join(HeartBeatId, HeartBeatStatus)
+         thread_join(HeartBeatId, HeartBeatStatus),
+         mydebug(task_heartbeat(out), heartbeat(HeartBeatStatus))
       ; true
     ),
     message_queue_destroy(HeartBeatMBox),
-    mydebug(task_heartbeat(out), heartbeat(HeartBeatStatus)).
+    mydebug(task_heartbeat(out), HeartBeatMBox).
 
 
 task_control_message(task_completed(O), true, O) :- !,
@@ -180,13 +183,13 @@ task_control(Action, Optional, I, O, E) :-
                                [task_control_mbox(TaskControlMBox) | Optional],
                                I, O, E), TaskExecuteId),
     catch( ( ( repeat,
-               mydebug(task_control(repeat), in),
+               mydebug(task_control(repeat(in)), (I, O)),
                ( thread_get_message(TaskControlMBox, Msg),
                  task_control_message(Msg, Ret, O)
                ),
                Ret
              ),
-             mydebug(task_control(out), (I, O))
+             mydebug(task_control(repeat(out)), (I, O))
            ),
            Error,
            mydebug(task_control(catch), Error)
@@ -195,22 +198,25 @@ task_control(Action, Optional, I, O, E) :-
     ( is_thread(TaskExecuteId),
       thread_property(TaskExecuteId, status(running))
       -> thread_signal(TaskExecuteId, throw(task_execute_kill)),
-         thread_join(TaskExecuteId, TaskExecuteStatus)
+         thread_join(TaskExecuteId, TaskExecuteStatus),
+         mydebug(task_control(cleanup), task_execute(TaskExecuteStatus))
       ;  true
     ),
-    mydebug(task_control(cleanup), task_execute(TaskExecuteStatus)),
+    
     ( ground(TaskHeartBeatId),
       is_thread(TaskHeartBeatId),
       thread_property(TaskHeartBeatId, status(running))
       -> thread_signal(TaskHeartBeatId, throw(task_heartbeat_kill)),
-         thread_join(TaskHeartBeatId, TaskHeartBeatStatus)
+         thread_join(TaskHeartBeatId, TaskHeartBeatStatus),
+         mydebug(task_control(cleanup), task_heartbeat(TaskHeartBeatStatus))
       ;  true
     ),
     message_queue_destroy(TaskControlMBox),
-    mydebug(task_control(cleanup), task_heartbeat(TaskHeartBeatStatus)).
+    mydebug(task_control(out), (I, O)).
 
 
 task_execute(Action, Optional, I, O, E) :-
+    mydebug(task_execute(in), (I, O)),
     option(task_control_mbox(TaskControlMBox), Optional),
     option(timeout_seconds(TimeoutSeconds), Optional, infinite),
     mydebug(task_execute(timeout), TimeoutSeconds),
@@ -229,7 +235,7 @@ task_execute(Action, Optional, I, O, E) :-
            )
          ).
 
-retry(_Action, [], O, O, _E) :-
+retry(_Action, [], _Optional, O, O, _E) :-
     mydebug(retry(done), O).
 retry(Action, [case(Cond, Params)|Cases], Optional, I, O, E) :-
     mydebug(task(retry(in)), (I, O)),
@@ -252,14 +258,14 @@ retry(Action, [case(Cond, Params)|Cases], Optional, I, O, E) :-
            ( CurrentAttempt < MaxAttempts
              -> NewAttempt is CurrentAttempt + 1,
                 merge_options([current_attempt(NewAttempt)], Params, NewParams),
-                execute(Action, Optional, E.action_input, M1, E),
+                task_control(Action, Optional, E.action_input, M1, E),
                 ( _{error: Err} :< M1 
                   -> mydebug(task(retry(again)), new_optional(NewParams)),
                      retry(Action, [case(Cond, NewParams)|Cases],
                            Optional, Err, O, E)
                   ;  retry(Action, [], Optional, M1, O, E)
                 )
-             ; retry(Action, [], _{error:I}, O, E)
+             ; retry(Action, [], Optional, _{error:I}, O, E)
            )
         ;  mydebug(task(retry(false)), (case(Cond), I, O)),
            retry(Action, Cases, Optional, I, O, E)
@@ -276,7 +282,7 @@ fallback(State, [case(Cond, States)|Cases], I, O, E) :-
         -> mydebug(task(fallback(true)), (State, case(Cond), I, O)),
            reduce(States, I, O, E)
         ;  mydebug(task(fallback(false)), (State, case(Cond), I, O)),
-           fallback(Cases, I, O, E)
+           fallback(State, Cases, I, O, E)
     ),
     mydebug(task(fallback(out)), (State, case(Cond), I, O)).
 
