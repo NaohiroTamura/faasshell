@@ -316,7 +316,7 @@ wait(State, seconds(Seconds), Optional, I, O, _E) :-
     ),
     mydebug(wait(sleep), Wait),
     sleep(Wait),
-    process_output(I, I, O, Optional),
+    process_output(I, O, Optional),
     mydebug(wait(out), (State, I, O)).
 
 wait(State, timestamp(Timestamp), Optional, I, O, _E) :-
@@ -330,7 +330,7 @@ wait(State, timestamp(Timestamp), Optional, I, O, _E) :-
       ;  mydebug(wait(nosleep), Wait),
          true
     ),
-    process_output(I, I, O, Optional),
+    process_output(I, O, Optional),
     mydebug(wait(out), (State, I, O)).
 
 wait(State, seconds_path(SecondsPath), Optional, I, O, _E) :-
@@ -340,7 +340,7 @@ wait(State, seconds_path(SecondsPath), Optional, I, O, _E) :-
     ),
     mydebug(wait(sleep), Wait),
     sleep(Wait),
-    process_output(I, I, O, Optional),
+    process_output(I, O, Optional),
     mydebug(wait(out), (State, I, O)).
 
 wait(State, timestamp_path(TimestampPath), Optional, I, O, _E) :-
@@ -354,7 +354,7 @@ wait(State, timestamp_path(TimestampPath), Optional, I, O, _E) :-
       ;  mydebug(wait(nosleep), Wait),
          true
     ),
-    process_output(I, I, O, Optional),
+    process_output(I, O, Optional),
     mydebug(wait(out), (State, I, O)).
 
 %% fail state
@@ -501,11 +501,20 @@ process_input(OriginalInput, Input, Optional) :-
     -> Input = OriginalInput.InputPath
     ;  Input = OriginalInput.
 
+process_output(Input, Output, Optional) :-
+    option(output_path(OutputPath), Optional)
+    -> Output = Input.OutputPath
+    ;  Output = Input.
+
 process_output(OriginalInput, Result, Output, Optional) :-
     ( option(result_path(ResultPath), Optional)
-      -> I = OriginalInput.put(ResultPath, Result);  I = Result ),
+      -> I = OriginalInput.put(ResultPath, Result)
+      ;  I = OriginalInput.put(Result)
+    ),
     ( option(output_path(OutputPath), Optional)
-      -> Output = I.OutputPath;  Output = I ).
+      -> Output = I.OutputPath
+      ;  Output = I
+    ).
 
 %%
 %% misc.
