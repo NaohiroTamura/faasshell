@@ -96,6 +96,13 @@ error_code(Error, O) :-
     O = _{error: "States.Permissions"},
     mydebug(error_code(permission(out)), (Status, O)).
 
+error_code(Error, O) :-
+    Error = error(existence_error(_, _), context(_, Status)), !,
+    mydebug(error_code(existence_error(in)), (Status, O)),
+    print_message(error, Error),
+    O = _{error: "States.TaskFailed"},
+    mydebug(error_code(existence_error(out)), (Status, O)).
+
 error_code(Error, _{error: Error}) :-
     print_message(error, Error).
 
@@ -167,7 +174,7 @@ task_control(Action, Optional, I, O, E) :-
     ( option(heartbeat_seconds(HeartbeatSeconds), Optional)
       -> thread_create(task_heartbeat(TaskControlMBox, TaskToken, HeartbeatSeconds),
                        TaskHeartBeatId)
-      ;  TaskHeartBeatId
+      ;  TaskHeartBeatId = _
     ),
     thread_create(task_execute(Action,
                                [task_control_mbox(TaskControlMBox) | Optional],
@@ -205,7 +212,7 @@ task_control(Action, Optional, I, O, E) :-
 
 task_execute(Action, Optional, I, O, E) :-
     option(task_control_mbox(TaskControlMBox), Optional),
-    option(timeout_seconds(TimeoutSeconds), Optional, 99999999),
+    option(timeout_seconds(TimeoutSeconds), Optional, infinite),
     mydebug(task_execute(timeout), TimeoutSeconds),
     WskApiEnv = [timeout(TimeoutSeconds) | E.openwhisk],
     catch( ( wsk_api_actions:invoke(Action, WskApiEnv, I, O),
@@ -344,92 +351,92 @@ fail(State, Optional, I, O, _E) :-
 
 'BooleanEquals'(Variable, Value, I, O, _E) :-
     mydebug('BooleanEquals'(in), (Variable, Value, I, O)),
-    ( I.Variable == Value ->  O = true; O = false ),
+    catch((I.Variable == Value ->  O = true; O = false ), _, O = false),
     mydebug('BooleanEquals'(out), (Variable, Value, I, O)).
 
 'NumericEquals'(Variable, Value, I, O, _E) :-
     mydebug('NumericEquals'(in), (Variable, Value, I, O)),
-    ( I.Variable =:= Value ->  O = true; O = false ),
+    catch((I.Variable =:= Value ->  O = true; O = false), _, O = false),
     mydebug('NumericEquals'(out), (Variable, Value, I, O)).
 
 'NumericGreaterThan'(Variable, Value, I, O, _E) :-
     mydebug('NumericGreaterThan'(in), (Variable, Value, I, O)),
-    ( I.Variable > Value ->  O = true; O = false ),
+    catch((I.Variable > Value ->  O = true; O = false ), _, O = false),
     mydebug('NumericGreaterThan'(out), (Variable, Value, I, O)).
 
 'NumericGreaterThanEquals'(Variable, Value, I, O, _E) :-
     mydebug('NumericGreaterThanEquals'(in), (Variable, Value, I, O)),
-    ( I.Variable >= Value ->  O = true; O = false ),
+    catch((I.Variable >= Value ->  O = true; O = false ), _, O = false),
     mydebug('NumericGreaterThanEquals'(out), (Variable, Value, I, O)).
 
 'NumericLessThan'(Variable, Value, I, O, _E) :-
     mydebug('NumericLessThan'(in), (Variable, Value, I, O)),
-    ( I.Variable < Value ->  O = true; O = false ),
+    catch((I.Variable < Value ->  O = true; O = false ), _, O = false),
     mydebug('NumericLessThan'(out), (Variable, Value, I, O)).
 
 'NumericLessThanEquals'(Variable, Value, I, O, _E) :-
     mydebug('NumericLessThanEquals'(in), (Variable, Value, I, O)),
-    ( I.Variable =< Value ->  O = true; O = false ),
+    catch((I.Variable =< Value ->  O = true; O = false ), _, O = false),
     mydebug('NumericLessThanEquals'(out), (Variable, Value, I, O)).
 
 'StringEquals'(Variable, Value, I, O, _E) :-
     mydebug('StringEquals'(in), (Variable, Value, I, O)),
-    ( I.Variable == Value ->  O = true; O = false ),
+    catch((I.Variable == Value ->  O = true; O = false ), _, O = false),
     mydebug('StringEquals'(out), (Variable, Value, I, O)).
 
 'StringGreaterThan'(Variable, Value, I, O, _E) :-
     mydebug('StringGreaterThan'(in), (Variable, Value, I, O)),
-    ( I.Variable @> Value ->  O = true; O = false ),
+    catch((I.Variable @> Value ->  O = true; O = false ), _, O = false),
     mydebug('StringGreaterThan'(out), (Variable, Value, I, O)).
 
 'StringGreaterThanEquals'(Variable, Value, I, O, _E) :-
     mydebug('StringGreaterThanEquals'(in), (Variable, Value, I, O)),
-    ( I.Variable @>= Value ->  O = true; O = false ),
+    catch((I.Variable @>= Value ->  O = true; O = false ), _, O = false),
     mydebug('StringGreaterThanEquals'(out), (Variable, Value, I, O)).
 
 'StringLessThan'(Variable, Value, I, O, _E) :-
     mydebug('StringLessThan'(in), (Variable, Value, I, O)),
-    ( I.Variable @< Value ->  O = true; O = false ),
+    catch((I.Variable @< Value ->  O = true; O = false ), _, O = false),
     mydebug('StringLessThan'(out), (Variable, Value, I, O)).
 
 'StringLessThanEquals'(Variable, Value, I, O, _E) :-
     mydebug('StringLessThanEquals'(in), (Variable, Value, I, O)),
-    ( I.Variable @=< Value ->  O = true; O = false ),
+    catch((I.Variable @=< Value ->  O = true; O = false ), _, O = false),
     mydebug('StringLessThanEquals'(out), (Variable, Value, I, O)).
 
 'TimestampEquals'(Variable, Value, I, O, _E) :-
     mydebug('TimestampEquals'(in), (Variable, Value, I, O)),
     parse_time(Variable, VariableStamp),
     parse_time(Value, ValueStamp),
-    ( I.VariableStamp =:= ValueStamp ->  O = true; O = false ),
+    catch((I.VariableStamp =:= ValueStamp ->  O = true; O = false ), _, O = false),
     mydebug('TimestampEquals'(out), (Variable, Value, I, O)).
 
 'TimestampGreaterThan'(Variable, Value, I, O, _E) :-
     mydebug('TimestampGreaterThan'(in), (Variable, Value, I, O)),
     parse_time(Variable, VariableStamp),
     parse_time(Value, ValueStamp),
-    ( I.VariableStamp > ValueStamp ->  O = true; O = false ),
+    catch((I.VariableStamp > ValueStamp ->  O = true; O = false ), _, O = false),
     mydebug('TimestampGreaterThan'(out), (Variable, Value, I, O)).
 
 'TimestampGreaterThanEquals'(Variable, Value, I, O, _E) :-
     mydebug('TimestampGreaterThanEquals'(in), (Variable, Value, I, O)),
     parse_time(Variable, VariableStamp),
     parse_time(Value, ValueStamp),
-    ( I.VariableStamp >= ValueStamp ->  O = true; O = false ),
+    catch((I.VariableStamp >= ValueStamp ->  O = true; O = false ), _, O = false),
     mydebug('TimestampGreaterThanEquals'(out), (Variable, Value, I, O)).
 
 'TimestampLessThan'(Variable, Value, I, O, _E) :-
     mydebug('TimestampLessThan'(in), (Variable, Value, I, O)),
     parse_time(Variable, VariableStamp),
     parse_time(Value, ValueStamp),
-    ( I.VariableStamp < ValueStamp ->  O = true; O = false ),
+    catch((I.VariableStamp < ValueStamp ->  O = true; O = false ), _, O = false),
     mydebug('TimestampLessThan'(out), (Variable, Value, I, O)).
 
 'TimestampLessThanEquals'(Variable, Value, I, O, _E) :-
     mydebug('TimestampLessThanEquals'(in), (Variable, Value, I, O)),
     parse_time(Variable, VariableStamp),
     parse_time(Value, ValueStamp),
-    ( I.VariableStamp =< ValueStamp ->  O = true; O = false ),
+    catch((I.VariableStamp =< ValueStamp ->  O = true; O = false ), _, O = false),
     mydebug('TimestampLessThanEquals'(out), (Variable, Value, I, O)).
 
 %% Input and Output Processing
