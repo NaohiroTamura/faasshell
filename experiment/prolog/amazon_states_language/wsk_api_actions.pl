@@ -19,7 +19,8 @@
 :- use_module(library(http/json_convert)).
 :- use_module(library(http/http_json)).
 
-list(ActionName, Options, Reply) :-
+list(Action, Options, Reply) :-
+    wsk_api_utils:api_action_name(Action, NS, ActionName),
     option(api_host(HostName), Options),
     option(namespace(NS), Options, default),
     option(query(Query), Options, []),
@@ -35,9 +36,9 @@ list(ActionName, Options, Reply) :-
               cert_verify_hook(cert_accept_any)]),
     wsk_api_utils:term_json_dict(R1, Reply).
 
-invoke(ActionName, Options, Payload, Reply) :-
+invoke(Action, Options, Payload, Reply) :-
+    wsk_api_utils:api_action_name(Action, NS, ActionName),
     option(api_host(HostName), Options),
-    option(namespace(NS), Options, default),
     option(query(Query), Options, [blocking=true,result=true]),
     wsk_api_utils:api_url(HostName, 
                           wsk_api_dcg:path(post, NS, actions, ActionName, Query),
@@ -73,8 +74,12 @@ test(action_list, true) :-
 
 :- begin_tests(invoke).
 %% 
-test(action_invoke, R = _{payload:"Hello, wsk!"}) :-
+test(hello, R = _{payload:"Hello, wsk!"}) :-
     wsk_api_utils:openwhisk(Options), 
     wsk_api_actions:invoke(hello,Options,_{name:"wsk"}, R).
+
+test(echo, R = _{foo:1}) :-
+    wsk_api_utils:openwhisk(Options),
+    wsk_api_actions:invoke("/whisk.system/utils/echo",Options,_{foo:1}, R).
 
 :- end_tests(invoke).
