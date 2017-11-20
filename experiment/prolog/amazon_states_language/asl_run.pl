@@ -308,6 +308,55 @@ choices(State, [case(Cond, States)|Cases], Optional, I, O, E) :-
     ),
     mydebug(choices(out), (State, case(Cond), I, O)).
 
+%% wait state
+wait(State, seconds(Seconds), Optional, I, O, _E) :-
+    mydebug(wait(in), (State, seconds(Seconds), I, O)),
+    ( number(Seconds), Wait = Seconds;
+      string(Seconds), number_string(Wait, Seconds)
+    ),
+    mydebug(wait(sleep), Wait),
+    sleep(Wait),
+    process_output(I, I, O, Optional),
+    mydebug(wait(out), (State, I, O)).
+
+wait(State, timestamp(Timestamp), Optional, I, O, _E) :-
+    mydebug(wait(in), (State, timestamp(Timestamp), I, O)),
+    parse_time(Timestamp, TargetStamp),
+    get_time(CurrentStamp),
+    Wait is TargetStamp - CurrentStamp,
+    ( Wait > 0
+      -> mydebug(wait(sleep), Wait),
+         sleep(Wait)
+      ;  mydebug(wait(nosleep), Wait),
+         true
+    ),
+    process_output(I, I, O, Optional),
+    mydebug(wait(out), (State, I, O)).
+
+wait(State, seconds_path(SecondsPath), Optional, I, O, _E) :-
+    mydebug(wait(in), (State, seconds_path(SecondsPath), I, O)),
+    ( number(I.SecondsPath), Wait = I.SecondsPath;
+      string(I.SecondsPath), number_string(Wait, I.SecondsPath)
+    ),
+    mydebug(wait(sleep), Wait),
+    sleep(Wait),
+    process_output(I, I, O, Optional),
+    mydebug(wait(out), (State, I, O)).
+
+wait(State, timestamp_path(TimestampPath), Optional, I, O, _E) :-
+    mydebug(wait(in), (State, timestamp_path(TimestampPath), I, O)),
+    parse_time(I.TimestampPath, TargetStamp),
+    get_time(CurrentStamp),
+    Wait is TargetStamp - CurrentStamp,
+    ( Wait > 0
+      -> mydebug(wait(sleep), Wait),
+         sleep(Wait)
+      ;  mydebug(wait(nosleep), Wait),
+         true
+    ),
+    process_output(I, I, O, Optional),
+    mydebug(wait(out), (State, I, O)).
+
 %% fail state
 fail(State, Optional, I, O, _E) :-
     mydebug(fail(in), (State, Optional, I, O)),
