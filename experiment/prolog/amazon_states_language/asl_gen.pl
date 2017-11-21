@@ -150,7 +150,8 @@ parse(States, StateKey,  Dsl, Graph, Path) :-
 parse_next(States, StateKey, NextKey, Term, Dsl, Graph, Path) :-
     (
         memberchk(StateKey>NextKey, Path)
-     -> Dsl = [Term],
+     -> Term =.. [_,State|_],
+        Dsl = [goto(state(State))],
         Graph = [StateKey>NextKey]
      ;  parse(States, NextKey, D1, G1, [StateKey>NextKey | Path]),
         Dsl = [Term | D1],

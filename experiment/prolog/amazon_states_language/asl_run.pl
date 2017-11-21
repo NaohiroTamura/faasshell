@@ -22,6 +22,7 @@ start(File, I, O) :-
             read_term(S, Term, []),
             close(S)),
     mydebug(start(in), (Term, I, O)),
+    assertz(Term),
     wsk_api_utils:openwhisk(Options),
     reduce(Term, I, O, _{openwhisk: Options}),
     mydebug(start(out), (I, O)).
@@ -367,6 +368,32 @@ fail(State, Optional, I, O, _E) :-
 %% end of state
 %%
 
+%%
+%% cyclic state transition
+%%
+goto(state(Target), I, O, E) :-
+    mydebug(goto(in), (Target, I, O)),
+    asl(States),
+    findall(N,asl_run:lookup(Target,States,N),L),
+    include(is_list, L, Next),
+    mydebug(goto(out), (Next, I, O)),
+    reduce(Next, I, O, E).
+
+lookup(Target, [State|States], Next) :-
+    \+ is_list(State),   % writeln(s1(State)),
+    State =.. [_, Target | _]
+    -> Next = [State|States]
+    ;  lookup(Target, States, Next).
+lookup(Target, [Ss|Sss], Next) :-
+    is_list(Ss),         % writeln(s2(Ss)),
+    lookup(Target, Ss, Next)
+    -> true
+    ;  lookup(Target, Sss, Next).
+lookup(Target, [parallel(_,branches(StatesList),_)|_], Next) :-
+    % writeln(s3(StatesList)),
+    lookup(Target, StatesList, Next).
+lookup(_Target, [], nil).
+        
 %%
 %% retry and fallback conditions
 %%
