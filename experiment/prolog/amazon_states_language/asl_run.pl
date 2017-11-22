@@ -73,7 +73,7 @@ task(State, Action, Optional, I, O, E) :-
     process_input(I, I1, Optional),
     task_control(Action, Optional, I1, M1, E),
     ( option(retry(R), Optional), is_dict(M1), get_dict(error, M1, Error1)
-      -> retry(Action, R, Optional, Error1, M2, E.put(_{action_input:I1}))
+      -> retry(task_control(Action, Optional, I1), R, Error1, M2, E)
       ;  M2 = M1
     ),
     ( option(fallback(F), Optional), is_dict(M2), get_dict(error, M2, Error2)
@@ -238,9 +238,9 @@ task_execute(Action, Optional, I, O, E) :-
            )
          ).
 
-retry(_Action, [], _Optional, O, O, _E) :-
+retry(_PartialFunc, [], O, O, _E) :-
     mydebug(retry(done), O).
-retry(Action, [case(Cond, Params)|Cases], Optional, I, O, E) :-
+retry(PartialFunc, [case(Cond, Params)|Cases], I, O, E) :-
     mydebug(task(retry(in)), (I, O)),
     reduce(Cond, I, M, E),
     (
@@ -261,17 +261,17 @@ retry(Action, [case(Cond, Params)|Cases], Optional, I, O, E) :-
            ( CurrentAttempt < MaxAttempts
              -> NewAttempt is CurrentAttempt + 1,
                 merge_options([current_attempt(NewAttempt)], Params, NewParams),
-                task_control(Action, Optional, E.action_input, M1, E),
+                PartialFunc =.. CL1, append(CL1, [M1, E], CL2),
+                RetryCommand =.. CL2, RetryCommand,
                 ( _{error: Err} :< M1 
                   -> mydebug(task(retry(again)), new_optional(NewParams)),
-                     retry(Action, [case(Cond, NewParams)|Cases],
-                           Optional, Err, O, E)
-                  ;  retry(Action, [], Optional, M1, O, E)
+                     retry(PartialFunc, [case(Cond, NewParams)|Cases], Err, O, E)
+                  ;  retry(PartialFunc, [], M1, O, E)
                 )
-             ; retry(Action, [], Optional, _{error:I}, O, E)
+             ; retry(PartialFunc, [], _{error:I}, O, E)
            )
         ;  mydebug(task(retry(false)), (case(Cond), I, O)),
-           retry(Action, Cases, Optional, I, O, E)
+           retry(PartialFunc, Cases, I, O, E)
     ),
     mydebug(task(retry(out)), (I, O)).
 
@@ -371,27 +371,45 @@ fail(State, Optional, I, O, _E) :-
 %% parallel state
 parallel(State, branches(Branches), Optional, I, O, E) :-
     mydebug(parallel(in), (State, Optional, I, O)),
-    catch( ( process_input(I, I1, Optional),
+    process_input(I, I1, Optional),
+    parallel_execute(Branches, I1, M1, E),
+    ( option(retry(R), Optional), is_dict(M1), get_dict(error, M1, Error1)
+      -> retry(parallel_execute(Branches, I), R, Error1, M2, E)
+      ;  M2 = M1
+    ),
+    ( option(fallback(F), Optional), is_dict(M2), get_dict(error, M2, Error2)
+      -> fallback(State, F, Error2, M3, E)
+      ;  M3 = M2
+    ),
+    process_output(I, M3, O, Optional),
+    mydebug(parallel(out), (State, I, O)).
+
+parallel_execute(Branches, I, O, E) :-
+    mydebug(parallel_execute(in), (I, O)),
+    catch( ( 
              length(Branches, BL),
              length(Args, BL),
-             maplist(=((I1,O1,E)), Args),
-             mydebug(parallel(args), (O1,O)),
+             maplist(=((I,M,E)), Args),
+             mydebug(parallel(args), (M,O)),
              concurrent_maplist(branch_execute, Branches, Args, Results),
-             maplist([(_A,B,_C),B]>>true, Results, O2),
-             mydebug(parallel(result), (O2, O)),
-             process_output(I, O2, O, Optional)
+             maplist([(_A,B,_C),B]>>true, Results, O),
+             mydebug(parallel_execute(result), O)
            ),
            Error,
            ( mydebug(parallel(catch), Error),
              error_code(Error, O)
            )
         ),
-    mydebug(parallel(out), (State, I, O)).
+    mydebug(parallel_execute(out), (I, O)).
 
 branch_execute(Branch, (I, O, E), (I, O, E)) :-
     mydebug(branch_execute(in), (I,O)),
     reduce(Branch, I, O, E),
-    mydebug(branch_execute(out), (I,O)).
+    mydebug(branch_execute(out), (I,O)),
+    ( is_dict(O), get_dict(error, O, Error)
+      -> throw(Error)
+      ;  true
+    ).
 
 %% end of state
 %%
