@@ -14,7 +14,9 @@
 
 :- use_module(library(http/json)).
 
-mydebug(F, M) :- format("mydbug: ~p~t~24| : ~p~n", [F, M]).
+mydebug(F, M) :- 
+    thread_self(Id), thread_property(Id, id(N)),
+    format("(~w): ~p~t~24| : ~p~n", [N, F, M]).
 
 start(File, I, O) :-
     open(File, read, S),
@@ -365,6 +367,32 @@ fail(State, Optional, I, O, _E) :-
     (option(error(Error), Optional) -> O2 = O1.put(error, Error); O2 = O1),
     O = O2,
     mydebug(fail(out), (State, I, O)).
+
+%% parallel state
+parallel(State, branches(Branches), Optional, I, O, E) :-
+    mydebug(parallel(in), (State, Optional, I, O)),
+    catch( ( process_input(I, I1, Optional),
+             length(Branches, BL),
+             length(Args, BL),
+             maplist(=((I1,O1,E)), Args),
+             mydebug(parallel(args), (O1,O)),
+             concurrent_maplist(branch_execute, Branches, Args, Results),
+             maplist([(_A,B,_C),B]>>true, Results, O2),
+             mydebug(parallel(result), (O2, O)),
+             process_output(I, O2, O, Optional)
+           ),
+           Error,
+           ( mydebug(parallel(catch), Error),
+             error_code(Error, O)
+           )
+        ),
+    mydebug(parallel(out), (State, I, O)).
+
+branch_execute(Branch, (I, O, E), (I, O, E)) :-
+    mydebug(branch_execute(in), (I,O)),
+    reduce(Branch, I, O, E),
+    mydebug(branch_execute(out), (I,O)).
+
 %% end of state
 %%
 
@@ -374,25 +402,26 @@ fail(State, Optional, I, O, _E) :-
 goto(state(Target), I, O, E) :-
     mydebug(goto(in), (Target, I, O)),
     asl(States),
-    findall(N,asl_run:lookup(Target,States,N),L),
+    setof(N,asl_run:lookup_state(Target,States,N),L),
     include(is_list, L, Next),
+    length(Next,1),
     mydebug(goto(out), (Next, I, O)),
     reduce(Next, I, O, E).
 
-lookup(Target, [State|States], Next) :-
+lookup_state(Target, [State|States], Next) :-
     \+ is_list(State),   % writeln(s1(State)),
     State =.. [_, Target | _]
     -> Next = [State|States]
-    ;  lookup(Target, States, Next).
-lookup(Target, [Ss|Sss], Next) :-
+    ;  lookup_state(Target, States, Next).
+lookup_state(Target, [Ss|Sss], Next) :-
     is_list(Ss),         % writeln(s2(Ss)),
-    lookup(Target, Ss, Next)
+    lookup_state(Target, Ss, Next)
     -> true
-    ;  lookup(Target, Sss, Next).
-lookup(Target, [parallel(_,branches(StatesList),_)|_], Next) :-
+    ;  lookup_state(Target, Sss, Next).
+lookup_state(Target, [parallel(_,branches(StatesList),_)|_], Next) :-
     % writeln(s3(StatesList)),
-    lookup(Target, StatesList, Next).
-lookup(_Target, [], nil).
+    lookup_state(Target, StatesList, Next).
+lookup_state(_Target, [], nil).
         
 %%
 %% retry and fallback conditions
@@ -524,24 +553,37 @@ lookup(_Target, [], nil).
 %% Input and Output Processing
 %% (TODO: full JsonPath syntax support)
 process_input(OriginalInput, Input, Optional) :-
+    var(Input),
     option(input_path(InputPath), Optional)
     -> Input = OriginalInput.InputPath
     ;  Input = OriginalInput.
 
 process_output(Input, Output, Optional) :-
+    var(Output),
     option(output_path(OutputPath), Optional)
     -> Output = Input.OutputPath
     ;  Output = Input.
 
 process_output(OriginalInput, Result, Output, Optional) :-
-    ( option(result_path(ResultPath), Optional)
-      -> I = OriginalInput.put(ResultPath, Result)
-      ;  I = OriginalInput.put(Result)
-    ),
-    ( option(output_path(OutputPath), Optional)
-      -> Output = I.OutputPath
-      ;  Output = I
-    ).
+    mydebug(process_output(in), (OriginalInput, Result, Output, Optional)),
+    var(Output),
+    catch( ( ( option(result_path(ResultPath), Optional)
+               -> I = OriginalInput.put(ResultPath, Result)
+               ;  I = OriginalInput.put(Result)
+             ),
+             mydebug(process_output(result_path), (I, ResultPath, Result, Output)),
+             ( option(output_path(OutputPath), Optional)
+               -> Output = I.OutputPath
+               ;  Output = I
+             ),
+             mydebug(process_output(output_path), (Output, OutputPath))
+           ),
+           Error,
+           ( mydebug(process_output(catch), Error),
+             error_code(Error, Output)
+           )
+         ),
+    mydebug(process_output(out), Output).
 
 %%
 %% misc.
@@ -573,6 +615,12 @@ test(output, Output = 7) :-
     OriginalInput = _{title: "Numbers to add", numbers: _{val1:3, val2:4}},
     Optional = [input_path(numbers), result_path(sum), output_path(sum)],
     process_output(OriginalInput, 7, Output, Optional).
+
+test(output, Output = _{a:1,prallel:[_{a:1},_{a:1}]}) :-
+    OriginalInput = _{a:1},
+    Optional = [result_path(parallel)],
+    Result = [_{a:1},_{a:1}],
+    process_output(OriginalInput, Result, Output, Optional).
 
 :- end_tests(process_io).
 
