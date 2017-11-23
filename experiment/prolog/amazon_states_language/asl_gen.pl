@@ -48,6 +48,7 @@ graphdot(Graph) :-
 %%
 main(File, Dsl, Graph) :-
     load_json(File, Asl),
+    check_dup_state(Asl),
     parse(Asl, Dsl, Graph, []).
 
 load_json(File, Asl) :-
@@ -376,6 +377,24 @@ dollarvar_key(DollarVar, Key) :-
     string_concat("$.", KeyStr, DollarVar)
     -> atom_string(Key, KeyStr)
     ;  atom_string(Key, DollarVar).
+
+%%
+%% Semantic Checks
+%%
+check_dup_state(Asl) :-
+    findall(K, visit_state(Asl,K) ,L),
+    dup_state(L, Dups),
+    length(Dups, N),
+    N > 0 -> throw(format("duplicated_state(~w)",[Dups])); true.
+
+dup_state([], []).
+dup_state([L|Ls], Ds) :-
+    member(L,Ls) -> Ds = [L|Ds2], dup_state(Ls, Ds2); dup_state(Ls, Ds).
+
+visit_state(N, K) :-
+    _ = N.'States'.K;
+    V = N.'States'._, V.'Type' == "Parallel"
+    -> member(N2, V.'Branches'), visit_state(N2, K).
 
 %%
 %% Unit Tests
