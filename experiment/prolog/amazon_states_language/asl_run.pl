@@ -420,8 +420,7 @@ branch_execute(Branch, (I, O, E), (I, O, E)) :-
 goto(state(Target), I, O, E) :-
     mydebug(goto(in), (Target, I, O)),
     asl(States),
-    setof(N,asl_run:lookup_state(Target,States,N),L),
-    include(is_list, L, Next),
+    setof(N,asl_run:lookup_state(Target,States,N),Next),
     length(Next,1),
     mydebug(goto(out), (Next, I, O)),
     reduce(Next, I, O, E).
@@ -433,13 +432,12 @@ lookup_state(Target, [State|States], Next) :-
     ;  lookup_state(Target, States, Next).
 lookup_state(Target, [Ss|Sss], Next) :-
     is_list(Ss),         % writeln(s2(Ss)),
-    lookup_state(Target, Ss, Next)
-    -> true
-    ;  lookup_state(Target, Sss, Next).
+    lookup_state(Target, Ss, Next);
+    lookup_state(Target, Sss, Next).
 lookup_state(Target, [parallel(_,branches(StatesList),_)|_], Next) :-
     % writeln(s3(StatesList)),
     lookup_state(Target, StatesList, Next).
-lookup_state(_Target, [], nil).
+lookup_state(_Target, [], _) :- fail.
         
 %%
 %% retry and fallback conditions
