@@ -8,6 +8,7 @@
 :- module(asl_gen,
           [ validate/1,
             gen_dsl/1,
+            gen_dsl/2,
             gen_dot/1
          ]).
 
@@ -17,21 +18,26 @@
 validate(File) :-
     catch(main(File, _Dsl, _Graph),
           Err,
-          (print_message(error, Err), fail)), !,
+          (print_message(error, Err), fail)),
     writeln(current_output, ok).
 
 %% swipl -q -l asl_gen.pl -g 'gen_dsl("blueprints/hello_world.json")' -t halt
 gen_dsl(File) :-
     catch(main(File, Dsl, _Graph),
           Err,
-          (print_message(error, Err), fail)), !,
+          (print_message(error, Err), fail)),
     format(current_output, '~p.~n', [Dsl]).
+
+gen_dsl(Asl, Dsl) :-
+    catch(main(Asl, Dsl, _Graph),
+          Err,
+          Dsl = Err).
 
 %% swipl -q -l asl_gen.pl -g 'gen_dot("blueprints/hello_world.json")' -t halt
 gen_dot(File) :-
     catch(main(File, _Dsl, Graph),
           Err,
-          (print_message(error, Err), fail)), !,
+          (print_message(error, Err), fail)),
     graphdot(Graph).
 
 edgedot([]).
@@ -46,10 +52,15 @@ graphdot(Graph) :-
     writeln(current_output, "}").
 
 %%
-main(File, Dsl, Graph) :-
-    load_json(File, Asl),
+main(Asl, Dsl, Graph) :-
+    is_dict(Asl), !,
     check_dup_state(Asl),
     parse(Asl, Dsl, Graph, []).
+
+main(File, Dsl, Graph) :-
+    string(File), !,
+    load_json(File, Asl),
+    main(Asl, Dsl, Graph).
 
 load_json(File, Asl) :-
     open(File, read, S, []),
@@ -385,7 +396,8 @@ check_dup_state(Asl) :-
     findall(K, visit_state(Asl,K) ,L),
     dup_state(L, Dups),
     length(Dups, N),
-    N > 0 -> throw(format("duplicated_state(~w)",[Dups])); true.
+    %% N > 0 -> throw(format("duplicated_state(~w)",[Dups])); true.
+    N > 0 -> throw(error(duplicated_state(Dups))); true.
 
 dup_state([], []).
 dup_state([L|Ls], Ds) :-

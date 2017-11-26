@@ -13,20 +13,28 @@
 :- use_module(wsk_api_actions).
 
 :- use_module(library(http/json)).
+:- use_module(library(http/http_log)).
 
 mydebug(F, M) :- 
     thread_self(Id), thread_property(Id, id(N)),
-    format("(~w): ~p~t~24| : ~p~n", [N, F, M]).
+    %% format("(~w): ~p~t~24| : ~p~n", [N, F, M]).
+    http_log("(~w): ~p~t~24| : ~p~n", [N, F, M]).
 
 start(File, I, O) :-
+    string(File), !,
     open(File, read, S),
     call_cleanup(
             read_term(S, Term, []),
             close(S)),
+    start(Term, I, O).
+
+start(Term, I, O) :-
+    Term = asl(_), !,
     mydebug(start(in), (Term, I, O)),
-    assertz(Term),
+    assertz(Term), %% TODO: remove assert/retract
     wsk_api_utils:openwhisk(Options),
     reduce(Term, I, O, _{openwhisk: Options}),
+    retract(Term), %% TODO: remove assert/retract
     mydebug(start(out), (I, O)).
               
 %%

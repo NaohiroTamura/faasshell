@@ -23,12 +23,16 @@ openwhisk(Options) :-
     %% $ export $(grep APIHOST ~/.wskprops)
     getenv('AUTH',Key),
     api_key(Key, ID, PW),
-    getenv('APIHOST',HOST),
+    getenv('APIHOST',URL),
+    parse_url(URL, Attributes),
+    option(protocol(PROTCOL), Attributes, https),
+    option(port(PORT), Attributes, 443),
+    option(host(HOST), Attributes),
     Options = [
         api_key(ID, PW),
         api_host(HOST),
-        protocol(https),
-        port(443),
+        protocol(PROTCOL),
+        port(PORT),
         namespace(default)
     ].
 
@@ -51,6 +55,7 @@ api_url(ApiHost, Gen, URL, Options) :-
     append([Protocol, "://", ApiHost, ":", Port, "/api/", Ver], Path, URLList),
     atomics_to_string(URLList, URL).
 
+api_action_name(none, default, none).
 api_action_name(Action, NS, ActionName) :-
     split_string(Action, "/", "", ["", NS | AN])
     -> atomics_to_string(AN, "/", ActionName)
