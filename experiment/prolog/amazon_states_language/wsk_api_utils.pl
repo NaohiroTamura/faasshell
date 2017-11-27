@@ -23,11 +23,19 @@ openwhisk(Options) :-
     %% $ export $(grep APIHOST ~/.wskprops)
     getenv('AUTH',Key),
     api_key(Key, ID, PW),
-    getenv('APIHOST',URL),
-    parse_url(URL, Attributes),
-    option(protocol(PROTCOL), Attributes, https),
-    option(port(PORT), Attributes, 443),
-    option(host(HOST), Attributes),
+    ( getenv('APIHOST',URL)
+      -> parse_url(URL, Attributes),
+         option(protocol(PROTCOL), Attributes, https),
+         option(port(PORT), Attributes, 443),
+         option(host(HOST), Attributes)
+      ; ( getenv('NGINX_SERVICE_HOST', H),
+          getenv('NGINX_SERVICE_PORT_HTTPS_API', P)
+          -> PROTCOL = https,
+             atom_string(H, HOST),
+             atom_number(P, PORT)
+          ; throw(error(unknown_api_host))
+        )
+    ),
     Options = [
         api_key(ID, PW),
         api_host(HOST),

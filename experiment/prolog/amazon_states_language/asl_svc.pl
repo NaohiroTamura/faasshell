@@ -23,6 +23,7 @@
 
 %%
 %% main
+%%   $ swipl -q -l asl_svc.pl -g main -t halt
 %%
 %% start:
 %%   ?- asl_svc:main.
@@ -30,6 +31,7 @@
 %%   ?- http_stop_server(8080,[]).
 %%
 main :-
+    set_setting(http:logfile,'/logs/httpd.log'), % docker volume /tmp
     getenv('SVC_PORT', Port) -> server(Port); server(8080).
 
 server(Port) :-
