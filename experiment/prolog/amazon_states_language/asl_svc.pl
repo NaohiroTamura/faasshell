@@ -4,7 +4,7 @@
 %% $Id$
 %%
 
-:- use_module(asl_svc).
+:- use_module(asl_svc, [main/0]).
 
 :- use_module(asl_gen, [gen_dsl/2]).
 :- use_module(asl_run, [start/3]).
@@ -15,8 +15,8 @@
 :- use_module(library(http/http_parameters)).
 :- use_module(library(http/json_convert)).
 :- use_module(library(http/http_json)).
-:- use_module(library(http/http_error)).
 :- use_module(library(http/http_log)).
+%:- use_module(library(http/http_error)). % should be removed in puroduction
 
 %% start
 %% :- initialization(main).
@@ -43,13 +43,17 @@ hup(_Signal) :-
     thread_send_message(main, stop),
     halt(0).
 
-%% $ curl -i localhost:8080/list
-:- http_handler('/list', list, [methods([get])]).
+%% $ curl -i localhost:8080/list/
+%% $ curl -i localhost:8080/list/{actionName}
+:- http_handler('/list/', list, [methods([get]), prefix]).
 
 list(Request) :-
-    %% http_log('~w', [request(Request)]),
+    % http_log('~w', [request(Request)]),
     wsk_api_utils:openwhisk(Options),
-    wsk_api_actions:list(none, Options, Reply),
+    ( memberchk(path_info(Action), Request)
+      -> wsk_api_actions:list(Action, Options, Reply)
+      ;  wsk_api_actions:list(none, Options, Reply)
+    ),
     reply_json_dict(Reply).
 
 %% $ curl -i -X POST -H 'Content-Type: application/json' \
@@ -59,9 +63,9 @@ list(Request) :-
 
 validate(Request) :-
     http_read_json_dict(Request, Params, []), 
-    %% http_log('~w~n', [params(Params)]),
+    % http_log('~w~n', [params(Params)]),
     asl_gen:gen_dsl(Params.asl, Dsl),
-    %% http_log('~w~n', [dsl(Dsl)]),
+    % http_log('~w~n', [dsl(Dsl)]),
     term_string(Dsl, DslStr),
     ( Dsl = asl(_)
       -> Output = Params.put(_{output:ok, dsl:DslStr})
@@ -76,9 +80,9 @@ validate(Request) :-
 
 run(Request) :-
     http_read_json_dict(Request, Params, []), 
-    %% http_log('~w~n', [params(Params)]),
+    % http_log('~w~n', [params(Params)]),
     asl_gen:gen_dsl(Params.asl, Dsl),
-    %% http_log('~w~n', [dsl(Dsl)]),
+    % http_log('~w~n', [dsl(Dsl)]),
     term_string(Dsl, DslStr),
     ( Dsl = asl(_)
       -> asl_run:start(Dsl, Params.input, O),
@@ -86,3 +90,14 @@ run(Request) :-
       ;  Output = Params.put(_{output:ng, error:DslStr})
     ),
     reply_json_dict(Output).
+
+%% $ curl -X POST -H 'Content-Type: application/json' \
+%%        -H 'Accept: application/json' -d @asl.json \
+%%        localhost:8080/graph
+:- http_handler('/graph', graph, [methods([post])]).
+
+graph(Request) :-
+    http_read_json_dict(Request, Params, []), 
+    format('Content-type: text/plain~n~n'),
+    % http_log('~w~n', [params(Params)]),
+    asl_gen:gen_dot(Params.asl).
