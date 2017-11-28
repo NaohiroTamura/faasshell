@@ -374,6 +374,12 @@ wait(State, timestamp_path(TimestampPath), Optional, I, O, _E) :-
     process_output(I, O, Optional),
     mydebug(wait(out), (State, I, O)).
 
+%% succeed state
+succeed(State, Optional, I, O, _E) :-
+    mydebug(succeed(in), (State, Optional, I, O)),
+    process_output(I, O, Optional),
+    mydebug(succeed(out), (State, I, O)).
+
 %% fail state
 fail(State, Optional, I, O, _E) :-
     mydebug(fail(in), (State, Optional, I, O)),
