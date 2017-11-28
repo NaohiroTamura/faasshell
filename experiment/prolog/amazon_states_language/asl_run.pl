@@ -21,7 +21,8 @@ mydebug(F, M) :-
     http_log("(~w): ~p~t~24| : ~p~n", [N, F, M]).
 
 start(File, I, O) :-
-    string(File), !,
+    ( atom(File); string(File) ), !,
+    set_setting(http:logfile,'/logs/httpd.log'), % docker volume /tmp
     open(File, read, S),
     call_cleanup(
             read_term(S, Term, []),
@@ -29,22 +30,20 @@ start(File, I, O) :-
     start(Term, I, O).
 
 start(Term, I, O) :-
-    Term = asl(_), !,
+    Term = asl(Dsl), !,
     mydebug(start(in), (Term, I, O)),
-    assertz(Term), %% TODO: remove assert/retract
     wsk_api_utils:openwhisk(Options),
-    reduce(Term, I, O, _{openwhisk: Options}),
-    retract(Term), %% TODO: remove assert/retract
+    reduce(Term, I, O, _{openwhisk: Options, asl: Dsl}),
     mydebug(start(out), (I, O)).
               
 %%
 %% begin of iterpreter
 %%
-%% reduce(+DSL, +Input, -Output, +Environment)
-reduce(asl(DSL), I, O, E) :- 
+%% reduce(+Dsl, +Input, -Output, +Environment)
+reduce(asl(Dsl), I, O, E) :- 
     !,
     mydebug(reduce(asl(in)), (I, O)),
-    reduce(DSL, I, O, E),
+    reduce(Dsl, I, O, E),
     mydebug(reduce(asl(out)), (I, O)).
 reduce([], O, O, _E) :-
     !,
@@ -113,6 +112,13 @@ error_code(Error, O) :-
     print_message(error, Error),
     O = _{error: "States.TaskFailed"},
     mydebug(error_code(existence_error(out)), (Status, O)).
+
+error_code(Error, O) :-
+    Error = error(type_error(_, _), context(_, Status)), !,
+    mydebug(error_code(type_error(in)), (Status, O)),
+    print_message(error, Error),
+    O = _{error: "States.TaskFailed"},
+    mydebug(error_code(type_error(out)), (Status, O)).
 
 error_code(Error, _{error: Error}) :-
     print_message(error, Error).
@@ -291,7 +297,7 @@ fallback(State, [case(Cond, States)|Cases], I, O, E) :-
     (
         M == true
         -> mydebug(task(fallback(true)), (State, case(Cond), I, O)),
-           reduce(States, I, O, E)
+           reduce(States, _{error: I}, O, E)
         ;  mydebug(task(fallback(false)), (State, case(Cond), I, O)),
            fallback(State, Cases, I, O, E)
     ),
@@ -427,7 +433,7 @@ branch_execute(Branch, (I, O, E), (I, O, E)) :-
 %%
 goto(state(Target), I, O, E) :-
     mydebug(goto(in), (Target, I, O)),
-    asl(States),
+    States = E.asl,
     setof(N,asl_run:lookup_state(Target,States,N),Next),
     length(Next,1),
     mydebug(goto(out), (Next, I, O)),
@@ -592,7 +598,10 @@ process_output(OriginalInput, Result, Output, Optional) :-
     mydebug(process_output(in), (OriginalInput, Result, Output, Optional)),
     var(Output),
     catch( ( ( option(result_path(ResultPath), Optional)
-               -> I = OriginalInput.put(ResultPath, Result)
+               -> % AWS Lambda function can return not only dict, but also value.
+                  % However OpenWhisk action can retrun only dict.
+                  % So Result is always dict in case of OpenWhisk.
+                  I = OriginalInput.put(ResultPath, Result)
                ;  I = OriginalInput.put(Result)
              ),
              mydebug(process_output(result_path), (I, ResultPath, Result, Output)),
