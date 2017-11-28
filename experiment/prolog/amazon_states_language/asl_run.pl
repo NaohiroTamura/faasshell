@@ -2,7 +2,7 @@
 %%
 %% $Id$
 %%
-%% Amazon State Language (ALS) DSL Interpreter
+%% Amazon State Language (ASL) DSL Interpreter
 %%
 
 :- module(asl_run,
