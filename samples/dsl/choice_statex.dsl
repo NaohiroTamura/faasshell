@@ -1,0 +1,13 @@
+asl([task('FirstState',"/whisk.system/utils/echo",[]),
+     choices('ChoiceStateX',
+             [case('Not'('StringEquals'(type,"Private")),
+                   [task('Public',"hello",[]),
+                    task('NextState',"hello",[])]),
+              case('NumericEquals'(value,0),
+                   [task('ValueIsZero',"hello",[]),
+                    task('NextState',"hello",[])]),
+              case('And'(['NumericGreaterThanEquals'(value,20),
+                          'NumericLessThan'(value,30)]),
+                   [task('ValueInTwenties',"hello",[]),
+                    task('NextState',"hello",[])])],
+             [default([fail('DefaultState',[cause("No Matches!")])])])]).

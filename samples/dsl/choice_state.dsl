@@ -1,0 +1,10 @@
+asl([task('FirstState',"/whisk.system/utils/echo",[]),
+     choices('ChoiceState',
+             [case('NumericEquals'(foo,1),
+                   [task('FirstMatchState',"hello",[]),
+                    task('NextState',"hello",[])]),
+              case('NumericEquals'(foo,2),
+                   [task('SecondMatchState',"hello",[]),
+                    task('NextState',"hello",[])])],
+             [default([fail('DefaultState',
+                            [error("DefaultStateError"),cause("No Matches!")])])])]).

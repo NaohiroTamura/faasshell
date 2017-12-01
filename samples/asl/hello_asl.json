@@ -1,0 +1,17 @@
+{
+    "input": {
+        "test": "simplest"
+    },
+    "asl": {
+        "Comment": "A Hello World example of the Amazon States Language using a Pass state",
+        "StartAt": "HelloWorld",
+        "States": {
+            "HelloWorld": {
+                "Type": "Pass",
+                "Result": "Hello World!",
+                "ResultPath": "$.message",
+                "End": true
+            }
+        }
+    }
+}

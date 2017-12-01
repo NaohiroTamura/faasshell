@@ -1,0 +1,71 @@
+{
+    "input": {
+        "type": "Public"
+    },
+    "asl": {
+        "Comment": "An example of the Amazon States Language using a choice state.",
+        "StartAt": "FirstState",
+        "States": {
+            "FirstState": {
+                "Type": "Task",
+                "Resource": "hello",
+                "Next": "ChoiceStateX"
+            },
+            "ChoiceStateX": {
+                "Type": "Choice",
+                "Choices": [
+                    {
+                        "Not": {
+                            "Variable": "$.type",
+                            "StringEquals": "Private"
+                        },
+                        "Next": "Public"
+                    },
+                    {
+                        "Variable": "$.value",
+                        "NumericEquals": 0,
+                        "Next": "ValueIsZero"
+                    },
+                    {
+                        "And": [
+                            {
+                                "Variable": "$.value",
+                                "NumericGreaterThanEquals": 20
+                            },
+                            {
+                                "Variable": "$.value",
+                                "NumericLessThan": 30
+                            }
+                        ],
+                        "Next": "ValueInTwenties"
+                    }
+                ],
+                "Default": "DefaultState"
+            },
+            "Public": {
+                "Type" : "Task",
+                "Resource": "hello",
+                "Next": "NextState"
+            },
+            "ValueIsZero": {
+                "Type" : "Task",
+                "Resource": "hello",
+                "Next": "NextState"
+            },
+            "ValueInTwenties": {
+                "Type" : "Task",
+                "Resource": "hello",
+                "Next": "NextState"
+            },
+            "DefaultState": {
+                "Type": "Fail",
+                "Cause": "No Matches!"
+            },
+            "NextState": {
+                "Type": "Task",
+                "Resource": "hello",
+                "End": true
+            }
+        }
+    }
+}

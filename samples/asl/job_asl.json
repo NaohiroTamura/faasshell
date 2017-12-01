@@ -1,0 +1,55 @@
+{ 
+    "input": {
+        "wait_time": 5
+    },
+    "asl": {
+        "Comment": "A state machine that submits a Job to AWS Batch and monitors the Job until it completes.",
+        "StartAt": "Submit Job",
+        "States": {
+            "Submit Job": {
+                "Type": "Task",
+                "Resource": "hello",
+                "ResultPath": "$.guid",
+                "Next": "Wait X Seconds"
+            },
+            "Wait X Seconds": {
+                "Type": "Wait",
+                "SecondsPath": "$.wait_time",
+                "Next": "Get Job Status"
+            },
+            "Get Job Status": {
+                "Type": "Task",
+                "Resource": "job",
+                "Next": "Job Complete?",
+                "InputPath": "$.guid"
+            },
+            "Job Complete?": {
+                "Type": "Choice",
+                "Choices": [
+                    {
+                        "Variable": "$.status",
+                        "StringEquals": "FAILED",
+                        "Next": "Job Failed"
+                    },
+                    {
+                        "Variable": "$.status",
+                        "StringEquals": "SUCCEEDED",
+                        "Next": "Get Final Job Status"
+                    }
+                ],
+                "Default": "Wait X Seconds"
+            },
+            "Job Failed": {
+                "Type": "Fail",
+                "Cause": "AWS Batch Job Failed",
+                "Error": "DescribeJob returned FAILED"
+            },
+            "Get Final Job Status": {
+                "Type": "Task",
+                "Resource": "hello",
+                "InputPath": "$.guid",
+                "End": true
+            }
+        }
+    }
+}

@@ -1,0 +1,12 @@
+digraph graph_name {
+     "Start" -> "Submit Job" ;
+     "Submit Job" -> "Wait X Seconds" ;
+     "Wait X Seconds" -> "Get Job Status" ;
+     "Get Job Status" -> "Job Complete?" ;
+     "Job Complete?" -> "Job Failed" ;
+     "Job Failed" -> "Fail" ;
+     "Job Complete?" -> "Get Final Job Status" ;
+     "Get Final Job Status" -> "End" ;
+     "Job Complete?" -> "Wait X Seconds" ;
+}
+
