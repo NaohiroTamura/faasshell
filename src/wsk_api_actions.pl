@@ -64,34 +64,3 @@ invoke(Action, Options, Payload, Reply) :-
                authorization(basic(ID, PW)),
                cert_verify_hook(cert_accept_any)]),
     wsk_api_utils:term_json_dict(R1, Reply).
-
-
-%%
-%% Unit Tests
-%%
-:- use_module(library(plunit)).
-
-:- begin_tests(list).
-
-test(json_term_to_dict, Name  == "openwhisk") :-
-    term_json_dict(json([name=openwhisk]), Dict), Name = Dict.name.
-
-test(json_dict_to_term, Term  == json([name=openwhisk])) :-
-    term_json_dict(Term, json{name:"openwhisk"}).
-
-test(action_list, true) :-
-   wsk_api_utils:openwhisk(Options), wsk_api_actions:list(hello, Options, _R). 
-
-:- end_tests(list).
-
-:- begin_tests(invoke).
-%% 
-test(hello, R = _{payload:"Hello, wsk!"}) :-
-    wsk_api_utils:openwhisk(Options), 
-    wsk_api_actions:invoke(hello,Options,_{name:"wsk"}, R).
-
-test(echo, R = _{foo:1}) :-
-    wsk_api_utils:openwhisk(Options),
-    wsk_api_actions:invoke("/whisk.system/utils/echo",Options,_{foo:1}, R).
-
-:- end_tests(invoke).

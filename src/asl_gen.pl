@@ -72,7 +72,7 @@ main(Asl, Dsl, Graph) :-
     parse(Asl, Dsl, Graph, []).
 
 main(File, Dsl, Graph) :-
-    string(File), !,
+    ( atom(File); string(File) ), !,
     load_json(File, Asl),
     main(Asl, Dsl, Graph).
 
@@ -411,7 +411,7 @@ check_dup_state(Asl) :-
     dup_state(L, Dups),
     length(Dups, N),
     %% N > 0 -> throw(format("duplicated_state(~w)",[Dups])); true.
-    N > 0 -> throw(error(duplicated_state(Dups))); true.
+    N > 0 -> throw(error(duplicated_state(Dups), _)); true.
 
 dup_state([], []).
 dup_state([L|Ls], Ds) :-
@@ -421,46 +421,3 @@ visit_state(N, K) :-
     _ = N.'States'.K;
     V = N.'States'._, V.'Type' == "Parallel"
     -> member(N2, V.'Branches'), visit_state(N2, K).
-
-%%
-%% Unit Tests
-%%
-:- use_module(library(plunit)).
-
-:- begin_tests(blueprints).
-
-test(hello) :- main('blueprints/hello_world.json', _D, _G).
-
-test(choice) :- main('blueprints/choice_state.json', _D, _G).
-
-test(choicex) :- main('blueprints/choice_statex.json', _D, _G).
-
-test(catch) :- main('blueprints/catch_failure.json', _D, _G).
-
-test(poller) :- main('blueprints/job_status_poller.json', _D, _G).
-
-test(parallel) :- main('blueprints/parallel.json', _D, _G).
-
-test(retry) :- main('blueprints/retry_failure.json', _D, _G).
-
-test(timer) :- main('blueprints/task_timer.json', _D, _G).
-
-test(wait) :- main('blueprints/wait_state.json', _D, _G).
-
-:- end_tests(blueprints).
-
-:- begin_tests(invalid).
-
-test(abnormal) :-
-    main('test/has-dupes.json', _D, _G).
-
-test(abnormal) :-
-    main('test/linked-parallel.json', _D, _G).
-
-test(abnormal) :-
-    main('test/minimal-fail-state.json', _D, _G).
-
-test(abnormal) :-
-    main('test/no-terminal.json', _D, _G).
-
-:- end_tests(invalid).
