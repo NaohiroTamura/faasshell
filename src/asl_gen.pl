@@ -166,7 +166,7 @@ parse(States, StateKey, Dsl, Graph, Path) :-
 
 parse(States, StateKey,  Dsl, Graph, Path) :-
     _{'Type':"Parallel",'Branches':Branches,'End':true} :< States.StateKey,
-    branches(States, StateKey, Branches, D1, G1),
+    branches(States, StateKey, Branches, D1, G1, Path),
     task_optional(States, StateKey, Optional, G2, Path),
     Dsl = [parallel(StateKey, branches(D1), Optional)],
     flatten([[StateKey>'End'], G1, G2], Graph).
