@@ -36,25 +36,34 @@ openwhisk(Options) :-
     getenv('AUTH',Key),
     api_key(Key, ID, PW),
     ( getenv('APIHOST',URL)
-      -> parse_url(URL, Attributes),
-         option(protocol(PROTCOL), Attributes, https),
-         option(port(PORT), Attributes, 443),
-         option(host(HOST), Attributes)
+      -> ( re_match("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$", URL)
+           -> PROTOCOL = https,
+              HOST = URL,
+              PORT = 443
+           ;  parse_url(URL, Attributes),
+              option(protocol(PROTOCOL), Attributes),
+              option(host(HOST), Attributes),
+              default_port(PROTOCOL, DEFAULT_PORT),
+              option(port(PORT), Attributes, DEFAULT_PORT)
+         )
       ; ( getenv('NGINX_SERVICE_HOST', H),
           getenv('NGINX_SERVICE_PORT_HTTPS_API', P)
-          -> PROTCOL = https,
+          -> PROTOCOL = https,
              atom_string(H, HOST),
              atom_number(P, PORT)
-          ; throw(error(unknown_api_host))
+          ; throw(error(unknown_api_host, _))
         )
     ),
     Options = [
         api_key(ID, PW),
         api_host(HOST),
-        protocol(PROTCOL),
+        protocol(PROTOCOL),
         port(PORT),
         namespace(default)
     ].
+
+default_port(http, 80).
+default_port(https, 443).
 
 api_scheme(http).
 api_scheme(https).
@@ -87,41 +96,3 @@ term_json_dict(Term, Dict) :-
     atom_json_term(Atom, Term, []), atom_json_dict(Atom, Dict, []).
 term_json_dict(Term, Dict) :-
     atom_json_dict(Atom, Dict, []), atom_json_term(Atom, Term, []).
-
-
-%%
-%% Unit Tests
-%%
-:- use_module(library(plunit)).
-
-:- begin_tests(utils).
-
-test(ns_echo, (NS, ActionName) = ("whisk.system", "utils/echo")) :-
-    api_action_name("/whisk.system/utils/echo", NS, ActionName).
-
-test(echo, (NS, ActionName) = (default, "utils/echo")) :-
-    api_action_name("utils/echo", NS, ActionName).
-
-test(json_term_to_dict, Name  == "openwhisk") :-
-    term_json_dict(json([name=openwhisk]), Dict), Name = Dict.name.
-
-test(json_dict_to_term, Term  == json([name=openwhisk])) :-
-    term_json_dict(Term, json{name:"openwhisk"}).
-
-:- end_tests(utils).
-
-:- begin_tests(api_url).
-
-test(https, URL = "https://bluemix:443/api/v1/namespaces") :-
-     api_url("bluemix", wsk_api_dcg:path(get), URL, []).
-
-test(http, URL = "http://bluemix:80/api/v1/namespaces") :-
-     api_url("bluemix", wsk_api_dcg:path(get), URL, [protocol(http), port(80)]).
-
-test(ftp, fail) :-
-     api_url("bluemix", wsk_api_dcg:path(get), _URL, [protocol(ftp)]).
-
-test(port_string, fail) :-
-     api_url("bluemix", wsk_api_dcg:path(get), _URL, [port("80")]).
-
-:- end_tests(api_url).
