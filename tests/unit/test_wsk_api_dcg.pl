@@ -50,10 +50,17 @@ test(query_rev, (V, N, A, E, Q)  == (get, guest, actions, hello, [limit=1])) :-
     path(V, N, A, E, Q, ["get", "/", "namespaces", "/", "guest", "/", "actions",
                         "/", "hello", "?", "limit", "=", "1"], []).
 
+test(action_empty, Xs == ["get", "/", "namespaces", "/", "guest", "/", "actions",
+                          "?", "limit", "=", "1", "&", "skip", "=", "2"]) :-
+    path(get, guest, actions, none, [limit=1, skip=2], Xs, []).
+
+test(action_query_empty, Xs = ["get", "/", "namespaces", "/", "guest", "/",
+                               "actions"]) :-
+        path(get, guest, actions, none, [], Xs, []).
+
 test(query_empty, Xs == ["get", "/", "namespaces", "/", "guest", "/", "actions",
                    "/", "hello"]) :-
     path(get, guest, actions, hello, [], Xs, []).
-
 
 test(query, Xs == ["get", "/", "namespaces", "/", "guest", "/", "actions",
                    "/", "hello", "?", "skip", "=", "2"]) :-

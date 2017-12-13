@@ -58,8 +58,7 @@ openwhisk(Options) :-
         api_key(ID, PW),
         api_host(HOST),
         protocol(PROTOCOL),
-        port(PORT),
-        namespace(default)
+        port(PORT)
     ].
 
 default_port(http, 80).
@@ -87,7 +86,8 @@ api_url(ApiHost, Gen, URL, Options) :-
 api_action_name(none, default, none).
 api_action_name(Action, NS, ActionName) :-
     split_string(Action, "/", "", ["", NS | AN])
-    -> atomics_to_string(AN, "/", ActionName)
+    -> (length(AN, 0), ActionName = none;
+        atomics_to_string(AN, "/", ActionName))
     ; ActionName = Action,
       NS = default.
 

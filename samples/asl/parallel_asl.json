@@ -1,4 +1,5 @@
 {
+    "name": "parallel_asl.json",
     "input": {
         "Comment": "it takes 20s"
     },

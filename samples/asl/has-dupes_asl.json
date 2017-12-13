@@ -1,4 +1,5 @@
-{ "input": "error test",
+{ "name": "has-dupes_asl.json",
+  "input": "error test",
   "asl": 
   {
       "StartAt": "A",

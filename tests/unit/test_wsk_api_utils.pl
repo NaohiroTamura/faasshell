@@ -27,6 +27,12 @@
 test(ns_echo, (NS, ActionName) = ("whisk.system", "utils/echo")) :-
     api_action_name("/whisk.system/utils/echo", NS, ActionName).
 
+test(ns_hello, (NS, ActionName) = ("guest", "hello")) :-
+    api_action_name('/guest/hello', NS, ActionName).
+
+test(ns_none, (NS, ActionName) = ("whisk.system", none)) :-
+    api_action_name("/whisk.system", NS, ActionName).
+
 test(echo, (NS, ActionName) = (default, "utils/echo")) :-
     api_action_name("utils/echo", NS, ActionName).
 

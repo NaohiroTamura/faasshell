@@ -1,6 +1,7 @@
 {
+    "name": "hello_task_asl.json",
     "input" : {
-        "a":1
+        "name": "FaaS Shell"
     },
     "asl" :{
         "Comment": "A Hello World example of the Amazon States Language using an AWS Lambda function",

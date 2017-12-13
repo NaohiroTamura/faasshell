@@ -34,7 +34,6 @@
 list(Action, Options, Reply) :-
     wsk_api_utils:api_action_name(Action, NS, ActionName),
     option(api_host(HostName), Options),
-    option(namespace(NS), Options, default),
     option(query(Query), Options, []),
     wsk_api_utils:api_url(HostName, 
                           wsk_api_dcg:path(get, NS, actions, ActionName, Query),

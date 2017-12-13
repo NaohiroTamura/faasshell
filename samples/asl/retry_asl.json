@@ -1,4 +1,5 @@
 {
+    "name": "retry_asl.json",
     "input": {
         "Comment": "unknown function causes States.TaskFailed"
     },
