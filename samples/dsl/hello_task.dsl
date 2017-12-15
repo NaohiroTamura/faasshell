@@ -1,1 +1,1 @@
-asl([task('HelloWorld',"helloPython",[timeout_seconds(2),heartbeat_seconds(10)])]).
+asl([task('HelloWorld',"hello",[timeout_seconds(5),heartbeat_seconds(10)])]).
