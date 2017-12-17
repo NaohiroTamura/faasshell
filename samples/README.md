@@ -60,6 +60,8 @@ Endpoint is opened at http://$(minikube ip):30954 in case of Minikube.
 
 ## Execute Hello World Example
 
+### faas interface
+
 ```sh
 ubuntu@trusty:~/faasshell[master]$ wsk action create hello samples/actions/hello.js -i
 ok: created action hello
@@ -96,6 +98,8 @@ ubuntu@trusty:~/faasshell[master]$ curl http://172.17.0.1:8080/faas/guest
   }
 ]
 ```
+
+### statemachine interface
 ```sh
 ubuntu@trusty:~/faasshell[master]$ curl -X PUT -L -H 'Content-Type: application/json' -H 'Accept: application/json' -d @samples/asl/hello_task_asl.json http://172.17.0.1:8080/statemachine/
 {
@@ -160,6 +164,27 @@ ubuntu@trusty:~/faasshell[master]$ curl -X POST http://172.17.0.1:8080/statemach
 }
 ```
 ```sh
+ubuntu@trusty:~/faasshell[master]$ curl -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' -d '{"input": {"name": "Curl"}}' http://172.17.0.1:8080/statemachine/hello_task_asl.json
+{
+  "asl": {
+    "Comment":"A Hello World example of the Amazon States Language using an AWS Lambda function",
+    "StartAt":"HelloWorld",
+    "States": {
+      "HelloWorld": {
+        "End":true,
+        "HeartbeatSeconds":60,
+        "Resource":"hello",
+        "TimeoutSeconds":300,
+        "Type":"Task"
+      }
+    }
+  },
+  "input": {"name":"FaaS Shell"},
+  "name":"hello_task_asl.json",
+  "output": {"name":"Curl", "payload":"Hello, Curl!"}
+}
+```
+```sh
 ubuntu@trusty:~/faasshell[master]$ curl -X PATCH http://172.17.0.1:8080/statemachine/hello_task_asl.json
 digraph graph_name {
      "Start" -> "HelloWorld" ;
@@ -170,4 +195,28 @@ digraph graph_name {
 ubuntu@trusty:~/faasshell[master]$ curl -X DELETE http://172.17.0.1:8080/statemachine/hello_task_asl.json
 {"output":"ok"}
 
+```
+
+### shell interface
+```sh
+ubuntu@trusty:~/faasshell[master]$ curl -X PUT -H 'Content-Type: text/plain' -H 'Accept: application/json' -d @samples/dsl/hello_task.dsl http://172.17.0.1:8080/shell/hello_task.dsl
+{
+  "dsl":"asl([task('HelloWorld',\"hello\",[timeout_seconds(5),heartbeat_seconds(10)])]).",
+  "output":"ok"
+}
+```
+```sh
+ubuntu@trusty:~/faasshell[master]$ curl -X GET http://172.17.0.1:8080/shell/hello_task.dsl
+{
+  "dsl":"asl([task('HelloWorld',\"hello\",[timeout_seconds(5),heartbeat_seconds(10)])])",
+  "output":"ok"
+}
+```
+```sh
+ubuntu@trusty:~/faasshell[master]$ curl -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' -d '{"name":"Shell"}' http://172.17.0.1:8080/shell/hello_task.dsl
+{"output": {"name":"Shell", "payload":"Hello, Shell!"}}
+```
+```sh
+ubuntu@trusty:~/faasshell[master]$ curl -X DELETE http://172.17.0.1:8080/shell/hello_task.dsl
+{"output":"ok"}
 ```

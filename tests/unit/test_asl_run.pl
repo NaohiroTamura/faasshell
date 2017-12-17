@@ -49,7 +49,7 @@ test(hello, O = _{message:"Hello World!", name:"wsk"}) :-
 
 :- begin_tests(task).
 
-test(hello, O = _{error:"States.Timeout",name:"wsk"}) :-
+test(hello, O = _{name:"wsk",payload:"Hello, wsk!"}) :-
     start('samples/dsl/hello_task.dsl', _{name:"wsk"}, O).
 
 :- end_tests(task).

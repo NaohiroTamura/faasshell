@@ -128,7 +128,7 @@ statemachine(put, Request) :-
 %%        localhost:8080/statemachine/{statemachine}
 statemachine(post, Request) :-
     %% TODO: read Dsl from DB
-    http_read_json_dict(Request, Params, []),
+    ( http_read_json_dict(Request, Params, []); Params = _{}),
     http_log('~w~n', [params(Params)]),
     ( memberchk(path_info(File), Request)
       -> load_json(File, Dict),
