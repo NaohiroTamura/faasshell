@@ -6,11 +6,17 @@ jobs:
     steps:
       - checkout
       - run:
-          name: install make
-          command: apt-get update && apt-get install -y make
+          name: install tools
+          command: apt-get update && apt-get install -y make procps
       - run:
           name: unit test
           command: make unit_test
+      - run:
+          name: create /logs for functional test
+          command: mkdir /logs
+      - run:
+          name: functional test
+          command: make functional_test
       - run:
           name: Print the Current Time
           command: date

@@ -32,12 +32,14 @@
             "FirstMatchState": {
                 "Type" : "Task",
                 "Resource": "hello",
+                "ResultPath": "$.first_match_state",
                 "Next": "NextState"
             },
 
             "SecondMatchState": {
                 "Type" : "Task",
                 "Resource": "hello",
+                "ResultPath": "$.second_match_state",
                 "Next": "NextState"
             },
 
@@ -50,6 +52,7 @@
             "NextState": {
                 "Type": "Task",
                 "Resource": "hello",
+                "ResultPath": "$.next_state",
                 "End": true
             }
         }

@@ -17,6 +17,7 @@ docker_image_prefix =
 docker_image_tag = :latest
 
 unit_test_files := $(wildcard tests/unit/test_*.pl)
+functional_test_files := $(wildcard tests/functional/test_*.pl)
 
 all: unit_test
 
@@ -25,6 +26,15 @@ unit_test:
 	for case in $(unit_test_files); do \
 		swipl -q -l $$case -g run_tests -t halt; \
 	done
+
+functional_test:
+	@echo "functionalunit  test"
+	swipl -q -l src/asl_svc.pl -g main -t halt &
+	sleep 3
+	for case in $(functional_test_files); do \
+		swipl -q -l $$case -g run_tests -t halt; \
+	done
+	pkill swipl
 
 build_image:
 	@echo "create build image"
