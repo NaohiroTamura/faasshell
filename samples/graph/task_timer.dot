@@ -1,0 +1,5 @@
+digraph graph_name {
+     "Start" -> "Wait for Timestamp" ;
+     "Wait for Timestamp" -> "Send SNS Message" ;
+     "Send SNS Message" -> "End" ;
+}

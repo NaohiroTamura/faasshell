@@ -1,0 +1,10 @@
+digraph graph_name {
+     "Start" -> "Parallel" ;
+     "Parallel" -> "Wait 20s" ;
+     "Wait 20s" -> "End" ;
+     "Parallel" -> "Pass" ;
+     "Pass" -> "Wait 10s" ;
+     "Wait 10s" -> "End" ;
+     "Parallel" -> "Final State" ;
+     "Final State" -> "End" ;
+}

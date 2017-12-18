@@ -1,0 +1,9 @@
+digraph graph_name {
+     "Start" -> "FirstState" ;
+     "FirstState" -> "wait_using_seconds" ;
+     "wait_using_seconds" -> "wait_using_timestamp" ;
+     "wait_using_timestamp" -> "wait_using_timestamp_path" ;
+     "wait_using_timestamp_path" -> "wait_using_seconds_path" ;
+     "wait_using_seconds_path" -> "FinalState" ;
+     "FinalState" -> "End" ;
+}

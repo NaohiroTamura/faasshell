@@ -1,0 +1,11 @@
+digraph graph_name {
+     "Start" -> "FirstState" ;
+     "FirstState" -> "ChoiceState" ;
+     "ChoiceState" -> "FirstMatchState" ;
+     "FirstMatchState" -> "NextState" ;
+     "NextState" -> "End" ;
+     "ChoiceState" -> "SecondMatchState" ;
+     "SecondMatchState" -> "NextState" ;
+     "ChoiceState" -> "DefaultState" ;
+     "DefaultState" -> "Fail" ;
+}

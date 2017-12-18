@@ -1,0 +1,10 @@
+digraph graph_name {
+     "Start" -> "CreateAccount" ;
+     "CreateAccount" -> "End" ;
+     "CreateAccount" -> "CustomErrorFallback" ;
+     "CustomErrorFallback" -> "End" ;
+     "CreateAccount" -> "ReservedTypeFallback" ;
+     "ReservedTypeFallback" -> "End" ;
+     "CreateAccount" -> "CatchAllFallback" ;
+     "CatchAllFallback" -> "End" ;
+}
