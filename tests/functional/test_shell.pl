@@ -29,34 +29,34 @@
 %%
 %% Functional Tests
 %%
-:- begin_tests(hello_task_dsl).
+:- begin_tests(hello_world_task_dsl).
 
 test(put, Output = "ok") :-
     api_host(Host),
-    string_concat(Host, '/shell/hello_task.dsl', URL),
-    http_put(URL, file('samples/dsl/hello_task.dsl'), Data, []),
+    string_concat(Host, '/shell/hello_world_task.dsl', URL),
+    http_put(URL, file('samples/dsl/hello_world_task.dsl'), Data, []),
     term_json_dict(Data, Dict),
     get_dict(output, Dict, Output).
 
 test(get, Output = "ok") :-
     api_host(Host),
-    string_concat(Host, '/shell/hello_task.dsl', URL),
+    string_concat(Host, '/shell/hello_world_task.dsl', URL),
     http_get(URL, Data, []),
     term_json_dict(Data, Dict),
     get_dict(output, Dict, Output).
 
 test(post, Output = "Hello, FaaS Shell!") :-
     api_host(Host),
-    string_concat(Host, '/shell/hello_task.dsl', URL),
+    string_concat(Host, '/shell/hello_world_task.dsl', URL),
     http_post(URL, json(json(['name'='FaaS Shell'])), Data, []),
     term_json_dict(Data, Dict),
     get_dict(payload, Dict.output, Output).
 
 test(delete, Output = "ok") :-
     api_host(Host),
-    string_concat(Host, '/shell/hello_task.dsl', URL),
+    string_concat(Host, '/shell/hello_world_task.dsl', URL),
     http_delete(URL, Data, []),
     term_json_dict(Data, Dict),
     get_dict(output, Dict, Output).
 
-:- end_tests(hello_task_dsl).
+:- end_tests(hello_world_task_dsl).

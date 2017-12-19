@@ -426,7 +426,7 @@ parallel_execute(Branches, I, O, E) :-
              maplist(=((I,M,E)), Args),
              mydebug(parallel(args), (M,O)),
              concurrent_maplist(branch_execute, Branches, Args, Results),
-             maplist([(_A,B,_C),B]>>true, Results, O),
+             maplist([(_A,B,_C),B]>>true, Results, O), %% O is list
              mydebug(parallel_execute(result), O)
            ),
            Error,
@@ -620,9 +620,12 @@ process_output(OriginalInput, Result, Output, Optional) :-
     catch( ( ( option(result_path(ResultPath), Optional)
                -> % AWS Lambda function can return not only dict, but also value.
                   % However OpenWhisk action can retrun only dict.
-                  % So Result is always dict in case of OpenWhisk.
                   I = OriginalInput.put(ResultPath, Result)
-               ;  I = OriginalInput.put(Result)
+               ;  ( is_dict(Result)
+                    -> I = OriginalInput.put(Result)
+                    %% The type of Result from Parallel state is List.
+                    ;  I = Result
+                  )
              ),
              mydebug(process_output(result_path), (I, ResultPath, Result, Output)),
              ( option(output_path(OutputPath), Optional)

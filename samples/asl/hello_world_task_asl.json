@@ -1,5 +1,5 @@
 {
-    "name": "hello_task_asl.json",
+    "name": "hello_world_task_asl.json",
     "input" : {
         "name": "FaaS Shell"
     },

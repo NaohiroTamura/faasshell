@@ -29,48 +29,48 @@
 %%
 %% Functional Tests
 %%
-:- begin_tests(hello_task).
+:- begin_tests(hello_world_task).
 
 test(put, Output = "ok") :-
-    load_json('samples/asl/hello_task_asl.json', Term),
+    load_json('samples/asl/hello_world_task_asl.json', Term),
     api_host(Host),
     string_concat(Host, '/statemachine/', URL),
     http_put(URL, json(Term), Data, []),
     term_json_dict(Data, Dict),
     get_dict(output, Dict, Output).
 
-test(get, Output = "hello_task_asl.json") :-
+test(get, Output = "hello_world_task_asl.json") :-
     api_host(Host),
-    string_concat(Host, '/statemachine/hello_task_asl.json', URL),
+    string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
     http_get(URL, Data, []),
     term_json_dict(Data, Dict),
     get_dict(name, Dict, Output).
 
 test(post, Output = "Hello, FaaS Shell!") :-
     api_host(Host),
-    string_concat(Host, '/statemachine/hello_task_asl.json', URL),
+    string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
     http_post(URL, json(json([])), Data, []),
     term_json_dict(Data, Dict),
     get_dict(payload, Dict.output, Output).
 
 test(post, Output = "Hello, Curl!") :-
     api_host(Host),
-    string_concat(Host, '/statemachine/hello_task_asl.json', URL),
+    string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
     http_post(URL, json(json(['input'=json(['name'='Curl'])])), Data, []),
     term_json_dict(Data, Dict),
     get_dict(payload, Dict.output, Output).
 
 test(patch, Output = "digraph graph_name {") :-
     api_host(Host),
-    string_concat(Host, '/statemachine/hello_task_asl.json', URL),
+    string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
     http_patch(URL, atom(''), Data, []),
     split_string(Data, "\n", "", [Output|_]).
 
 test(delete, Output = "ok") :-
     api_host(Host),
-    string_concat(Host, '/statemachine/hello_task_asl.json', URL),
+    string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
     http_delete(URL, Data, []),
     term_json_dict(Data, Dict),
     get_dict(output, Dict, Output).
 
-:- end_tests(hello_task).
+:- end_tests(hello_world_task).
