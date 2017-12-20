@@ -1,4 +1,4 @@
-asl([task('Submit Job',"hello",[result_path(guid)]),
+asl([task('Submit Job',"/whisk.system/utils/echo",[result_path(guid)]),
      wait('Wait X Seconds',seconds_path(wait_time),[]),
      task('Get Job Status',"job",[input_path(guid)]),
      choices('Job Complete?',

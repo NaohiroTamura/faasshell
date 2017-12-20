@@ -1,13 +1,16 @@
-import random
-
+#
+# testing for job_status_poller
+#
 def main(args):
-    name = args.get("payload", "stranger")
-    if random.random() > 0.5:
-        result = "FAILED"
-    else:
-        result = "SUCCEEDED"
-    print(name, result)
-    return {"status": result}
+    result = args.get("params", ["DEFAULT"])
+    print(result[0])
+    return {"status": result[0], "guid": {"params": result[1:]}}
 
 if __name__ == '__main__':
-    print(main({"payload": "standalone"}))
+    a = main({"params": ["SUCCEEDED", "FAILED", "DEFAULT"]})
+    print(a)
+    b = main(a['guid'])
+    print(b)
+    c = main(b['guid'])
+    print(c)
+    d = main({})

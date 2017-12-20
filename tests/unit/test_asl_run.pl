@@ -95,3 +95,17 @@ test(normal, O = [_{var:1}, _{var:1}]) :-
     start('samples/dsl/parallel.dsl', _{var:1}, O).
 
 :- end_tests(parallel).
+
+:- begin_tests(job_status_poller).
+
+test(succeeded, STATUS = "SUCCEEDED") :-
+    start('samples/dsl/job_status_poller.dsl',
+          _{wait_time:1, params:["DEFAULT", "SUCCEEDED"]}, O),
+    STATUS = O.status.
+
+test(failed, STATUS = "FAILED") :-
+    start('samples/dsl/job_status_poller.dsl',
+          _{wait_time:1, params:["DEFAULT", "FAILED"]}, O),
+    STATUS = O.status.
+
+:- end_tests(job_status_poller).
