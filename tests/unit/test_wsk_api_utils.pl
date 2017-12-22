@@ -36,12 +36,6 @@ test(ns_none, (NS, ActionName) = ("whisk.system", none)) :-
 test(echo, (NS, ActionName) = (default, "utils/echo")) :-
     api_action_name("utils/echo", NS, ActionName).
 
-test(json_term_to_dict, Name  == "openwhisk") :-
-    term_json_dict(json([name=openwhisk]), Dict), Name = Dict.name.
-
-test(json_dict_to_term, Term  == json([name=openwhisk])) :-
-    term_json_dict(Term, json{name:"openwhisk"}).
-
 :- end_tests(utils).
 
 :- begin_tests(options).

@@ -24,14 +24,15 @@
 
 :- begin_tests(list).
 
-test(json_term_to_dict, Name  == "openwhisk") :-
-    term_json_dict(json([name=openwhisk]), Dict), Name = Dict.name.
+test(default_hello, Name = "hello") :-
+   wsk_api_utils:openwhisk(Options),
+   wsk_api_actions:list(hello, Options, R),
+   Name = R.name.
 
-test(json_dict_to_term, Term  == json([name=openwhisk])) :-
-    term_json_dict(Term, json{name:"openwhisk"}).
-
-test(action_list, true) :-
-   wsk_api_utils:openwhisk(Options), wsk_api_actions:list(hello, Options, _R).
+test(ns_hello, Name = "hello") :-
+   wsk_api_utils:openwhisk(Options),
+   wsk_api_actions:list('/guest/hello', Options, R),
+   Name = R.name.
 
 :- end_tests(list).
 

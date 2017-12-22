@@ -18,8 +18,7 @@
 :- module(wsk_api_utils,
           [ openwhisk/1,
             api_url/4,
-            api_action_name/3,
-            term_json_dict/2
+            api_action_name/3
          ]).
 
 :- use_module(wsk_api_dcg).
@@ -90,9 +89,3 @@ api_action_name(Action, NS, ActionName) :-
         atomics_to_string(AN, "/", ActionName))
     ; ActionName = Action,
       NS = default.
-
-term_json_dict(Term, Dict) :-
-    ground(Term), !,
-    atom_json_term(Atom, Term, []), atom_json_dict(Atom, Dict, []).
-term_json_dict(Term, Dict) :-
-    atom_json_dict(Atom, Dict, []), atom_json_term(Atom, Term, []).

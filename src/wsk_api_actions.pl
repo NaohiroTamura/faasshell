@@ -22,6 +22,7 @@
 
 :- use_module(wsk_api_dcg).
 :- use_module(wsk_api_utils).
+:- use_module(json_utils).
 
 :- use_module(library(http/http_open)).
 :- use_module(library(http/http_client)).
@@ -45,7 +46,7 @@ list(Action, Options, Reply) :-
               timeout(Timeout),
               authorization(basic(ID, PW)),
               cert_verify_hook(cert_accept_any)]),
-    wsk_api_utils:term_json_dict(R1, Reply).
+    json_utils:term_json_dict(R1, Reply).
 
 invoke(Action, Options, Payload, Reply) :-
     wsk_api_utils:api_action_name(Action, NS, ActionName),
@@ -56,10 +57,10 @@ invoke(Action, Options, Payload, Reply) :-
                           URL, Options),
     option(api_key(ID, PW), Options),
     option(timeout(Timeout), Options, infinite),
-    wsk_api_utils:term_json_dict(Json, Payload),
+    json_utils:term_json_dict(Json, Payload),
     http_post(URL, json(Json), R1,
               [%% status_code(_Code),
                timeout(Timeout),
                authorization(basic(ID, PW)),
                cert_verify_hook(cert_accept_any)]),
-    wsk_api_utils:term_json_dict(R1, Reply).
+    json_utils:term_json_dict(R1, Reply).
