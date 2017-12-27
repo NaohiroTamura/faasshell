@@ -7,26 +7,13 @@ jobs:
       - checkout
       - run:
           name: install tools
-          command: apt-get update && apt-get install -y make procps curl
-      - run:
-          name: install kubectl and setup kubeconfig file
-          command: >
-            curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl;
-            chmod +x ./kubectl;
-            mv ./kubectl /usr/local/bin/kubectl;
-            mkdir $HOME/.kube;
-            echo $KUBECONFIG_FILE | base64 --decode > $HOME/.kube/config;
-            echo $KUBECA_CRT_FILE | base64 --decode > $HOME/.kube/k8s.ca.crt;
-            kubectl config set-cluster mycluster --certificate-authority=$HOME/.kube/k8s.ca.crt;
+          command: apt-get update && apt-get install -y make procps
       - run:
           name: create /logs for testing
           command: mkdir /logs
       - run:
           name: unit test
-          command: >
-            (kubectl port-forward $(kubectl get pod | grep couchdb | cut -d' ' -f1) 5984:5984) &
-            timeout 60 bash -c 'while ! curl -sf http://127.0.0.1:5984/; do sleep 1 && echo -n .; done';
-            make unit_test
+          command: make unit_test
       - run:
           name: functional test
           command: make functional_test

@@ -42,6 +42,64 @@ test(doc_slash, Path = ["/", "unit_test", "/", "guest%2fsample"]) :-
 
 :- end_tests(db_path).
 
+:- begin_tests(db_crud).
+
+test(db_create, (Code, Res) = (201, _{ok:true})) :-
+    db_create(unit_test_db, Code, Res).
+
+test(db_exist, (Code, Res) = (200, '')) :-
+    db_exist(unit_test_db, Code, Res).
+
+test(db_exist2, (Code, Res) = (412, _{error:"file_exists",reason:_})) :-
+    db_create(unit_test_db, Code, Res).
+
+test(doc_create, (Code, Res) = (201, _{id:"sample", ok:true, rev:_})) :-
+    doc_create(unit_test_db, "sample", _{contents: "hello world!"}, Code, Res).
+
+test(doc_create_conflicted, (Code, Res) = (409, _{error:"conflict", reason:_})) :-
+    doc_create(unit_test_db, "sample", _{contents: "hello world!"}, Code, Res).
+
+test(doc_read, (Code, Res) = (200, _{'_id':"sample", '_rev':_, contents:_})) :-
+    doc_read(unit_test_db, "sample", Code, Res).
+
+test(doc_read_not_found, (Code, Res) = (404, _{error:"not_found", reason:_})) :-
+    doc_read(unit_test_db, "not_existed", Code, Res).
+
+test(doc_update, (Code1, Code2, Res) = (200, 201, _{id:"sample", ok:true, rev:_})) :-
+    doc_read(unit_test_db, "sample", Code1, R1),
+    doc_update(unit_test_db, "sample",
+               R1.'_rev', _{contents: "updated!"}, Code2, Res).
+
+test(doc_update_bad_rev, (Code, Res) = (400, _{error:"bad_request", reason:_})) :-
+    doc_update(unit_test_db, "sample",
+               "bad_revision", _{contents: "updated!"}, Code, Res).
+
+test(doc_update_wrong_rev,
+     (Code, Res) = (500, _{error:"unknown_error", reason:_, ref:_})) :-
+    doc_update(unit_test_db, "sample",
+               "2-abcdefghijklmnopqrstrvwxyz123456",
+               _{contents: "updated!"}, Code, Res).
+
+test(doc_delete_bad_rev, (Code, Res) = (400, _{error:"bad_request", reason:_})) :-
+    doc_delete(unit_test_db, "sample", "bad_revision", Code, Res).
+
+test(doc_delete_wrong_rev,
+     (Code, Res) = (500, _{error:"unknown_error", reason:_, ref:_})) :-
+    doc_delete(unit_test_db, "sample", "2-abcdefghijklmnopqrstrvwxyz123456",
+               Code, Res).
+
+test(doc_delete, (Code1, Code2, Res) = (200, 200, _{id:"sample", ok:true, rev:_})) :-
+    doc_read(unit_test_db, "sample", Code1, R1),
+    doc_delete(unit_test_db, "sample", R1.'_rev', Code2, Res).
+
+test(db_delete, (Code, Res) = (200, _{ok:true})) :-
+    db_delete(unit_test_db, Code, Res).
+
+test(db_not_exist, (Code, Res) = (404, _{error:"not_found",reason:_})) :-
+    db_delete(unit_test_db, Code, Res).
+
+:- end_tests(db_crud).
+
 :- begin_tests(db_env).
 
 test(local, (ID, PW, URL) = ("id", "pw",
@@ -107,58 +165,3 @@ test(cloud, (ID, PW, URL) = ("id", "pw",
     unsetenv('DB_APIHOST').
 
 :- end_tests(db_env).
-
-:- begin_tests(db_crud).
-
-test(db_create, (Code, Res) = (201, _{ok:true})) :-
-    db_create("unit_test_db", Code, Res).
-
-test(db_exist, (Code, Res) = (412, _{error:"file_exists",reason:_})) :-
-    db_create("unit_test_db", Code, Res).
-
-test(doc_create, (Code, Res) = (201, _{id:"sample", ok:true, rev:_})) :-
-    doc_create("unit_test_db", "sample", _{contents: "hello world!"}, Code, Res).
-
-test(doc_create_conflicted, (Code, Res) = (409, _{error:"conflict", reason:_})) :-
-    doc_create("unit_test_db", "sample", _{contents: "hello world!"}, Code, Res).
-
-test(doc_read, (Code, Res) = (200, _{'_id':"sample", '_rev':_, contents:_})) :-
-    doc_read("unit_test_db", "sample", Code, Res).
-
-test(doc_read_not_found, (Code, Res) = (404, _{error:"not_found", reason:_})) :-
-    doc_read("unit_test_db", "not_existed", Code, Res).
-
-test(doc_update, (Code, Res) = (201, _{id:"sample", ok:true, rev:_})) :-
-    doc_read("unit_test_db", "sample", _C1, R1),
-    doc_update("unit_test_db", "sample",
-               R1.'_rev', _{contents: "updated!"}, Code, Res).
-
-test(doc_update_bad_rev, (Code, Res) = (400, _{error:"bad_request", reason:_})) :-
-    doc_update("unit_test_db", "sample",
-               "bad_revision", _{contents: "updated!"}, Code, Res).
-
-test(doc_update_wrong_rev,
-     (Code, Res) = (500, _{error:"unknown_error", reason:_, ref:_})) :-
-    doc_update("unit_test_db", "sample",
-               "2-abcdefghijklmnopqrstrvwxyz123456",
-               _{contents: "updated!"}, Code, Res).
-
-test(doc_delete_bad_rev, (Code, Res) = (400, _{error:"bad_request", reason:_})) :-
-    doc_delete("unit_test_db", "sample", "bad_revision", Code, Res).
-
-test(doc_delete_wrong_rev,
-     (Code, Res) = (500, _{error:"unknown_error", reason:_, ref:_})) :-
-    doc_delete("unit_test_db", "sample", "2-abcdefghijklmnopqrstrvwxyz123456",
-               Code, Res).
-
-test(doc_delete, (Code, Res) = (200, _{id:"sample", ok:true, rev:_})) :-
-    doc_read("unit_test_db", "sample", Code, R1),
-    doc_delete("unit_test_db", "sample", R1.'_rev', Code, Res).
-
-test(db_delete, (Code, Res) = (200, _{ok:true})) :-
-    db_delete("unit_test_db", Code, Res).
-
-test(db_not_exist, (Code, Res) = (404, _{error:"not_found",reason:_})) :-
-    db_delete("unit_test_db", Code, Res).
-
-:- end_tests(db_crud).
