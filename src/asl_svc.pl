@@ -92,19 +92,28 @@ statemachine(Request) :-
     statemachine(Method, Request).
 
 %% get state machine information
-%% $ curl localhost:8080/statemachine/{statemachine}
+%% $ curl -sLX GET localhost:8080/statemachine/{statemachine}
+%% $ curl -sLX GET localhost:8080/statemachine/
 statemachine(get, Request) :-
     ( memberchk(path_info(File), Request)
-      -> cdb_api:doc_read(faasshell, File, Code, Output),
-         http_log('~w~n', [doc_read(Code)])
-      ;  Output = _{output:ng, error:"statemashine missing!"}
+      -> cdb_api:doc_read(faasshell, File, Code1, Dict1),
+         ( Code1 = 200
+           -> Output = _{output:ok}.put(Dict1)
+           ;  Output = _{output:ng}.put(Dict1)
+         ),
+         http_log('~w~n', [doc_read(Code1)])
+      ;  cdb_api:view_read(faasshell, faas, statemachine, Code2, Dict2),
+         ( Code2 = 200
+           -> Output = _{output:ok}.put(Dict2)
+           ;  Output = _{output:ng}.put(Dict2)
+         ),
+         http_log('~w~n', [view_read(Code2)])
     ),
     reply_json_dict(Output).
 
 %% create state machine
-%% $ curl -X PUT -H 'Content-Type: application/json' \
-%%        -H 'Accept: application/json' -d @asl.json \
-%%         localhost:8080/statemachine/{statemachine}
+%% $ curl -sX PUT localhost:8080/statemachine/{statemachine}?overwrite=true
+%%        -H 'Content-Type: application/json' -d @asl.json
 statemachine(put, Request) :-
     http_read_json_dict(Request, Params, []),
     http_log('~w~n', [params(Params)]),
@@ -112,69 +121,77 @@ statemachine(put, Request) :-
       -> Dict = Params.put(name, File)
       ;  Dict = Params
     ),
-    http_parameters(Request, [overwrite(Overwrite, [default(false)])]),
-    http_log('~w~n', [overwrite(Overwrite)]),
-    ( Overwrite = false
-      -> cdb_api:doc_create(faasshell, Dict.name, Dict, Code, Res),
-         % TODO: error check
-         http_log('~w~n', [doc_create(Code, Res)])
-      ;  cdb_api:doc_read(faasshell, Dict.name, Code1, R1),
-         % TODO: error check
-         % http_log('~w~n', [doc_read(Dict.name, Code1, R1)]),
-         cdb_api:doc_update(faasshell, Dict.name, R1.'_rev', Dict, Code2, Res),
-         http_log('~w~n', [doc_update(Code1, Code2, Res)])
-    ),
     asl_gen:gen_dsl(Dict.asl, Dsl),
     http_log('~w~n', [dsl(Dsl)]),
     term_string(Dsl, DslStr),
     ( Dsl = asl(_)
-      -> Output = Dict.put(_{output:ok, dsl:DslStr})
-      ;  Output = Dict.put(_{output:ng, error:DslStr})
+      -> http_parameters(Request, [overwrite(Overwrite, [default(false)])]),
+         http_log('~w~n', [overwrite(Overwrite)]),
+         ( Overwrite = false
+           -> cdb_api:doc_create(faasshell, Dict.name, Dict, Code, Res),
+              http_log('~w~n', [doc_create(Code, Res)])
+           ;  cdb_api:doc_update(faasshell, Dict.name, Dict, Code, Res),
+              http_log('~w~n', [doc_update(Code, Res)])
+         ),
+         ( Code = 201
+           -> Output = Dict.put(_{output:ok, dsl: DslStr})
+           ;  Output = Dict.put(_{output:ng}).put(Res)
+         )
+      ;  Output = Dict.put(_{output:ng, error: "syntax error!", dsl: DslStr})
     ),
     reply_json_dict(Output).
 
 %% execute state machine
-%% $ curl -X POST -H 'Content-Type: application/json' \
-%%        -H 'Accept: application/json' -d '{"input":{"arg":"overwrite"}' \
-%%        localhost:8080/statemachine/{statemachine}
+%% $ curl -sX POST localhost:8080/statemachine/{statemachine} \
+%%        -H 'Content-Type: application/json' -d '{"input":{"arg":1}}'
 statemachine(post, Request) :-
-    ( http_read_json_dict(Request, Params, []); Params = _{}),
+    ( http_read_json_dict(Request, Params, []); Params = _{} ),
     http_log('~w~n', [params(Params)]),
     ( memberchk(path_info(File), Request)
       -> cdb_api:doc_read(faasshell, File, Code, Dict),
-         http_log('~w~n', [doc_read(Code)]),
-         asl_gen:gen_dsl(Dict.asl, Dsl),
-         % http_log('~w~n', [dsl(Dsl)]),
-         term_string(Dsl, DslStr),
-         ( Dsl = asl(_)
-           -> Input = Dict.put(Params),
-              asl_run:start(Dsl, Input.input, O),
-              Output = Dict.put(_{output:O})
-           ;  Output = Dict.put(_{output:ng, error:DslStr})
+         http_log('~w~n', [doc_read(File, Code)]),
+         ( Code = 200
+           -> asl_gen:gen_dsl(Dict.asl, Dsl),
+              % http_log('~w~n', [dsl(Dsl)]),
+              term_string(Dsl, DslStr),
+              ( Dsl = asl(_)
+                -> Input = Dict.put(Params),
+                   asl_run:start(Dsl, Input.input, O),
+                   Output = Dict.put(_{output:O})
+                ;  Output = Dict.put(_{output:ng, error: DslStr})
+              )
+           ;  Output = _{output:ng}.put(Dict)
          )
       ;  Output = _{output:ng, error:"statemashine missing!"}
     ),
     reply_json_dict(Output).
 
 %% delete state machine
-%% $ curl -X DELETE localhost:8080/statemachine/{statemachine}
+%% $ curl -sX DELETE localhost:8080/statemachine/{statemachine}
 statemachine(delete, Request) :-
-    memberchk(path_info(File), Request)
-    -> cdb_api:doc_read(faasshell, File, Code1, R1),
-       cdb_api:doc_delete(faasshell, File, R1.'_rev', Code2, Res),
-       http_log('~w~n', [doc_delete(Code1, Code2, Res)]),
-       reply_json_dict(_{output: ok})
-    ;  reply_json_dict(_{output:ng, error:"statemashine missing!"}).
+    ( memberchk(path_info(File), Request)
+      -> cdb_api:doc_delete(faasshell, File, Code, Res),
+         http_log('~w~n', [doc_delete(Code, Res)]),
+         ( Code = 200
+           -> Output = _{output:ok}
+           ;  Output = _{output:ng}.put(Res)
+         )
+      ; Output = _{output:ng, error:"statemashine missing!"}
+    ),
+    reply_json_dict(Output).
 
 %% create graph of state machine
-%% $ curl -X PATTCH localhost:8080/statemachine/{statemachine}
+%% $ curl -sX PATTCH localhost:8080/statemachine/{statemachine}
 statemachine(patch, Request) :-
     memberchk(path_info(File), Request)
     -> cdb_api:doc_read(faasshell, File, Code, Dict),
        http_log('~w~n', [doc_read(Code)]),
-       format('Content-type: text/plain~n~n'),
-       asl_gen:gen_dot(Dict.asl)
-    ;  reply_json_dict(_{output:ng, error:"statemashine missing!"}).
+       ( Code = 200
+         -> format('Content-type: text/plain~n~n'),
+            asl_gen:gen_dot(Dict.asl)
+         ;  reply_json_dict(_{output:ng}.put(Dict))
+       )
+    ; reply_json_dict(_{output:ng, error: "statemachine missing!"}).
 
 %%    GET: get shell.dsl information
 %%    PUT: create shell.dsl
@@ -189,70 +206,85 @@ shell(Request) :-
     shell(Method, Request).
 
 %% get shell information
-%% $ curl localhost:8080/shell/{shell.dsl}
+%% $ curl -sLX GET localhost:8080/shell/{shell.dsl}
+%% $ curl -sLX GET localhost:8080/shell
 shell(get, Request) :-
     ( memberchk(path_info(File), Request)
-      -> cdb_api:doc_read(faasshell, File, Code, Dict),
-         http_log('~w~n', [doc_read(File, Code)]),
-         Output = _{output:ok, dsl: Dict.dsl}
-      ;  Output = _{output:ng, error:"shell name missing!"}
+      -> cdb_api:doc_read(faasshell, File, Code1, Dict1),
+         ( Code1 = 200
+           -> Output = _{output:ok, dsl: Dict1.dsl}
+           ;  Output = _{output:ng}.put(Dict1)
+         ),
+         http_log('~w~n', [doc_read(Code1)])
+      ;  cdb_api:view_read(faasshell, faas, shell, Code2, Dict2),
+         ( Code2 = 200
+           -> Output = _{output:ok}.put(Dict2)
+           ;  Output = _{output:ng}.put(Dict2)
+         ),
+         http_log('~w~n', [view_read(Code2)])
     ),
     reply_json_dict(Output).
 
 %% create shell
-%% $ curl -X PUT -H 'Content-Type: text/plain' \
-%%        -H 'Accept: application/json' -d @shell.dsl \
-%%         localhost:8080/shell/{shell.dsl}
+%% $ curl -sX PUT localhost:8080/shell/{shell.dsl}?overwrite=true \
+%%        -H 'Content-Type: text/plain' -d @shell.dsl
 shell(put, Request) :-
-    ( memberchk(path_info(File), Request)
-      -> http_read_data(Request, DslStr, [application/x-prolog]),
-         term_string(Dsl, DslStr),
-         http_log('~w~n', [put(Dsl)]),
-         ( Dsl = asl(_)
+    http_read_data(Request, DslStr, [text/plain]),
+    term_string(Dsl, DslStr),
+    http_log('~w~n', [put(Dsl)]),
+    ( Dsl = asl(_)
+      -> ( memberchk(path_info(File), Request)
            -> http_parameters(Request, [overwrite(Overwrite, [default(false)])]),
               http_log('~w~n', [overwrite(Overwrite)]),
               ( Overwrite = false
                 -> cdb_api:doc_create(faasshell, File, _{dsl: DslStr}, Code, Res),
                    http_log('~w~n', [doc_create(Code, Res)])
-                ; cdb_api:doc_read(faasshell, File, Code1, R1),
-                  % http_log('~w~n', [doc_read(File, Code1, R1)]),
-                  cdb_api:doc_update(faasshell, File, R1.'_rev',
-                                               _{dsl: DslStr}, Code2, Res),
-                  http_log('~w~n', [doc_update(Code1, Code2, Res)])
+                ;  cdb_api:doc_update(faasshell, File, _{dsl: DslStr}, Code, Res),
+                   http_log('~w~n', [doc_update(Code, Code, Res)])
               ),
-              Output = _{output:ok, dsl: DslStr}
-           ;  Output = _{output:ng, error: DslStr}
+              ( Code = 201
+                -> Output = _{output:ok, dsl: DslStr}
+                ;  Output = _{output:ng}.put(Res)
+              )
+           ; Output = _{output:ng, error: "shell name missing!"}
          )
-      ; Output = _{output:ng, error:"shell name missing!"}
+      ; Output = _{output:ng, error: "syntax error!"}
     ),
     reply_json_dict(Output).
 
 %% execute shell
-%% $ curl -X POST -H 'Content-Type: application/json' \
-%%        -H 'Accept: application/json' -d '{"arg":1}' \
-%%         localhost:8080/shell/{shell.dsl}
+%% $ curl -sX POST localhost:8080/shell/{shell.dsl} \
+%%        -H 'Content-Type: application/json' -d '{"arg":1}'
 shell(post, Request) :-
-    http_read_json_dict(Request, Params, []),
+    ( http_read_json_dict(Request, Params, []); Params = _{} ),
+    http_log('~w~n', [params(Params)]),
     ( memberchk(path_info(File), Request)
       -> cdb_api:doc_read(faasshell, File, Code, Dict),
          http_log('~w~n', [doc_read(File, Code)]),
-         term_string(Dsl, Dict.dsl),
-         http_log('~w~n', [post(params(Params), dsl(Dsl))]),
-         ( Dsl = asl(_)
-           -> asl_run:start(Dsl, Params, O),
-              Output = _{output:O}
-           ;  Output = _{output:ng, error: Dict.dsl}
+         ( Code = 200
+           -> term_string(Dsl, Dict.dsl),
+              % http_log('~w~n', [dsl(Dsl)]),
+              ( Dsl = asl(_)
+                -> asl_run:start(Dsl, Params, O),
+                   Output = _{output:O}
+                ;  Output = _{output:ng, error: Dict.dsl}
+              )
+           ;  Output = _{output:ng}.put(Dict)
          )
       ; Output = _{output:ng, error:"shell name missing!"}
     ),
     reply_json_dict(Output).
 
 %% delete shell
-%% $ curl -X DELETE localhost:8080/shell/{shell.dsl}
+%% $ curl -sX DELETE localhost:8080/shell/{shell.dsl}
 shell(delete, Request) :-
-    memberchk(path_info(File), Request)
-    -> cdb_api:doc_read(faasshell, File, Code1, R1),
-       cdb_api:doc_delete(faasshell, File, R1.'_rev', Code2, Res),
-       http_log('~w~n', [doc_delete(Code1, Code2, Res)]),
-       reply_json_dict(_{output:ok})
-    ;  reply_json_dict(_{output:ng, error:"shell name missing!"}).
+    ( memberchk(path_info(File), Request)
+      -> cdb_api:doc_delete(faasshell, File, Code, Res),
+         http_log('~w~n', [doc_delete(Code, Res)]),
+         ( Code = 200
+           -> Output = _{output:ok}
+           ;  Output = _{output:ng}.put(Res)
+         )
+      ; Output = _{output:ng, error: "shell name missing!"}
+    ),
+    reply_json_dict(Output).

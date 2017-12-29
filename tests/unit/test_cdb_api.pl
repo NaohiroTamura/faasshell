@@ -25,20 +25,29 @@
 :- begin_tests(db_url).
 
 test(default, URL = ["http", "://", "127.0.0.1", ":", "5984"]) :-
-    db_url(URL, []).
+    db_url_base(URL, []).
+
+test(specific, URL = ["https", "://", "test-host.com", ":", "1234"]) :-
+    db_url_base(https, 'test-host.com', '1234', URL, []).
 
 :- end_tests(db_url).
 
 :- begin_tests(db_path).
 
 test(default, Path = ["/", "unit_test"]) :-
-    db_path("unit_test", Path, []).
+    db_path(unit_test, Path, []).
 
 test(doc, Path = ["/", "unit_test", "/", "sample"]) :-
-    db_path("unit_test", "sample", Path, []).
+    db_path(unit_test, sample, Path, []).
 
 test(doc_slash, Path = ["/", "unit_test", "/", "guest%2fsample"]) :-
-    db_path("unit_test", "guest/sample", Path, []).
+    db_path(unit_test, 'guest/sample', Path, []).
+
+test(design, Path = ["/","unit_test","/_design/","faas"]) :-
+    db_path(unit_test, design, faas, Path, []).
+
+test(view, Path = ["/","unit_test","/_design/","faas","/_view/","statemachine"]) :-
+    db_path(unit_test, design, faas, view, statemachine, Path, []).
 
 :- end_tests(db_path).
 
@@ -54,43 +63,28 @@ test(db_exist2, (Code, Res) = (412, _{error:"file_exists",reason:_})) :-
     db_create(unit_test_db, Code, Res).
 
 test(doc_create, (Code, Res) = (201, _{id:"sample", ok:true, rev:_})) :-
-    doc_create(unit_test_db, "sample", _{contents: "hello world!"}, Code, Res).
+    doc_create(unit_test_db, "sample", _{asl: "hello world!"}, Code, Res).
 
 test(doc_create_conflicted, (Code, Res) = (409, _{error:"conflict", reason:_})) :-
-    doc_create(unit_test_db, "sample", _{contents: "hello world!"}, Code, Res).
+    doc_create(unit_test_db, "sample", _{asl: "hello world!"}, Code, Res).
 
-test(doc_read, (Code, Res) = (200, _{'_id':"sample", '_rev':_, contents:_})) :-
+test(doc_read, (Code, Res) = (200, _{'_id':"sample", '_rev':_, asl:_})) :-
     doc_read(unit_test_db, "sample", Code, Res).
 
 test(doc_read_not_found, (Code, Res) = (404, _{error:"not_found", reason:_})) :-
     doc_read(unit_test_db, "not_existed", Code, Res).
 
-test(doc_update, (Code1, Code2, Res) = (200, 201, _{id:"sample", ok:true, rev:_})) :-
-    doc_read(unit_test_db, "sample", Code1, R1),
-    doc_update(unit_test_db, "sample",
-               R1.'_rev', _{contents: "updated!"}, Code2, Res).
+test(doc_update, (Code, Res) = (201, _{id:"sample", ok:true, rev:_})) :-
+    doc_update(unit_test_db, "sample",  _{asl: "updated!"}, Code, Res).
 
-test(doc_update_bad_rev, (Code, Res) = (400, _{error:"bad_request", reason:_})) :-
-    doc_update(unit_test_db, "sample",
-               "bad_revision", _{contents: "updated!"}, Code, Res).
+test(doc_update_not_found, (Code, Res) = (404, _{error:"not_found", reason:_})) :-
+    doc_update(unit_test_db, "not_existd",  _{asl: "updated!"}, Code, Res).
 
-test(doc_update_wrong_rev,
-     (Code, Res) = (500, _{error:"unknown_error", reason:_, ref:_})) :-
-    doc_update(unit_test_db, "sample",
-               "2-abcdefghijklmnopqrstrvwxyz123456",
-               _{contents: "updated!"}, Code, Res).
+test(doc_delete_not_found, (Code, Res) = (404, _{error:"not_found", reason:_})) :-
+    doc_delete(unit_test_db, "not_exited", Code, Res).
 
-test(doc_delete_bad_rev, (Code, Res) = (400, _{error:"bad_request", reason:_})) :-
-    doc_delete(unit_test_db, "sample", "bad_revision", Code, Res).
-
-test(doc_delete_wrong_rev,
-     (Code, Res) = (500, _{error:"unknown_error", reason:_, ref:_})) :-
-    doc_delete(unit_test_db, "sample", "2-abcdefghijklmnopqrstrvwxyz123456",
-               Code, Res).
-
-test(doc_delete, (Code1, Code2, Res) = (200, 200, _{id:"sample", ok:true, rev:_})) :-
-    doc_read(unit_test_db, "sample", Code1, R1),
-    doc_delete(unit_test_db, "sample", R1.'_rev', Code2, Res).
+test(doc_delete, (Code, Res) = (200, _{id:"sample", ok:true, rev:_})) :-
+    doc_delete(unit_test_db, "sample", Code, Res).
 
 test(db_delete, (Code, Res) = (200, _{ok:true})) :-
     db_delete(unit_test_db, Code, Res).
@@ -100,6 +94,41 @@ test(db_not_exist, (Code, Res) = (404, _{error:"not_found",reason:_})) :-
 
 :- end_tests(db_crud).
 
+:- begin_tests(db_init).
+
+test(all, Codes = [404, 201, 404, 201]) :-
+    db_delete(test_db_init, _Code, _Res),
+    db_init(test_db_init, faas, Codes).
+
+test(ready, Codes = [200, null, 200, null]) :-
+    db_init(test_db_init, faas, Codes).
+
+test(doc, Codes = [200, null, 404, 201]) :-
+    design_delete(test_db_init, faas, 200, _Res),
+    db_init(test_db_init, faas, Codes).
+
+:- end_tests(db_init).
+
+:- begin_tests(db_design).
+
+test(update, (Code, Res) = (201, _{ok:true, id:_, rev:_})) :-
+    db_delete(test_db_design, _Code, _Res),
+    db_init(test_db_design, faas, _Codes),
+    faas_design(Dict),
+    design_update(test_db_design, faas, Dict, Code, Res).
+
+test(view, (Rows1, Rows2) = (3, 2)) :-
+    doc_create(test_db_design, 'sample1.json', _{asl:"ASL 1"}, 201, _),
+    doc_create(test_db_design, 'sample2.json', _{asl:"ASL 2"}, 201, _),
+    doc_create(test_db_design, 'sample3.json', _{asl:"ASL 3"}, 201, _),
+    doc_create(test_db_design, 'sample1.dsl', _{dsl:"DSL 1"}, 201, _),
+    doc_create(test_db_design, 'sample2.dsl', _{dsl:"DSL 2"}, 201, _),
+    view_read(test_db_design, faas, statemachine, 200, Res1),
+    view_read(test_db_design, faas, shell, 200, Res2),
+    (Res1.total_rows, Res2.total_rows) = (Rows1, Rows2).
+
+:- end_tests(db_design).
+
 :- begin_tests(db_env).
 
 test(local, (ID, PW, URL) = ("id", "pw",
@@ -108,7 +137,7 @@ test(local, (ID, PW, URL) = ("id", "pw",
     setenv('DB_AUTH', "id:pw"),
     db_env(Options),
     option(authorization(basic(ID, PW)), Options),
-    option(db_url(URL), Options),
+    option(db_url_base(URL), Options),
     unsetenv('DB_AUTH').
 
 test(kube, (ID, PW, URL) = ("id", "pw",
@@ -119,7 +148,7 @@ test(kube, (ID, PW, URL) = ("id", "pw",
     setenv('COUCHDB_SERVICE_PORT_COUCHDB', 5984),
     db_env(Options),
     option(authorization(basic(ID, PW)), Options),
-    option(db_url(URL), Options),
+    option(db_url_base(URL), Options),
     unsetenv('DB_AUTH'),
     unsetenv('COUCHDB_SERVICE_HOST'),
     unsetenv('COUCHDB_SERVICE_PORT_COUCHDB').
@@ -130,7 +159,7 @@ test(private, (ID, PW, URL) = ("id", "pw",
     setenv('DB_APIHOST', 'http://test-host.local'),
     db_env(Options),
     option(authorization(basic(ID, PW)), Options),
-    option(db_url(URL), Options),
+    option(db_url_base(URL), Options),
     unsetenv('DB_AUTH'),
     unsetenv('DB_APIHOST').
 
@@ -140,7 +169,7 @@ test(private, (ID, PW, URL) = ("id", "pw",
     setenv('DB_APIHOST', 'http://test-host.local:1234'),
     db_env(Options),
     option(authorization(basic(ID, PW)), Options),
-    option(db_url(URL), Options),
+    option(db_url_base(URL), Options),
     unsetenv('DB_AUTH'),
     unsetenv('DB_APIHOST').
 
@@ -150,7 +179,7 @@ test(cloud, (ID, PW, URL) = ("id", "pw",
     setenv('DB_APIHOST', 'https://test-host.com'),
     db_env(Options),
     option(authorization(basic(ID, PW)), Options),
-    option(db_url(URL), Options),
+    option(db_url_base(URL), Options),
     unsetenv('DB_AUTH'),
     unsetenv('DB_APIHOST').
 
@@ -160,7 +189,7 @@ test(cloud, (ID, PW, URL) = ("id", "pw",
     setenv('DB_APIHOST', 'https://test-host.com:1234'),
     db_env(Options),
     option(authorization(basic(ID, PW)), Options),
-    option(db_url(URL), Options),
+    option(db_url_base(URL), Options),
     unsetenv('DB_AUTH'),
     unsetenv('DB_APIHOST').
 

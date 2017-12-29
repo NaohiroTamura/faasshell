@@ -31,7 +31,7 @@
 %%
 :- begin_tests(hello_world_task).
 
-test(put, Output = "ok") :-
+test(put_default, Output = "ok") :-
     load_json('samples/asl/hello_world_task_asl.json', Term),
     api_host(Host),
     string_concat(Host, '/statemachine/', URL),
@@ -39,14 +39,45 @@ test(put, Output = "ok") :-
     term_json_dict(Data, Dict),
     get_dict(output, Dict, Output).
 
-test(get, Output = "hello_world_task_asl.json") :-
+test(put_overwrite_true, Output = "ok") :-
+    load_json('samples/asl/hello_world_task_asl.json', Term),
+    api_host(Host),
+    string_concat(Host, '/statemachine/hello_world_task_asl.json?overwrite=true',
+                  URL),
+    http_put(URL, json(Term), Data, []),
+    term_json_dict(Data, Dict),
+    get_dict(output, Dict, Output).
+
+test(put_overwrite_false, (Output, Error) = ("ng", "conflict")) :-
+    load_json('samples/asl/hello_world_task_asl.json', Term),
+    api_host(Host),
+    string_concat(Host, '/statemachine/hello_world_task_asl.json?overwrite=false',
+                  URL),
+    http_put(URL, json(Term), Data, []),
+    term_json_dict(Data, Dict),
+    _{output:Output, error:Error} :< Dict.
+
+test(get, Output = "ok") :-
+    api_host(Host),
+    string_concat(Host, '/statemachine/', URL),
+    http_get(URL, Data, []),
+    term_json_dict(Data, Dict),
+    get_dict(output, Dict, Output).
+
+test(get_view, Output = "hello_world_task_asl.json") :-
     api_host(Host),
     string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
     http_get(URL, Data, []),
     term_json_dict(Data, Dict),
     get_dict(name, Dict, Output).
 
-test(post, Output = "Hello, FaaS Shell!") :-
+test(get_not_exit, Output = _{output:"ng", error:"not_found", reason:_}) :-
+    api_host(Host),
+    string_concat(Host, '/statemachine/not_exist.json', URL),
+    http_get(URL, Data, []),
+    term_json_dict(Data, Output).
+
+test(post_no_param, Output = "Hello, FaaS Shell!") :-
     api_host(Host),
     string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
     http_post(URL, json(json([])), Data, []),
@@ -72,5 +103,11 @@ test(delete, Output = "ok") :-
     http_delete(URL, Data, []),
     term_json_dict(Data, Dict),
     get_dict(output, Dict, Output).
+
+test(delete_not_exist, Output = _{output:"ng", error:"not_found", reason:_}) :-
+    api_host(Host),
+    string_concat(Host, '/statemachine/not_exist.json', URL),
+    http_delete(URL, Data, []),
+    term_json_dict(Data, Output).
 
 :- end_tests(hello_world_task).
