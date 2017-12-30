@@ -34,7 +34,7 @@ functional_test:
 	for case in $(functional_test_files); do \
 		swipl -q -l $$case -g run_tests -t halt; \
 	done
-	pkill swipl
+	pkill -HUP swipl
 
 build_image:
 	@echo "create build image"
@@ -61,6 +61,8 @@ run:
 	docker run -d \
 	           -e $$(grep AUTH ~/.wskprops) \
 	           -e $$(grep APIHOST ~/.wskprops) \
+	           -e DB_AUTH=whisk_admin:some_passw0rd \
+	           -e DB_APIHOST=172.17.0.1:5984 \
 	           -p 8080:8080 -v /tmp:/logs \
 	           $(docker_image_prefix)faasshell$(docker_image_tag)
 

@@ -51,6 +51,9 @@
 %%
 main :-
     set_setting(http:logfile,'/logs/httpd.log'), % docker volume /tmp
+    catch(db_init(faasshell, faas, _Codes),
+          Error,
+          (print_message(error, Error), halt(1))),
     getenv('SVC_PORT', Port) -> server(Port); server(8080).
 
 server(Port) :-

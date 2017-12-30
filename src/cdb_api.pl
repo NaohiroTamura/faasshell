@@ -234,10 +234,10 @@ db_init(DB, Doc, [C1, C2, C3, C4]) :-
 faas_design(_{
    views: _{
      shell: _{
-       map: "function (doc) { if (doc.dsl != null) { emit(doc._id, null); } }"
+       map: "function (doc) { if (doc.dsl != null) { emit(doc._id, doc.dsl); } }"
      },
      statemachine: _{
-       map: "function (doc) { if (doc.asl != null) { emit(doc._id, null);} }"
+       map: "function (doc) { if (doc.asl != null) { emit(doc._id, doc.asl);} }"
      }
    },
    language: "javascript"

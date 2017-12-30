@@ -30,6 +30,11 @@ test(default, URL = ["http", "://", "127.0.0.1", ":", "5984"]) :-
 test(specific, URL = ["https", "://", "test-host.com", ":", "1234"]) :-
     db_url_base(https, 'test-host.com', '1234', URL, []).
 
+test(specific, URL = ["http", "://", "172.0.0.1", ":", "5984"]) :-
+    parse_url('172.0.0.1:5984',
+              [protocol(Scheme), host(Host), port(Port), path(/)]),
+    db_url_base(Scheme, Host, Port, URL, []).
+
 :- end_tests(db_url).
 
 :- begin_tests(db_path).
