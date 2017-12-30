@@ -22,6 +22,7 @@
 :- module(cdb_api,
           [ db_create/3,
             db_exist/3,
+            db_read/3,
             db_delete/3,
             doc_create/5,
             doc_read/4,
@@ -131,6 +132,12 @@ db_exist(DB, Code, Res) :-
     db_url(Path, [], Options, URL, Code),
     http_get(URL, Res, [method(head), to(atom) | Options]).
 
+db_read(DB, Code, Res) :-
+    db_path(DB, Path, []),
+    db_url(Path, [], Options, URL, Code),
+    http_get(URL, Data, Options),
+    json_utils:term_json_dict(Data, Res).
+
 db_delete(DB, Code, Res) :-
     db_path(DB, Path, []),
     db_url(Path, [], Options, URL, Code),
@@ -234,11 +241,56 @@ db_init(DB, Doc, [C1, C2, C3, C4]) :-
 faas_design(_{
    views: _{
      shell: _{
-       map: "function (doc) { if (doc.dsl != null) { emit(doc._id, doc.dsl); } }"
+       map: "function (doc) { if (doc.dsl !== undefined) { emit(doc._id, doc.dsl); } }",
+       reduce: "function (keys, values, rereduce) { if (rereduce) { var merge = function(x,y){return Object.keys(x).reduce(function(accm, e){accm[e] = x[e]; return accm},y)}; return values.reduce(function(accm, e){ accm = merge(accm,e); return accm},{}) } else { return keys.reduce(function(accm, e, i){accm[e[0]] = values[i]; return accm}, {}) } }"
      },
      statemachine: _{
-       map: "function (doc) { if (doc.asl != null) { emit(doc._id, doc.asl);} }"
+       map: "function (doc) { if (doc.asl !== undefined) { emit(doc._id, doc.asl); } }",
+       reduce: "function (keys, values, rereduce) { if (rereduce) { var merge = function(x,y){return Object.keys(x).reduce(function(accm, e){accm[e] = x[e]; return accm},y)}; return values.reduce(function(accm, e){ accm = merge(accm,e); return accm},{}) } else { return keys.reduce(function(accm, e, i){accm[e[0]] = values[i]; return accm}, {}) } }"
      }
    },
    language: "javascript"
  }).
+
+%% DB Configuration
+db_get_reduce_limit(Res) :-
+    db_read('_membership', Code1, Res1),
+    ( Code1 = 200
+      -> maplist([Node, NodeKey-Reply]>>(
+                     format(string(Path),
+                            '/_node/~w/_config/query_server_config/reduce_limit',
+                            [Node]),
+                     db_url(Path, [], Options, URL, Code2),
+                     http_get(URL, Reply, Options),
+                     ( Code2 = 200
+                       -> atom_string(NodeKey, Node)
+                       ;  json_utils:term_json_dict(Reply, Error),
+                          throw(Error)
+                     )
+                 ), Res1.all_nodes, Pair),
+         dict_pairs(Res, _, Pair)
+      ; throw(Res1)
+    ).
+
+db_set_reduce_limit(Flag, Res) :-
+    atom_string(Flag1, Flag),
+    db_read('_membership', Code1, Res1),
+    ( Code1 = 200
+      -> length(Res1.all_nodes, Len),
+         length(FlagList, Len),
+         maplist(=(Flag1), FlagList),
+         maplist([Node, Flag2, NodeKey-Reply]>>(
+                     format(string(Path),
+                            '/_node/~w/_config/query_server_config/reduce_limit',
+                            [Node]),
+                     db_url(Path, [], Options, URL, Code2),
+                     http_put(URL, json(Flag2), Reply, Options),
+                     ( Code2 = 200
+                       -> atom_string(NodeKey, Node)
+                       ;  json_utils:term_json_dict(Reply, Error),
+                          throw(Error)
+                     )
+                 ), Res1.all_nodes, FlagList, Pair),
+         dict_pairs(Res, _, Pair)
+      ; throw(Res1)
+    ).

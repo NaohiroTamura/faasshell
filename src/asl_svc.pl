@@ -100,17 +100,18 @@ statemachine(Request) :-
 statemachine(get, Request) :-
     ( memberchk(path_info(File), Request)
       -> cdb_api:doc_read(faasshell, File, Code1, Dict1),
+         http_log('~w~n', [doc_read(Code1)]),
          ( Code1 = 200
            -> Output = _{output:ok}.put(Dict1)
            ;  Output = _{output:ng}.put(Dict1)
-         ),
-         http_log('~w~n', [doc_read(Code1)])
+         )
       ;  cdb_api:view_read(faasshell, faas, statemachine, Code2, Dict2),
+         http_log('~w~n', [view_read(Code2, Dict2)]),
          ( Code2 = 200
-           -> Output = _{output:ok}.put(Dict2)
+           -> ( [Row0] = Dict2.rows -> Value = Row0.value; Value = null ),
+              Output = _{output:ok}.put(asl, Value)
            ;  Output = _{output:ng}.put(Dict2)
-         ),
-         http_log('~w~n', [view_read(Code2)])
+         )
     ),
     reply_json_dict(Output).
 
@@ -214,17 +215,18 @@ shell(Request) :-
 shell(get, Request) :-
     ( memberchk(path_info(File), Request)
       -> cdb_api:doc_read(faasshell, File, Code1, Dict1),
+         http_log('~w~n', [doc_read(Code1, Dict1)]),
          ( Code1 = 200
            -> Output = _{output:ok, dsl: Dict1.dsl}
            ;  Output = _{output:ng}.put(Dict1)
-         ),
-         http_log('~w~n', [doc_read(Code1)])
+         )
       ;  cdb_api:view_read(faasshell, faas, shell, Code2, Dict2),
+         http_log('~w~n', [view_read(Code2, Dict2)]),
          ( Code2 = 200
-           -> Output = _{output:ok}.put(Dict2)
+           -> ( [Row0] = Dict2.rows -> Value = Row0.value; Value = null ),
+              Output = _{output:ok}.put(asl, Value)
            ;  Output = _{output:ng}.put(Dict2)
-         ),
-         http_log('~w~n', [view_read(Code2)])
+         )
     ),
     reply_json_dict(Output).
 

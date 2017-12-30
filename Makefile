@@ -24,6 +24,7 @@ all: unit_test
 unit_test:
 	@echo "unit  test"
 	for case in $(unit_test_files); do \
+		echo $$case; \
 		swipl -q -l $$case -g run_tests -t halt; \
 	done
 
@@ -32,6 +33,7 @@ functional_test:
 	swipl -q -l src/asl_svc.pl -g main -t halt &
 	sleep 3
 	for case in $(functional_test_files); do \
+		echo $$case; \
 		swipl -q -l $$case -g run_tests -t halt; \
 	done
 	pkill -HUP swipl
