@@ -32,7 +32,7 @@
             design_read/4,
             design_update/5,
             design_delete/4,
-            view_read/5,
+            view_read/6,
             db_init/3
          ]).
 
@@ -217,9 +217,9 @@ design_delete(DB, Doc, Code, Res) :-
     ).
 
 %%
-view_read(DB, Design, View, Code, Res) :-
+view_read(DB, Design, View, Query, Code, Res) :-
     db_path(DB, design, Design, view, View, Path, []),
-    db_url(Path, [], Options, URL, Code),
+    db_url(Path, Query, Options, URL, Code),
     http_get(URL, Reply, Options),
     json_utils:term_json_dict(Reply, Res).
 

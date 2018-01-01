@@ -25,15 +25,14 @@
 
 :- use_module(library(http/json)).
 
-api_key(Key, ID, PW) :-
+api_key(Key, ID-PW) :-
     split_string(Key, ':', "", [ID, PW]).
 
 openwhisk(Options) :-
-    %% prerequisite
-    %% $ export $(grep AUTH ~/.wskprops)
-    %% $ export $(grep APIHOST ~/.wskprops)
-    getenv('AUTH',Key),
-    api_key(Key, ID, PW),
+    ( getenv('AUTH',Key), api_key(Key, ID-PW)
+      -> AuthOpt =  [api_key(ID-PW)]
+      ;  AuthOpt =  []
+    ),
     ( getenv('APIHOST',URL)
       -> ( re_match("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$", URL)
            -> PROTOCOL = https,
@@ -53,12 +52,11 @@ openwhisk(Options) :-
           ; throw(error(unknown_api_host, _))
         )
     ),
-    Options = [
-        api_key(ID, PW),
-        api_host(HOST),
-        protocol(PROTOCOL),
-        port(PORT)
-    ].
+    append(AuthOpt, [
+               api_host(HOST),
+               protocol(PROTOCOL),
+               port(PORT)
+           ], Options).
 
 default_port(http, 80).
 default_port(https, 443).

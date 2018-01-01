@@ -131,9 +131,9 @@ test(view, (R1, R2) = (
     doc_create(test_db_design, 'sample3.json', _{asl:"ASL 3"}, 201, _),
     doc_create(test_db_design, 'sample1.dsl', _{dsl:"DSL 1"}, 201, _),
     doc_create(test_db_design, 'sample2.dsl', _{dsl:"DSL 2"}, 201, _),
-    view_read(test_db_design, faas, statemachine, 200, Res1),
+    view_read(test_db_design, faas, statemachine, [], 200, Res1),
     [Row1] = Res1.rows, R1 = Row1.value,
-    view_read(test_db_design, faas, shell, 200, Res2),
+    view_read(test_db_design, faas, shell, [], 200, Res2),
     [Row2] = Res2.rows, R2 = Row2.value.
 
 test(reduce, Len = 100) :-
@@ -143,7 +143,7 @@ test(reduce, Len = 100) :-
                 format(string(Contents),'ASL ~w',[N]),
                 doc_create(test_db_design, File, _{asl:Contents}, Code, _)
             ), L, _),
-    view_read(test_db_design, faas, statemachine, 200, Res1),
+    view_read(test_db_design, faas, statemachine, [], 200, Res1),
     _{rows:[_{key:null, value:Value}]} :< Res1,
     dict_pairs(Value, _, Pairs),
     length(Pairs, Len).

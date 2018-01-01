@@ -61,7 +61,6 @@ undeploy:
 run:
 	@echo "run app_image in docker"
 	docker run -d \
-	           -e $$(grep AUTH ~/.wskprops) \
 	           -e $$(grep APIHOST ~/.wskprops) \
 	           -e DB_AUTH=whisk_admin:some_passw0rd \
 	           -e DB_APIHOST=172.17.0.1:5984 \

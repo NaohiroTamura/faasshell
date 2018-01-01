@@ -73,7 +73,10 @@ ubuntu@trusty:~/faasshell[master]$ wsk action create job samples/actions/job.py 
 ok: created action job
 ```
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl http://172.17.0.1:8080/faas/guest
+ubuntu@trusty:~/faasshell[master]$ . ~/.wskprops
+```
+```sh
+ubuntu@trusty:~/faasshell[master]$ curl -sLX GET http://172.17.0.1:8080/faas/ -u $AUTH
 [
   {
     "annotations": [ {"key":"exec", "value":"python:2"} ],
@@ -101,8 +104,8 @@ ubuntu@trusty:~/faasshell[master]$ curl http://172.17.0.1:8080/faas/guest
 
 ### statemachine interface
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -X PUT http://172.17.0.1:8080/statemachine/ \
--H 'Content-Type: application/json' -d @samples/asl/hello_world_task_asl.json
+ubuntu@trusty:~/faasshell[master]$ curl -sX PUT http://172.17.0.1:8080/statemachine/hello_world_task_asl.json \
+-H 'Content-Type: application/json' -d @samples/asl/hello_world_task_asl.json -u $AUTH
 {
   "asl": {
     "Comment":"A Hello World example of the Amazon States Language using an AWS Lambda function",
@@ -124,7 +127,8 @@ ubuntu@trusty:~/faasshell[master]$ curl -X PUT http://172.17.0.1:8080/statemachi
 }
 ```
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -X GET http://172.17.0.1:8080/statemachine/hello_world_task_asl.json
+ubuntu@trusty:~/faasshell[master]$ curl -sLX GET http://172.17.0.1:8080/statemachine/hello_world_task_asl.json \
+-u $AUTH
 {
   "asl": {
     "Comment":"A Hello World example of the Amazon States Language using an AWS Lambda function",
@@ -144,7 +148,8 @@ ubuntu@trusty:~/faasshell[master]$ curl -X GET http://172.17.0.1:8080/statemachi
 }
 ```
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -X POST http://172.17.0.1:8080/statemachine/hello_world_task_asl.json
+ubuntu@trusty:~/faasshell[master]$ curl -sX POST http://172.17.0.1:8080/statemachine/hello_world_task_asl.json \
+-u $AUTH
 {
   "asl": {
     "Comment":"A Hello World example of the Amazon States Language using an AWS Lambda function",
@@ -165,8 +170,8 @@ ubuntu@trusty:~/faasshell[master]$ curl -X POST http://172.17.0.1:8080/statemach
 }
 ```
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -X POST http://172.17.0.1:8080/statemachine/hello_world_task_asl.json \
--H 'Content-Type: application/json' -d '{"input": {"name": "Curl"}}'
+ubuntu@trusty:~/faasshell[master]$ curl -sX POST http://172.17.0.1:8080/statemachine/hello_world_task_asl.json \
+-H 'Content-Type: application/json' -d '{"input": {"name": "Curl"}}' -u $AUTH
 {
   "asl": {
     "Comment":"A Hello World example of the Amazon States Language using an AWS Lambda function",
@@ -187,40 +192,44 @@ ubuntu@trusty:~/faasshell[master]$ curl -X POST http://172.17.0.1:8080/statemach
 }
 ```
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -X PATCH http://172.17.0.1:8080/statemachine/hello_world_task_asl.json
+ubuntu@trusty:~/faasshell[master]$ curl -sX PATCH http://172.17.0.1:8080/statemachine/hello_world_task_asl.json \
+-u $AUTH
 digraph graph_name {
      "Start" -> "HelloWorld" ;
      "HelloWorld" -> "End" ;
 }
 ```
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -X DELETE http://172.17.0.1:8080/statemachine/hello_world_task_asl.json
+ubuntu@trusty:~/faasshell[master]$ curl -sX DELETE http://172.17.0.1:8080/statemachine/hello_world_task_asl.json \
+-u $AUTH
 {"output":"ok"}
 
 ```
 
 ### shell interface
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -X PUT http://172.17.0.1:8080/shell/hello_world_task.dsl \
--H 'Content-Type: text/plain' -d @samples/dsl/hello_world_task.dsl
+ubuntu@trusty:~/faasshell[master]$ curl -sX PUT http://172.17.0.1:8080/shell/hello_world_task.dsl \
+-H 'Content-Type: text/plain' -d @samples/dsl/hello_world_task.dsl -u $AUTH
 {
   "dsl":"asl([task('HelloWorld',\"hello\",[timeout_seconds(5),heartbeat_seconds(10)])]).",
   "output":"ok"
 }
 ```
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -X GET http://172.17.0.1:8080/shell/hello_world_task.dsl
+ubuntu@trusty:~/faasshell[master]$ curl -sLX GET http://172.17.0.1:8080/shell/hello_world_task.dsl \
+-u $AUTH
 {
   "dsl":"asl([task('HelloWorld',\"hello\",[timeout_seconds(5),heartbeat_seconds(10)])])",
   "output":"ok"
 }
 ```
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -X POST  http://172.17.0.1:8080/shell/hello_world_task.dsl \
--H 'Content-Type: application/json' -d '{"name":"Shell"}'
+ubuntu@trusty:~/faasshell[master]$ curl -sX POST  http://172.17.0.1:8080/shell/hello_world_task.dsl \
+-H 'Content-Type: application/json' -d '{"name":"Shell"}' -u $AUTH
 {"output": {"name":"Shell", "payload":"Hello, Shell!"}}
 ```
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -X DELETE http://172.17.0.1:8080/shell/hello_world_task.dsl
+ubuntu@trusty:~/faasshell[master]$ curl -sX DELETE http://172.17.0.1:8080/shell/hello_world_task.dsl \
+-u $AUTH
 {"output":"ok"}
 ```

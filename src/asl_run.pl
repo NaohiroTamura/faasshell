@@ -20,7 +20,7 @@
 %%
 
 :- module(asl_run,
-          [ start/3
+          [ start/4
          ]).
 
 :- use_module(wsk_api_utils).
@@ -34,19 +34,18 @@ mydebug(F, M) :-
     %% format("(~w): ~p~t~24| : ~p~n", [N, F, M]).
     http_log("(~w): ~p~t~24| : ~p~n", [N, F, M]).
 
-start(File, I, O) :-
+start(File, Options, I, O) :-
     ( atom(File); string(File) ), !,
     set_setting(http:logfile,'/logs/httpd.log'), % docker volume /tmp
     open(File, read, S),
     call_cleanup(
             read_term(S, Term, []),
             close(S)),
-    start(Term, I, O).
+    start(Term, Options, I, O).
 
-start(Term, I, O) :-
+start(Term, Options, I, O) :-
     Term = asl(Dsl), !,
     mydebug(start(in), (Term, I, O)),
-    wsk_api_utils:openwhisk(Options),
     reduce(Term, I, O, _{openwhisk: Options, asl: Dsl}),
     mydebug(start(out), (I, O)).
               
