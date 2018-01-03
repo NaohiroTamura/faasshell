@@ -1,5 +1,4 @@
 {
-    "name": "catch_failure_asl.json",
     "input": {
         "test": "unknown action"
     },

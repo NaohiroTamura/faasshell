@@ -1,5 +1,4 @@
 {
-    "name": "hello_world_task_asl.json",
     "input" : {
         "name": "FaaS Shell"
     },

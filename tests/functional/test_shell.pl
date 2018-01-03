@@ -32,70 +32,75 @@
 :- begin_tests(hello_world_task_dsl).
 
 test(put_default, Output = "ok") :-
-    api_host(Host),
+    api_host(Host), api_key(ID-PW),
     string_concat(Host, '/shell/hello_world_task.dsl', URL),
-    http_put(URL, file('samples/dsl/hello_world_task.dsl'), Data, []),
+    http_put(URL, file('samples/dsl/hello_world_task.dsl'), Data,
+             [authorization(basic(ID, PW))]),
     term_json_dict(Data, Dict),
     get_dict(output, Dict, Output).
 
 test(put_overwrite_true, Output = "ok") :-
-    api_host(Host),
+    api_host(Host), api_key(ID-PW),
     string_concat(Host, '/shell/hello_world_task.dsl?overwrite=true', URL),
-    http_put(URL, file('samples/dsl/hello_world_task.dsl'), Data, []),
+    http_put(URL, file('samples/dsl/hello_world_task.dsl'), Data,
+             [authorization(basic(ID, PW))]),
     term_json_dict(Data, Dict),
     get_dict(output, Dict, Output).
 
-test(put_overwrite_false, Output = _{output:"ng", error:"conflict", reason:_}) :-
-    api_host(Host),
+test(put_overwrite_false, (NG, Conflict) = ("ng", "conflict")) :-
+    api_host(Host), api_key(ID-PW),
     string_concat(Host, '/shell/hello_world_task.dsl?overwrite=false', URL),
-    http_put(URL, file('samples/dsl/hello_world_task.dsl'), Data, []),
-    term_json_dict(Data, Output).
+    http_put(URL, file('samples/dsl/hello_world_task.dsl'), Data,
+             [authorization(basic(ID, PW))]),
+    term_json_dict(Data, Output),
+    _{output:NG, error: Conflict, reason:_} :< Output.
 
 test(get, Output = "ok") :-
-    api_host(Host),
+    api_host(Host), api_key(ID-PW),
     string_concat(Host, '/shell/hello_world_task.dsl', URL),
-    http_get(URL, Data, []),
+    http_get(URL, Data, [authorization(basic(ID, PW))]),
     term_json_dict(Data, Dict),
     get_dict(output, Dict, Output).
 
 test(get_view, Output = "ok") :-
-    api_host(Host),
+    api_host(Host), api_key(ID-PW),
     string_concat(Host, '/shell/', URL),
-    http_get(URL, Data, []),
+    http_get(URL, Data, [authorization(basic(ID, PW))]),
     term_json_dict(Data, Dict),
     get_dict(output, Dict, Output).
 
 test(get_not_exit, Output = _{output:"ng", error:"not_found", reason:_}) :-
-    api_host(Host),
+    api_host(Host), api_key(ID-PW),
     string_concat(Host, '/shell/not_exist.dsl', URL),
-    http_get(URL, Data, []),
+    http_get(URL, Data, [authorization(basic(ID, PW))]),
     term_json_dict(Data, Output).
 
 test(post, Output = "Hello, FaaS Shell!") :-
-    api_host(Host),
+    api_host(Host), api_key(ID-PW),
     string_concat(Host, '/shell/hello_world_task.dsl', URL),
-    http_post(URL, json(json(['name'='FaaS Shell'])), Data, []),
+    http_post(URL, json(json(['name'='FaaS Shell'])), Data,
+              [authorization(basic(ID, PW))]),
     term_json_dict(Data, Dict),
     get_dict(payload, Dict.output, Output).
 
 test(post_no_param, Output = "Hello, World!") :-
-    api_host(Host),
+    api_host(Host), api_key(ID-PW),
     string_concat(Host, '/shell/hello_world_task.dsl', URL),
-    http_post(URL, json(json([])), Data, []),
+    http_post(URL, json(json([])), Data, [authorization(basic(ID, PW))]),
     term_json_dict(Data, Dict),
     get_dict(payload, Dict.output, Output).
 
 test(delete, Output = "ok") :-
-    api_host(Host),
+    api_host(Host), api_key(ID-PW),
     string_concat(Host, '/shell/hello_world_task.dsl', URL),
-    http_delete(URL, Data, []),
+    http_delete(URL, Data, [authorization(basic(ID, PW))]),
     term_json_dict(Data, Dict),
     get_dict(output, Dict, Output).
 
 test(delete_not_exist,Output =  _{output:"ng", error:"not_found", reason:_}) :-
-    api_host(Host),
+    api_host(Host), api_key(ID-PW),
     string_concat(Host, '/shell/not_exist.dsl', URL),
-    http_delete(URL, Data, []),
+    http_delete(URL, Data, [authorization(basic(ID, PW))]),
     term_json_dict(Data, Output).
 
 :- end_tests(hello_world_task_dsl).

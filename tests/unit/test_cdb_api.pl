@@ -123,23 +123,23 @@ test(update, (Code, Res) = (201, _{ok:true, id:_, rev:_})) :-
     design_update(test_db_design, faas, Dict, Code, Res).
 
 test(view, (R1, R2) = (
-               _{'sample1.json':"ASL 1", 'sample2.json':"ASL 2",
-                 'sample3.json':"ASL 3"},
-               _{'sample1.dsl':"DSL 1", 'sample2.dsl':"DSL 2"})) :-
-    doc_create(test_db_design, 'sample1.json', _{asl:"ASL 1"}, 201, _),
-    doc_create(test_db_design, 'sample2.json', _{asl:"ASL 2"}, 201, _),
-    doc_create(test_db_design, 'sample3.json', _{asl:"ASL 3"}, 201, _),
-    doc_create(test_db_design, 'sample1.dsl', _{dsl:"DSL 1"}, 201, _),
-    doc_create(test_db_design, 'sample2.dsl', _{dsl:"DSL 2"}, 201, _),
+               _{'guest/sample1.json':"ASL 1", 'guest/sample2.json':"ASL 2",
+                 'guest/sample3.json':"ASL 3"},
+               _{'guest/sample1.dsl':"DSL 1", 'guest/sample2.dsl':"DSL 2"})) :-
+    doc_create(test_db_design, 'guest/sample1.json', _{asl:"ASL 1"}, 201, _),
+    doc_create(test_db_design, 'guest/sample2.json', _{asl:"ASL 2"}, 201, _),
+    doc_create(test_db_design, 'guest/sample3.json', _{asl:"ASL 3"}, 201, _),
+    doc_create(test_db_design, 'guest/sample1.dsl', _{dsl:"DSL 1"}, 201, _),
+    doc_create(test_db_design, 'guest/sample2.dsl', _{dsl:"DSL 2"}, 201, _),
     view_read(test_db_design, faas, statemachine, [], 200, Res1),
     [Row1] = Res1.rows, R1 = Row1.value,
     view_read(test_db_design, faas, shell, [], 200, Res2),
     [Row2] = Res2.rows, R2 = Row2.value.
 
-test(reduce, Len = 100) :-
-    numlist(4,100,L),
+test(reduce, Len = 50) :-
+    numlist(4,50,L),
     maplist([N,Code]>>(
-                format(string(File),'sample~w.json',[N]),
+                format(string(File),'guest/sample~w.json',[N]),
                 format(string(Contents),'ASL ~w',[N]),
                 doc_create(test_db_design, File, _{asl:Contents}, Code, _)
             ), L, _),

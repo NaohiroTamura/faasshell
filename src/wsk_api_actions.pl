@@ -17,7 +17,10 @@
 
 :- module(wsk_api_actions,
           [list/3,
-           invoke/4
+           create/4,
+           update/4,
+           invoke/4,
+           delete/3
          ]).
 
 :- use_module(wsk_api_dcg).
@@ -32,15 +35,20 @@
 :- use_module(library(http/json_convert)).
 :- use_module(library(http/http_json)).
 
-list(Action, Options, Reply) :-
+%% wsk_url(+Method, +Action, +Options, +DefaultQuery, -URL, -ID-PW, -Timeout) :-
+wsk_url(Method, Action, Options, DefaultQuery, URL, ID-PW, Timeout) :-
     wsk_api_utils:api_action_name(Action, NS, ActionName),
     option(api_host(HostName), Options),
-    option(query(Query), Options, []),
+    option(query(Query), Options, DefaultQuery),
     wsk_api_utils:api_url(HostName, 
-                          wsk_api_dcg:path(get, NS, actions, ActionName, Query),
+                          wsk_api_dcg:path(Method, NS, actions, ActionName, Query),
                           URL, Options),
     option(api_key(ID-PW), Options),
-    option(timeout(Timeout), Options, infinite),
+    option(timeout(Timeout), Options, infinite).
+
+%%
+list(Action, Options, Reply) :-
+    wsk_url(get, Action, Options, [], URL, ID-PW, Timeout),
     http_get(URL, R1,
              [%% status_code(_Code),
               timeout(Timeout),
@@ -48,19 +56,41 @@ list(Action, Options, Reply) :-
               cert_verify_hook(cert_accept_any)]),
     json_utils:term_json_dict(R1, Reply).
 
+create(Action, Options, Payload, Reply) :-
+    wsk_url(put, Action, Options, [], URL, ID-PW, Timeout),
+    json_utils:term_json_dict(Json, Payload),
+    http_put(URL, json(Json), R1,
+              [%% status_code(_Code),
+               timeout(Timeout),
+               authorization(basic(ID, PW)),
+               cert_verify_hook(cert_accept_any)]),
+    json_utils:term_json_dict(R1, Reply).
+
+update(Action, Options, Payload, Reply) :-
+    wsk_url(put, Action, Options, [overwrite=true], URL, ID-PW, Timeout),
+    json_utils:term_json_dict(Json, Payload),
+    http_put(URL, json(Json), R1,
+              [%% status_code(_Code),
+               timeout(Timeout),
+               authorization(basic(ID, PW)),
+               cert_verify_hook(cert_accept_any)]),
+    json_utils:term_json_dict(R1, Reply).
+
 invoke(Action, Options, Payload, Reply) :-
-    wsk_api_utils:api_action_name(Action, NS, ActionName),
-    option(api_host(HostName), Options),
-    option(query(Query), Options, [blocking=true,result=true]),
-    wsk_api_utils:api_url(HostName, 
-                          wsk_api_dcg:path(post, NS, actions, ActionName, Query),
-                          URL, Options),
-    option(api_key(ID-PW), Options),
-    option(timeout(Timeout), Options, infinite),
+    wsk_url(post, Action, Options, [blocking=true,result=true], URL, ID-PW, Timeout),
     json_utils:term_json_dict(Json, Payload),
     http_post(URL, json(Json), R1,
               [%% status_code(_Code),
                timeout(Timeout),
                authorization(basic(ID, PW)),
                cert_verify_hook(cert_accept_any)]),
+    json_utils:term_json_dict(R1, Reply).
+
+delete(Action, Options, Reply) :-
+    wsk_url(delete, Action, Options, [], URL, ID-PW, Timeout),
+    http_delete(URL, R1,
+             [%% status_code(_Code),
+              timeout(Timeout),
+              authorization(basic(ID, PW)),
+              cert_verify_hook(cert_accept_any)]),
     json_utils:term_json_dict(R1, Reply).

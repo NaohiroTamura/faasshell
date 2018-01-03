@@ -31,6 +31,7 @@ unit_test:
 functional_test:
 	@echo "functionalunit  test"
 	swipl -q -l src/asl_svc.pl -g main -t halt &
+	swipl -q -l tests/unit/unit_test_utils.pl -g functional_test_setup -t halt
 	sleep 3
 	for case in $(functional_test_files); do \
 		echo $$case; \

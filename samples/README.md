@@ -123,6 +123,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -sX PUT http://172.17.0.1:8080/statemach
   "dsl":"asl([task('HelloWorld',\"hello\",[timeout_seconds(300),heartbeat_seconds(60)])])",
   "input": {"name":"FaaS Shell"},
   "name":"hello_world_task_asl.json",
+  "namespace":"guest",
   "output":"ok"
 }
 ```
@@ -144,7 +145,9 @@ ubuntu@trusty:~/faasshell[master]$ curl -sLX GET http://172.17.0.1:8080/statemac
     }
   },
   "input": {"name":"FaaS Shell"},
-  "name":"hello_world_task_asl.json"
+  "name":"hello_world_task_asl.json",
+  "namespace":"guest",
+  "output":"ok"
 }
 ```
 ```sh
@@ -166,6 +169,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -sX POST http://172.17.0.1:8080/statemac
   },
   "input": {"name":"FaaS Shell"},
   "name":"hello_world_task_asl.json",
+  "namespace":"guest",
   "output": {"name":"FaaS Shell", "payload":"Hello, FaaS Shell!"}
 }
 ```
@@ -188,6 +192,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -sX POST http://172.17.0.1:8080/statemac
   },
   "input": {"name":"FaaS Shell"},
   "name":"hello_world_task_asl.json",
+  "namespace":"guest",
   "output": {"name":"Curl", "payload":"Hello, Curl!"}
 }
 ```
@@ -212,6 +217,8 @@ ubuntu@trusty:~/faasshell[master]$ curl -sX PUT http://172.17.0.1:8080/shell/hel
 -H 'Content-Type: text/plain' -d @samples/dsl/hello_world_task.dsl -u $AUTH
 {
   "dsl":"asl([task('HelloWorld',\"hello\",[timeout_seconds(5),heartbeat_seconds(10)])]).",
+  "name":"hello_world_task.dsl",
+  "namespace":"guest",
   "output":"ok"
 }
 ```
@@ -220,13 +227,20 @@ ubuntu@trusty:~/faasshell[master]$ curl -sLX GET http://172.17.0.1:8080/shell/he
 -u $AUTH
 {
   "dsl":"asl([task('HelloWorld',\"hello\",[timeout_seconds(5),heartbeat_seconds(10)])])",
+  "name":"hello_world_task.dsl",
+  "namespace":"guest",
   "output":"ok"
 }
 ```
 ```sh
 ubuntu@trusty:~/faasshell[master]$ curl -sX POST  http://172.17.0.1:8080/shell/hello_world_task.dsl \
 -H 'Content-Type: application/json' -d '{"name":"Shell"}' -u $AUTH
-{"output": {"name":"Shell", "payload":"Hello, Shell!"}}
+{
+  "dsl":"asl([task('HelloWorld',\"hello\",[timeout_seconds(5),heartbeat_seconds(10)])]).",
+  "name":"hello_world_task.dsl",
+  "namespace":"guest",
+  "output": {"name":"Shell", "payload":"Hello, Shell!"}
+}
 ```
 ```sh
 ubuntu@trusty:~/faasshell[master]$ curl -sX DELETE http://172.17.0.1:8080/shell/hello_world_task.dsl \

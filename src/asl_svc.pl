@@ -112,7 +112,8 @@ statemachine(get, Request) :-
          cdb_api:doc_read(faasshell, NS_File, Code1, Dict1),
          http_log('~w~n', [doc_read(Code1)]),
          ( Code1 = 200
-           -> Output = _{output:ok}.put(Dict1)
+           -> select_dict(_{'_id':_, '_rev':_}, Dict1, Dict1Rest),
+              Output = _{output:ok}.put(Dict1Rest)
            ;  Output = _{output:ng}.put(Dict1)
          )
       ;  cdb_api:view_read(faasshell, faas, statemachine, [], Code2, Dict2),
@@ -133,7 +134,8 @@ statemachine(put, Request) :-
     http_log('~w~n', [params(Dict)]),
     ( option(path_info(File), Request),
       option(namespace(NS), Request)
-      -> atomics_to_string([NS, "/", File], NS_File),
+      -> NS_Dict = Dict.put(_{name: File, namespace: NS}),
+         atomics_to_string([NS, "/", File], NS_File),
          asl_gen:gen_dsl(Dict.asl, Dsl),
          http_log('~w: ~w~n', [NS_File, dsl(Dsl)]),
          term_string(Dsl, DslStr),
@@ -141,14 +143,14 @@ statemachine(put, Request) :-
            -> http_parameters(Request, [overwrite(Overwrite, [default(false)])]),
               http_log('~w~n', [overwrite(Overwrite)]),
               ( Overwrite = false
-                -> cdb_api:doc_create(faasshell, NS_File, Dict, Code, Res),
+                -> cdb_api:doc_create(faasshell, NS_File, NS_Dict, Code, Res),
                    http_log('~w~n', [doc_create(Code, Res)])
-                ;  cdb_api:doc_update(faasshell, NS_File, Dict, Code, Res),
+                ;  cdb_api:doc_update(faasshell, NS_File, NS_Dict, Code, Res),
                    http_log('~w~n', [doc_update(Code, Res)])
               ),
               ( Code = 201
-                -> Output = Dict.put(_{output:ok, dsl: DslStr})
-                ;  Output = Dict.put(_{output:ng}).put(Res)
+                -> Output = NS_Dict.put(_{output:ok, dsl: DslStr})
+                ;  Output = NS_Dict.put(_{output:ng}).put(Res)
               )
            ;  Output = Dict.put(_{output:ng, error: "syntax error!", dsl: DslStr})
          )
@@ -167,6 +169,7 @@ statemachine(post, Request) :-
       -> atomics_to_string([NS, "/", File], NS_File),
          cdb_api:doc_read(faasshell, NS_File, Code, Dict),
          http_log('~w~n', [doc_read(File, Code)]),
+         select_dict(_{'_id':_, '_rev':_}, Dict, DictRest),
          ( Code = 200
            -> asl_gen:gen_dsl(Dict.asl, Dsl),
               % http_log('~w~n', [dsl(Dsl)]),
@@ -177,10 +180,10 @@ statemachine(post, Request) :-
                    merge_options([api_key(ID-PW)], Defaults, Options),
                    Input = Dict.put(Params),
                    asl_run:start(Dsl, Options, Input.input, O),
-                   Output = Dict.put(_{output:O})
-                ;  Output = Dict.put(_{output:ng, error: DslStr})
+                   Output = DictRest.put(_{output:O})
+                ;  Output = DictRest.put(_{output:ng, error: DslStr})
               )
-           ;  Output = _{output:ng}.put(Dict)
+           ;  Output = DictRest.put(_{output:ng, error: "syntax error!"})
          )
       ;  Output = _{output:ng, error:"statemashine missing!"}
     ),
@@ -240,7 +243,8 @@ shell(get, Request) :-
          cdb_api:doc_read(faasshell, NS_File, Code1, Dict1),
          http_log('~w~n', [doc_read(Code1, Dict1)]),
          ( Code1 = 200
-           -> Output = _{output:ok, dsl: Dict1.dsl}
+           -> select_dict(_{'_id':_, '_rev':_}, Dict1, Dict1Rest),
+              Output = _{output:ok}.put(Dict1Rest)
            ;  Output = _{output:ng}.put(Dict1)
          )
       ;  cdb_api:view_read(faasshell, faas, shell, [], Code2, Dict2),
@@ -266,15 +270,16 @@ shell(put, Request) :-
            -> atomics_to_string([NS, "/", File], NS_File),
               http_parameters(Request, [overwrite(Overwrite, [default(false)])]),
               http_log('~w~n', [overwrite(Overwrite)]),
+              Dict = _{dsl: DslStr, name: File, namespace: NS},
               ( Overwrite = false
-                -> cdb_api:doc_create(faasshell, NS_File, _{dsl:DslStr}, Code, Res),
+                -> cdb_api:doc_create(faasshell, NS_File, Dict, Code, Res),
                    http_log('~w~n', [doc_create(Code, Res)])
-                ;  cdb_api:doc_update(faasshell, NS_File, _{dsl:DslStr}, Code, Res),
+                ;  cdb_api:doc_update(faasshell, NS_File, Dict, Code, Res),
                    http_log('~w~n', [doc_update(Code, Code, Res)])
               ),
               ( Code = 201
-                -> Output = _{output:ok, dsl: DslStr}
-                ;  Output = _{output:ng}.put(Res)
+                -> Output = Dict.put(_{output:ok})
+                ;  Output = Dict.put(_{output:ng}).put(Res)
               )
            ; Output = _{output:ng, error: "shell name missing!"}
          )
@@ -293,6 +298,7 @@ shell(post, Request) :-
       -> atomics_to_string([NS, "/", File], NS_File),
          cdb_api:doc_read(faasshell, NS_File, Code, Dict),
          http_log('~w~n', [doc_read(NS_File, Code)]),
+         select_dict(_{'_id':_, '_rev':_}, Dict, DictRest),
          ( Code = 200
            -> term_string(Dsl, Dict.dsl),
               % http_log('~w~n', [dsl(Dsl)]),
@@ -301,10 +307,10 @@ shell(post, Request) :-
                    wsk_api_utils:openwhisk(Defaults),
                    merge_options([api_key(ID-PW)], Defaults, Options),
                    asl_run:start(Dsl, Options, Params, O),
-                   Output = _{output:O}
-                ;  Output = _{output:ng, error: Dict.dsl}
+                   Output = DictRest.put(_{output:O})
+                ;  Output = DictRest.put(_{output:ng, error: "syntax error!"})
               )
-           ;  Output = _{output:ng}.put(Dict)
+           ;  Output = _{output:ng}.put(DictRest)
          )
       ; Output = _{output:ng, error:"shell name missing!"}
     ),

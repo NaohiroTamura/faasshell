@@ -16,6 +16,7 @@
 %%
 
 :- include('../../src/asl_run.pl').
+:- include('unit_test_utils.pl').
 
 %%
 %% Unit Tests
@@ -40,71 +41,104 @@ test(output, Output = _{a:1, parallel:[_{a:1},_{a:1}]}) :-
 
 :- end_tests(process_io).
 
+%%
 :- begin_tests(pass).
 
 test(hello, O = _{message:"Hello World!", name:"wsk"}) :-
-    start('samples/dsl/hello_world.dsl', _{name:"wsk"}, O).
+    wsk_api_utils:openwhisk(Options),
+    start('samples/dsl/hello_world.dsl', Options, _{name:"wsk"}, O).
 
 :- end_tests(pass).
 
-:- begin_tests(task).
+%%
+:- begin_tests(task,
+               [setup(create_action("hello",
+                                    'samples/actions/hello.js', "nodejs:6"))
+               ]).
 
 test(hello, O = _{name:"wsk",payload:"Hello, wsk!"}) :-
-    start('samples/dsl/hello_world_task.dsl', _{name:"wsk"}, O).
+    wsk_api_utils:openwhisk(Options),
+    start('samples/dsl/hello_world_task.dsl', Options,  _{name:"wsk"}, O).
 
 :- end_tests(task).
 
-:- begin_tests(choice).
+%%
+:- begin_tests(choice,
+               [setup(create_action("hello",
+                                    'samples/actions/hello.js', "nodejs:6"))
+               ]).
 
 test(case1, O = _{first_match_state:_, foo:1, next_state:_}) :-
-    start('samples/dsl/choice_state.dsl', _{foo:1}, O).
+    wsk_api_utils:openwhisk(Options),
+    start('samples/dsl/choice_state.dsl', Options, _{foo:1}, O).
 
 test(case2, O = _{second_match_state:_, foo:2, next_state:_}) :-
-    start('samples/dsl/choice_state.dsl', _{foo:2}, O).
+    wsk_api_utils:openwhisk(Options),
+    start('samples/dsl/choice_state.dsl', Options, _{foo:2}, O).
 
 test(default, O = _{cause:"No Matches!",error:"DefaultStateError",foo:5}) :-
-    start('samples/dsl/choice_state.dsl', _{foo:5}, O).
+    wsk_api_utils:openwhisk(Options),
+    start('samples/dsl/choice_state.dsl', Options, _{foo:5}, O).
 
 test(casex1, O = _{public_state:_, type:"Public", next_state:_}) :-
-    start('samples/dsl/choice_statex.dsl', _{type:"Public"}, O).
+    wsk_api_utils:openwhisk(Options),
+    start('samples/dsl/choice_statex.dsl', Options, _{type:"Public"}, O).
 
 test(casex2, O = _{value_is_zero_state:_, type:"Private", value:0, next_state:_}) :-
-    start('samples/dsl/choice_statex.dsl', _{type:"Private", value:0}, O).
+    wsk_api_utils:openwhisk(Options),
+    start('samples/dsl/choice_statex.dsl', Options, _{type:"Private", value:0}, O).
 
 test(casex3, O = _{value_in_twenties_state:_, type:"Private", value:25,
                    next_state:_}) :-
-    start('samples/dsl/choice_statex.dsl', _{type:"Private", value:25}, O).
+    wsk_api_utils:openwhisk(Options),
+    start('samples/dsl/choice_statex.dsl', Options, _{type:"Private", value:25}, O).
 
 test(defaultx, O = _{cause:"No Matches!", type:"Private", value:35}) :-
-    start('samples/dsl/choice_statex.dsl', _{type:"Private", value:35}, O).
+    wsk_api_utils:openwhisk(Options),
+    start('samples/dsl/choice_statex.dsl', Options, _{type:"Private", value:35}, O).
 
 :- end_tests(choice).
 
-:- begin_tests(wait).
+%%
+:- begin_tests(wait,
+               [setup(create_action("hello",
+                                    'samples/actions/hello.js', "nodejs:6"))
+               ]).
 
 test(normal, O = _{expirydate:_, expiryseconds:5, greeting:"Hello no sleep!",
                    name:"no sleep", payload:"Hello, no sleep!", sleep:0}) :-
-    start('samples/dsl/wait_state.dsl', _{expirydate: "2017-09-04T01:59:00Z",
-        expiryseconds:5, sleep:0, name:"no sleep"}, O).
+    wsk_api_utils:openwhisk(Options),
+    start('samples/dsl/wait_state.dsl', Options,
+          _{expirydate: "2017-09-04T01:59:00Z",
+            expiryseconds:5, sleep:0, name:"no sleep"}, O).
 
 :- end_tests(wait).
 
 :- begin_tests(parallel).
 
 test(normal, O = [_{var:1}, _{var:1}]) :-
-    start('samples/dsl/parallel.dsl', _{var:1}, O).
+    wsk_api_utils:openwhisk(Options),
+    start('samples/dsl/parallel.dsl', Options, _{var:1}, O).
 
 :- end_tests(parallel).
 
-:- begin_tests(job_status_poller).
+:- begin_tests(job_status_poller,
+               [setup(create_action("hello",
+                                    'samples/actions/hello.js', "nodejs:6")),
+                setup(create_action("helloPython",
+                                    'samples/actions/helloPython.py', "python:2")),
+                setup(create_action("job", 'samples/actions/job.py', "python:2"))
+               ]).
 
 test(succeeded, STATUS = "SUCCEEDED") :-
-    start('samples/dsl/job_status_poller.dsl',
+    wsk_api_utils:openwhisk(Options),
+    start('samples/dsl/job_status_poller.dsl', Options,
           _{wait_time:1, params:["DEFAULT", "SUCCEEDED"]}, O),
     STATUS = O.status.
 
 test(failed, STATUS = "FAILED") :-
-    start('samples/dsl/job_status_poller.dsl',
+    wsk_api_utils:openwhisk(Options),
+    start('samples/dsl/job_status_poller.dsl', Options,
           _{wait_time:1, params:["DEFAULT", "FAILED"]}, O),
     STATUS = O.status.
 
