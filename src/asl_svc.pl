@@ -106,8 +106,8 @@ statemachine(Request) :-
 %% $ curl -sLX GET localhost:8080/statemachine/{statemachine}
 %% $ curl -sLX GET localhost:8080/statemachine/
 statemachine(get, Request) :-
-    ( memberchk(path_info(File), Request),
-      option(namespace(NS), Request)
+    option(namespace(NS), Request),
+    ( memberchk(path_info(File), Request)
       -> atomics_to_string([NS, "/", File], NS_File),
          cdb_api:doc_read(faasshell, NS_File, Code1, Dict1),
          http_log('~w~n', [doc_read(Code1)]),
@@ -116,10 +116,16 @@ statemachine(get, Request) :-
               Output = _{output:ok}.put(Dict1Rest)
            ;  Output = _{output:ng}.put(Dict1)
          )
-      ;  cdb_api:view_read(faasshell, faas, statemachine, [], Code2, Dict2),
+      ;  format(string(Query), '["asl","~w"]',[NS]),
+         uri_encoded(query_value, Query, EncordedQuery),
+         cdb_api:view_read(faasshell, faas, statemachine,
+                           ['?key=', EncordedQuery], Code2, Dict2),
          http_log('~w~n', [view_read(Code2, Dict2)]),
          ( Code2 = 200
-           -> ( [Row0] = Dict2.rows -> Value = Row0.value; Value = null ),
+           -> maplist([Row,Elm]>>(
+                          _{value: [Namespace, Name]} :< Row,
+                          Elm = _{namespace: Namespace, name: Name}
+                      ), Dict2.rows, Value),
               Output = _{output:ok}.put(asl, Value)
            ;  Output = _{output:ng}.put(Dict2)
          )
@@ -237,8 +243,8 @@ shell(Request) :-
 %% $ curl -sLX GET localhost:8080/shell/{shell.dsl}
 %% $ curl -sLX GET localhost:8080/shell
 shell(get, Request) :-
-    ( memberchk(path_info(File), Request),
-      option(namespace(NS), Request)
+    option(namespace(NS), Request),
+    ( memberchk(path_info(File), Request)
       -> atomics_to_string([NS, "/", File], NS_File),
          cdb_api:doc_read(faasshell, NS_File, Code1, Dict1),
          http_log('~w~n', [doc_read(Code1, Dict1)]),
@@ -247,11 +253,17 @@ shell(get, Request) :-
               Output = _{output:ok}.put(Dict1Rest)
            ;  Output = _{output:ng}.put(Dict1)
          )
-      ;  cdb_api:view_read(faasshell, faas, shell, [], Code2, Dict2),
+      ;  format(string(Query), '["dsl","~w"]',[NS]),
+         uri_encoded(query_value, Query, EncordedQuery),
+         cdb_api:view_read(faasshell, faas, shell,
+                           ['?key=', EncordedQuery], Code2, Dict2),
          http_log('~w~n', [view_read(Code2, Dict2)]),
          ( Code2 = 200
-           -> ( [Row0] = Dict2.rows -> Value = Row0.value; Value = null ),
-              Output = _{output:ok}.put(asl, Value)
+           -> maplist([Row,Elm]>>(
+                          _{value: [Namespace, Name]} :< Row,
+                          Elm = _{namespace: Namespace, name: Name}
+                      ), Dict2.rows, Value),
+              Output = _{output:ok}.put(dsl, Value)
            ;  Output = _{output:ng}.put(Dict2)
          )
     ),
@@ -364,12 +376,12 @@ http:authenticate(openwhisk, Request, [api_key(User-Password), namespace(Id)]) :
            ;  debug(http_authenticate, 'cache not exist: ~w, ~w~n', [User, Time]),
               true
          ),
-         format(string(Query), '?startkey=[~w,~w]',[User, Password]),
+         format(string(Query), '["~w","~w"]',[User, Password]),
          uri_encoded(query_value, Query, EncodedQuery),
          cdb_api:view_read(whisk_local_subjects, subjects, identities,
-                           EncodedQuery, Code, Dict),
+                           ['?key=', EncodedQuery], Code, Dict),
          ( Code = 200
-           -> [Row0 |_] = Dict.rows,
+           -> [Row0] = Dict.rows,
               debug(http_authenticate, 'Subject: ~w~n Row0: ~w~n', [Dict, Row0]),
               atom_string(User, UserStr),
               atom_string(Password, PasswordStr),

@@ -122,31 +122,53 @@ test(update, (Code, Res) = (201, _{ok:true, id:_, rev:_})) :-
     faas_design(Dict),
     design_update(test_db_design, faas, Dict, Code, Res).
 
-test(view, (R1, R2) = (
-               _{'guest/sample1.json':"ASL 1", 'guest/sample2.json':"ASL 2",
-                 'guest/sample3.json':"ASL 3"},
-               _{'guest/sample1.dsl':"DSL 1", 'guest/sample2.dsl':"DSL 2"})) :-
-    doc_create(test_db_design, 'guest/sample1.json', _{asl:"ASL 1"}, 201, _),
-    doc_create(test_db_design, 'guest/sample2.json', _{asl:"ASL 2"}, 201, _),
-    doc_create(test_db_design, 'guest/sample3.json', _{asl:"ASL 3"}, 201, _),
-    doc_create(test_db_design, 'guest/sample1.dsl', _{dsl:"DSL 1"}, 201, _),
-    doc_create(test_db_design, 'guest/sample2.dsl', _{dsl:"DSL 2"}, 201, _),
-    view_read(test_db_design, faas, statemachine, [], 200, Res1),
-    [Row1] = Res1.rows, R1 = Row1.value,
-    view_read(test_db_design, faas, shell, [], 200, Res2),
-    [Row2] = Res2.rows, R2 = Row2.value.
+test(view_rereduce_false, (L1, L2) = (3, 2)) :-
+    %% asl, guest
+    doc_create(test_db_design, 'guest/sample1.json',
+               _{asl:"ASL 1", namespace:guest, name:'sample1.json'}, 201, _),
+    doc_create(test_db_design, 'guest/sample2.json',
+               _{asl:"ASL 2", namespace:guest, name:'sample2.json'}, 201, _),
+    doc_create(test_db_design, 'guest/sample3.json',
+               _{asl:"ASL 3", namespace:guest, name:'sample3.json'}, 201, _),
+    %% asl, admin
+    doc_create(test_db_design, 'admin/sample4.json',
+               _{asl:"ASL 4", namespace:admin, name:'sample4.json'}, 201, _),
+    doc_create(test_db_design, 'admin/sample5.json',
+               _{asl:"ASL 5", namespace:admin, name:'sample5.json'}, 201, _),
+    %% dsl, guest
+    doc_create(test_db_design, 'guest/sample1.dsl',
+               _{dsl:"DSL 1", namespace:guest, name:'sample1.dsl'}, 201, _),
+    doc_create(test_db_design, 'guest/sample2.dsl',
+               _{dsl:"DSL 2", namespace:guest, name:'sample2.dsl'}, 201, _),
+    %% dsl, admin
+    doc_create(test_db_design, 'admin/sample3.dsl',
+               _{dsl:"DSL 3", namespace:admin, name:'sample3.dsl'}, 201, _),
+    doc_create(test_db_design, 'admin/sample4.dsl',
+               _{dsl:"DSL 4", namespace:admin, name:'sample4.dsl'}, 201, _),
+    doc_create(test_db_design, 'admin/sample5.dsl',
+               _{dsl:"DSL 5", namespace:admin, name:'sample5.dsl'}, 201, _),
 
-test(reduce, Len = 50) :-
+    uri_encoded(query_value, '["asl","guest"]', Q1),
+    view_read(test_db_design, faas, statemachine, ['?key=', Q1], 200, Res1),
+    length(Res1.rows, L1),
+
+    uri_encoded(query_value, '["dsl","guest"]', Q2),
+    view_read(test_db_design, faas, shell, ['?key=', Q2], 200, Res2),
+    length(Res2.rows, L2).
+
+test(view_rereduce_true, Len = 50) :-
     numlist(4,50,L),
     maplist([N,Code]>>(
-                format(string(File),'guest/sample~w.json',[N]),
+                format(string(Id),'guest/sample~w.json',[N]),
+                format(string(File),'sample~w.json',[N]),
                 format(string(Contents),'ASL ~w',[N]),
-                doc_create(test_db_design, File, _{asl:Contents}, Code, _)
+                doc_create(test_db_design, Id,
+                           _{asl:Contents, namespace:guest, name:File}, Code, _)
             ), L, _),
-    view_read(test_db_design, faas, statemachine, [], 200, Res1),
-    _{rows:[_{key:null, value:Value}]} :< Res1,
-    dict_pairs(Value, _, Pairs),
-    length(Pairs, Len).
+
+    uri_encoded(query_value, '["asl","guest"]', Q),
+    view_read(test_db_design, faas, statemachine, ['?key=', Q], 200, Res),
+    length(Res.rows, Len).
 
 :- end_tests(db_design).
 

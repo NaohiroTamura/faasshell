@@ -241,12 +241,10 @@ db_init(DB, Doc, [C1, C2, C3, C4]) :-
 faas_design(_{
    views: _{
      shell: _{
-       map: "function (doc) { if (doc.dsl !== undefined) { emit(doc._id, doc.dsl); } }",
-       reduce: "function (keys, values, rereduce) { if (rereduce) { var merge = function(x,y){return Object.keys(x).reduce(function(accm, e){accm[e] = x[e]; return accm},y)}; return values.reduce(function(accm, e){ accm = merge(accm,e); return accm},{}) } else { return keys.reduce(function(accm, e, i){accm[e[0]] = values[i]; return accm}, {}) } }"
+       map: "function (doc) { if (doc.dsl !== undefined) { emit([\"dsl\", doc.namespace], [doc.namespace, doc.name]); } }"
      },
      statemachine: _{
-       map: "function (doc) { if (doc.asl !== undefined) { emit(doc._id, doc.asl); } }",
-       reduce: "function (keys, values, rereduce) { if (rereduce) { var merge = function(x,y){return Object.keys(x).reduce(function(accm, e){accm[e] = x[e]; return accm},y)}; return values.reduce(function(accm, e){ accm = merge(accm,e); return accm},{}) } else { return keys.reduce(function(accm, e, i){accm[e[0]] = values[i]; return accm}, {}) } }"
+       map: "function (doc) { if (doc.asl !== undefined) { emit([\"asl\", doc.namespace], [doc.namespace, doc.name]); } }"
      }
    },
    language: "javascript"
