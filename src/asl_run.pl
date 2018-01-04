@@ -133,6 +133,9 @@ error_code(Error, O) :-
     O = _{error: "States.TaskFailed"},
     mydebug(error_code(type_error(out)), (Status, O)).
 
+error_code(task_execute_kill, _) :-
+    print_message(warning, format('caught task_execute_kill message', [])).
+
 error_code(Error, _{error: Error}) :-
     print_message(error, Error).
 

@@ -15,7 +15,7 @@
 %% limitations under the License.
 %%
 
-:- include('../../src/wsk_api_utils.pl').
+:- include('unit_test_utils.pl').
 
 %%
 %% Unit Tests
