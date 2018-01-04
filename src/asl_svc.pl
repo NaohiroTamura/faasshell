@@ -378,7 +378,9 @@ http:authenticate(openwhisk, Request, [api_key(User-Password), namespace(Id)]) :
          ),
          format(string(Query), '["~w","~w"]',[User, Password]),
          uri_encoded(query_value, Query, EncodedQuery),
-         cdb_api:view_read(whisk_local_subjects, subjects, identities,
+         cdb_api:db_env(DBOptions),
+         option(subject_db(SubjectDB), DBOptions),
+         cdb_api:view_read(SubjectDB, subjects, identities,
                            ['?key=', EncodedQuery], Code, Dict),
          ( Code = 200
            -> [Row0] = Dict.rows,

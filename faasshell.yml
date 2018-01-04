@@ -58,6 +58,8 @@ spec:
         env:
         - name: "DB_AUTH"
           value: "whisk_admin:some_passw0rd"
+        - name: "DB_WHISK_AUTHS"
+          value: "test_subjects"
         volumeMounts:
           - name: logs
             mountPath: "/logs"

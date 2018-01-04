@@ -78,10 +78,14 @@ view             --> ["/_view/"].
 
 %%
 db_env(Options) :-
+    ( getenv('DB_WHISK_AUTHS', SubjectDB)
+      -> AuthDB = [subject_db(SubjectDB)]
+      ;  AuthDB = [subject_db(whisk_local_subjects)]
+    ),
     ( getenv('DB_AUTH', DB_AUTH),
       split_string(DB_AUTH, ':', "", [ID, PW])
-      -> AuthOpt = [authorization(basic(ID, PW))]
-      ;  AuthOpt = []
+      -> AuthOpt = [authorization(basic(ID, PW)) | AuthDB]
+      ;  AuthOpt = AuthDB
     ),
     ( getenv('DB_APIHOST', URL)
       -> parse_url(URL, Attributes),
