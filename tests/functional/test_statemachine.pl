@@ -112,3 +112,38 @@ test(delete_not_exist, Output = _{output:"ng", error:"not_found", reason:_}) :-
     term_json_dict(Data, Output).
 
 :- end_tests(hello_world_task).
+
+%%
+:- begin_tests(job_status_poller).
+
+test(scenario) :-
+    %% 1.
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
+    http_delete(URL, Data1, [authorization(basic(ID, PW))]),
+    term_json_dict(Data1, Dict1),
+    assertion((Dict1.output = "ok"; Dict1.error = "not_found")),
+
+    %% 2.
+    load_json('samples/asl/job_status_poller_asl.json', Term),
+    http_put(URL, json(Term), Data2, [authorization(basic(ID, PW))]),
+    term_json_dict(Data2, Dict2),
+    assertion(Dict2.output = "ok"),
+
+    %% 3.
+    http_post(URL,
+              json(json([input=json([params=['DEFAULT', 'SUCCEEDED'],
+                                     wait_time=1])])),
+              Data3, [authorization(basic(ID, PW))]),
+    term_json_dict(Data3, Dict3),
+    assertion(Dict3.output.status = "SUCCEEDED"),
+
+    %% 4.
+    http_post(URL,
+              json(json([input=json([params=['DEFAULT', 'FAILED'],
+                                     wait_time=1])])),
+              Data4, [authorization(basic(ID, PW))]),
+    term_json_dict(Data4, Dict4),
+    assertion(Dict4.output.status = "FAILED").
+
+:- end_tests(job_status_poller).
