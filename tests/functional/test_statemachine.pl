@@ -31,6 +31,13 @@
 %%
 :- begin_tests(hello_world_task).
 
+test(auth_error, Code = 401) :-
+    api_host(Host),
+    string_concat(Host, '/statemachine/', URL),
+    http_get(URL, Data, [authorization(basic(unknown, ng)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{error: "Authentication Failure"} = Dict).
+
 test(put_default, Output = "ok") :-
     load_json('samples/asl/hello_world_task_asl.json', Term),
     api_host(Host), api_key(ID-PW),

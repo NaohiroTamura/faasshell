@@ -76,6 +76,12 @@ hup(_Signal) :-
 
 faas(Request) :-
     http_log('~w~n', [request(Request)]),
+    option(namespace(nil), Request)
+    -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
+    ;  memberchk(method(Method), Request),
+       faas(Method, Request).
+
+faas(get, Request) :-
     option(api_key(ID-PW), Request),
     wsk_api_utils:openwhisk(Defaults),
     merge_options([api_key(ID-PW)], Defaults, Options),
@@ -99,8 +105,10 @@ faas(Request) :-
 
 statemachine(Request) :-
     http_log('~w~n', [request(Request)]),
-    memberchk(method(Method), Request),
-    statemachine(Method, Request).
+    option(namespace(nil), Request)
+    -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
+    ;  memberchk(method(Method), Request),
+       statemachine(Method, Request).
 
 %% get state machine information
 %% $ curl -sLX GET localhost:8080/statemachine/{statemachine}
@@ -236,8 +244,10 @@ statemachine(patch, Request) :-
 
 shell(Request) :-
     http_log('~w~n', [request(Request)]),
-    memberchk(method(Method), Request),
-    shell(Method, Request).
+    option(namespace(nil), Request)
+    -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
+    ;  memberchk(method(Method), Request),
+       shell(Method, Request).
 
 %% get shell information
 %% $ curl -sLX GET localhost:8080/shell/{shell.dsl}
@@ -382,20 +392,19 @@ http:authenticate(openwhisk, Request, [api_key(User-Password), namespace(Id)]) :
          option(subject_db(SubjectDB), DBOptions),
          cdb_api:view_read(SubjectDB, subjects, identities,
                            ['?key=', EncodedQuery], Code, Dict),
-         ( Code = 200
+         debug(http_authenticate, 'view_read: ~w~n', [Dict]),
+         length(Dict.rows, RowsLen),
+         ( Code = 200, RowsLen = 1
            -> [Row0] = Dict.rows,
               debug(http_authenticate, 'Subject: ~w~n Row0: ~w~n', [Dict, Row0]),
               atom_string(User, UserStr),
               atom_string(Password, PasswordStr),
-              ( _{id:IdStr, key:[UserStr,PasswordStr], value:_} :< Row0
-                -> atom_string(Id, IdStr),
-                   get_time(Updated),
-                   assertz(cached_auth(User, Password, Id, Updated)),
-                   http_log('Subject(refresh): ~w, ~w-~w~n', [User, Time, Updated])
-                ;  http_log('Auth failed: ~w, ~w~n', [User, Password]),
-                   throw(http_reply(authorise(basic, openwhisk(User))))
-              )
-          ; http_log('Subject DB read failed: ~w~n', [Dict]),
-            throw(http_reply(resource_error(format('DB status: ~wn', [Code]))))
+              _{id:IdStr, key:[UserStr,PasswordStr], value:_} :< Row0,
+              atom_string(Id, IdStr),
+              get_time(Updated),
+              assertz(cached_auth(User, Password, Id, Updated)),
+              http_log('Subject(refresh): ~w, ~w-~w~n', [User, Time, Updated])
+           ;  http_log('Authentication failed: ~w~n', [Dict]),
+              Id = nil
          )
     ).
