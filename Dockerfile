@@ -26,7 +26,8 @@ LABEL io.k8s.description="Platform for building and running SWI Prolog apps" \
       io.openshift.s2i.scripts-url="image:///opt/s2i"
 
 RUN apt-get update -y && \ 
-    apt-get install -y procps curl iputils-ping iproute2 traceroute dnsutils \
+    apt-get install -y zip unzip ca-certificates \
+                       procps curl iputils-ping iproute2 traceroute dnsutils \
                        less vim-tiny
 
 RUN mkdir /opt/faasshell /opt/s2i
