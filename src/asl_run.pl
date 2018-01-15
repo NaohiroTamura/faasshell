@@ -24,10 +24,17 @@
          ]).
 
 :- use_module(wsk_api_utils).
-:- use_module(wsk_api_actions).
+:- use_module(wsk_api_actions, [faas:invoke/4]).
+:- use_module(aws_api_lambda, [faas:invoke/4]).
 
 :- use_module(library(http/json)).
 :- use_module(library(http/http_log)).
+
+/*******************************
+ *   PLUGIN FOR FaaS API       *
+ *******************************/
+:- multifile
+       faas:invoke/4.
 
 mydebug(F, M) :- 
     thread_self(Id), thread_property(Id, id(N)),
@@ -46,7 +53,7 @@ start(File, Options, I, O) :-
 start(Term, Options, I, O) :-
     Term = asl(Dsl), !,
     mydebug(start(in), (Term, I, O)),
-    reduce(Term, I, O, _{openwhisk: Options, asl: Dsl}),
+    reduce(Term, I, O, _{faas: Options, asl: Dsl}),
     mydebug(start(out), (I, O)).
               
 %%
@@ -253,8 +260,9 @@ task_execute(Action, Optional, I, O, E) :-
     option(task_control_mbox(TaskControlMBox), Optional),
     option(timeout_seconds(TimeoutSeconds), Optional, infinite),
     mydebug(task_execute(timeout), TimeoutSeconds),
-    WskApiEnv = [timeout(TimeoutSeconds) | E.openwhisk],
-    catch( ( wsk_api_actions:invoke(Action, WskApiEnv, I, O),
+    ApiEnv = [timeout(TimeoutSeconds) | E.faas],
+    catch( ( %% call plugin
+             faas:invoke(Action, ApiEnv, I, O),
              thread_send_message(TaskControlMBox, task_completed(O)),
              mydebug(task_execute(out), (I, O))
            ),
@@ -399,7 +407,7 @@ succeed(State, Optional, I, O, _E) :-
 %% fail state
 fail(State, Optional, I, O, _E) :-
     mydebug(fail(in), (State, Optional, I, O)),
-    (option(cause(Cause), Optional) -> O1 = I.put(cause, Cause); O1 = I),
+    (option(cause(Cause), Optional) -> O1 = _{cause: Cause}; O1 = _{}),
     (option(error(Error), Optional) -> O2 = O1.put(error, Error); O2 = O1),
     O = O2,
     mydebug(fail(out), (State, I, O)).
@@ -544,7 +552,10 @@ lookup_state(_Target, [], _) :- fail.
 
 'StringEquals'(Variable, Value, I, O, _E) :-
     mydebug('StringEquals'(in), (Variable, Value, I, O)),
-    catch((I.Variable == Value ->  O = true; O = false ), _, O = false),
+    catch( ( atomic_list_concat([$|K], '.', Variable),
+             json_utils:search_dic(I, _, V, K),
+             (V == Value ->  O = true; O = false )
+           ), _, O = false),
     mydebug('StringEquals'(out), (Variable, Value, I, O)).
 
 'StringGreaterThan'(Variable, Value, I, O, _E) :-
@@ -607,7 +618,10 @@ lookup_state(_Target, [], _) :- fail.
 process_input(OriginalInput, Input, Optional) :-
     var(Input),
     option(input_path(InputPath), Optional)
-    -> Input = OriginalInput.InputPath
+    -> ( InputPath = null
+         -> Input = _{}
+         ;  Input = OriginalInput.InputPath
+       )
     ;  Input = OriginalInput.
 
 process_output(Input, Output, Optional) :-
@@ -623,11 +637,9 @@ process_output(OriginalInput, Result, Output, Optional) :-
                -> % AWS Lambda function can return not only dict, but also value.
                   % However OpenWhisk action can retrun only dict.
                   I = OriginalInput.put(ResultPath, Result)
-               ;  ( is_dict(Result)
-                    -> I = OriginalInput.put(Result)
-                    %% The type of Result from Parallel state is List.
-                    ;  I = Result
-                  )
+               ;  % ResultPath has the default value of $
+                  % The type of Result from Parallel state is List.
+                  I = Result
              ),
              mydebug(process_output(result_path), (I, ResultPath, Result, Output)),
              ( option(output_path(OutputPath), Optional)

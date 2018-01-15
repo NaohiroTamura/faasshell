@@ -1,4 +1,4 @@
-asl([task('HelloWorld',"helloPython",
+asl([task('HelloWorld',"wsk:helloPython",
           [timeout_seconds(2),
            retry([case('ErrorEquals'(["CustomError"]),
                        [interval_seconds(1),max_attempts(2),backoff_rate(2.0)]),

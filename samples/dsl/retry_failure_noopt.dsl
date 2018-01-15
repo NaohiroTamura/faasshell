@@ -1,4 +1,4 @@
-asl([task('CreateAccount',"helloPython",
+asl([task('CreateAccount',"wsk:helloPython",
           [timeout_seconds(2),
            fallback([case('ErrorEquals'(["CustomError"]),
                           [pass('CustomErrorFallback',[result("A")])]),

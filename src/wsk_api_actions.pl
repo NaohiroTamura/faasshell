@@ -19,7 +19,7 @@
           [list/3,
            create/4,
            update/4,
-           invoke/4,
+           faas:invoke/4,
            delete/3
          ]).
 
@@ -76,7 +76,12 @@ update(Action, Options, Payload, Reply) :-
                cert_verify_hook(cert_accept_any)]),
     json_utils:term_json_dict(R1, Reply).
 
-invoke(Action, Options, Payload, Reply) :-
+:- multifile
+       faas:invoke/4.
+
+faas:invoke(WRN, Options, Payload, Reply) :-
+    atomic_list_concat([wsk, Action], ':', WRN), !,
+    %% writeln(wsk(invoke(Action))),
     wsk_url(post, Action, Options, [blocking=true,result=true], URL, ID-PW, Timeout),
     json_utils:term_json_dict(Json, Payload),
     http_post(URL, json(Json), R1,

@@ -1,0 +1,11 @@
+{
+    "Comment": "A Hello World example of the Amazon States Language using a Task state",
+    "StartAt": "HelloWorld",
+    "States": {
+        "HelloWorld": {
+            "Type": "Task",
+            "Resource":"arn:aws:lambda:us-east-2:410388484666:function:hello", 
+            "End": true
+        }
+    }
+}

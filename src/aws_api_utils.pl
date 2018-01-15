@@ -65,7 +65,7 @@ aws_lambda(Action, ARN, RequestParameters, Payload, Options) :-
     Options = [
         aws_access_key_id(AWS_ACCESS_KEY_ID),
         aws_secret_access_key(AWS_SECRET_ACCESS_KEY),
-        url(URL), status_code(_Code),
+        url(URL),
         request_header('X-Amz-Date'=AmzDate),
         request_header('Authorization'=AuthorizationHeader)].
 

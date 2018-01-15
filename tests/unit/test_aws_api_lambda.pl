@@ -26,8 +26,7 @@
 
 test(hello, (Code, Name) = (200, "hello")) :-
     aws_api_lambda:list('arn:aws:lambda:us-east-2:410388484666:function:hello',
-                        O, R),
-    option(status_code(Code), O),
+                        [status_code(Code)], R),
     Name = R.'Configuration'.'FunctionName'.
 
 :- end_tests(list).
@@ -36,8 +35,7 @@ test(hello, (Code, Name) = (200, "hello")) :-
 
 test(hello, (Code, R) = (200, _{payload:"Hello, lambda!"})) :-
     aws_api_lambda:invoke('arn:aws:lambda:us-east-2:410388484666:function:hello',
-                          O, _{name:"lambda"}, R),
-    option(status_code(Code), O).
+                          [status_code(Code)], _{name:"lambda"}, R).
 
 :- end_tests(invoke).
 
@@ -45,8 +43,7 @@ test(hello, (Code, R) = (200, _{payload:"Hello, lambda!"})) :-
 
 test(unknown, (Code, Message) = (404, 'Function not found')) :-
     aws_api_lambda:delete('arn:aws:lambda:us-east-2:000000000000:function:unknown',
-                        O, R),
-    option(status_code(Code), O),
+                          [status_code(Code)], R),
     atomic_list_concat([Message |_], ':', R.'Message').
 
 :- end_tests(delete).

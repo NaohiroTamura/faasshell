@@ -56,7 +56,7 @@ test(hello, O = _{message:"Hello World!", name:"wsk"}) :-
                                     'samples/actions/hello.js', "nodejs:6"))
                ]).
 
-test(hello, O = _{name:"wsk",payload:"Hello, wsk!"}) :-
+test(hello, O = _{payload:"Hello, wsk!"}) :-
     wsk_api_utils:openwhisk(Options),
     start('samples/dsl/hello_world_task.dsl', Options,  _{name:"wsk"}, O).
 
@@ -76,7 +76,7 @@ test(case2, O = _{second_match_state:_, foo:2, next_state:_}) :-
     wsk_api_utils:openwhisk(Options),
     start('samples/dsl/choice_state.dsl', Options, _{foo:2}, O).
 
-test(default, O = _{cause:"No Matches!",error:"DefaultStateError",foo:5}) :-
+test(default, O = _{cause:"No Matches!",error:"DefaultStateError"}) :-
     wsk_api_utils:openwhisk(Options),
     start('samples/dsl/choice_state.dsl', Options, _{foo:5}, O).
 
@@ -93,7 +93,7 @@ test(casex3, O = _{value_in_twenties_state:_, type:"Private", value:25,
     wsk_api_utils:openwhisk(Options),
     start('samples/dsl/choice_statex.dsl', Options, _{type:"Private", value:25}, O).
 
-test(defaultx, O = _{cause:"No Matches!", type:"Private", value:35}) :-
+test(defaultx, O = _{cause:"No Matches!"}) :-
     wsk_api_utils:openwhisk(Options),
     start('samples/dsl/choice_statex.dsl', Options, _{type:"Private", value:35}, O).
 
@@ -105,8 +105,7 @@ test(defaultx, O = _{cause:"No Matches!", type:"Private", value:35}) :-
                                     'samples/actions/hello.js', "nodejs:6"))
                ]).
 
-test(normal, O = _{expirydate:_, expiryseconds:5, greeting:"Hello no sleep!",
-                   name:"no sleep", payload:"Hello, no sleep!", sleep:0}) :-
+test(normal, O = _{payload:"Hello, no sleep!"}) :-
     wsk_api_utils:openwhisk(Options),
     start('samples/dsl/wait_state.dsl', Options,
           _{expirydate: "2017-09-04T01:59:00Z",
@@ -130,16 +129,15 @@ test(normal, O = [_{var:1}, _{var:1}]) :-
                 setup(create_action("job", 'samples/actions/job.py', "python:2"))
                ]).
 
-test(succeeded, STATUS = "SUCCEEDED") :-
+test(succeeded, O = _{payload:"Hello, Poller!"}) :-
     wsk_api_utils:openwhisk(Options),
     start('samples/dsl/job_status_poller.dsl', Options,
-          _{wait_time:1, params:["DEFAULT", "SUCCEEDED"]}, O),
-    STATUS = O.status.
+          _{wait_time:1, params:["DEFAULT", "SUCCEEDED"], name:"Poller"}, O).
 
-test(failed, STATUS = "FAILED") :-
+test(failed, O = _{cause:"AWS Batch Job Failed",
+                   error:"DescribeJob returned FAILED"}) :-
     wsk_api_utils:openwhisk(Options),
     start('samples/dsl/job_status_poller.dsl', Options,
-          _{wait_time:1, params:["DEFAULT", "FAILED"]}, O),
-    STATUS = O.status.
+          _{wait_time:1, params:["DEFAULT", "FAILED"], name:"Poller"}, O).
 
 :- end_tests(job_status_poller).

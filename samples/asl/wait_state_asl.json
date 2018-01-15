@@ -11,6 +11,7 @@
             "FirstState": {
                 "Type": "Task",
                 "Resource": "helloPython",
+                "ResultPath": "$.first_state",
                 "Next": "wait_using_seconds"
             },
             "wait_using_seconds": {

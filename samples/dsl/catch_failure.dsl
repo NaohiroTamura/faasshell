@@ -1,4 +1,4 @@
-asl([task('CreateAccount',"hello",
+asl([task('CreateAccount',"wsk:hello",
           [fallback([case('ErrorEquals'(["CustomError"]),
                           [pass('CustomErrorFallback','{"Result":"This is a fallback from a custom Lambda function exception"}')]),
                      case('ErrorEquals'(["States.TaskFailed"]),

@@ -17,7 +17,7 @@
 
 :- module(aws_api_lambda,
           [ list/3,
-            invoke/4,
+            faas:invoke/4,
             delete/3
          ]).
 
@@ -32,26 +32,34 @@
 
 
 list(ARN, Options, Reply) :-
-    aws_api_utils:aws_lambda(list, ARN, '', '', Options),
-    option(url(URL), Options),
-    http_get(URL, R1, Options),
+    aws_api_utils:aws_lambda(list, ARN, '', '', AwsOptions),
+    merge_options(AwsOptions, Options, MergedOptions),
+    option(url(URL), MergedOptions),
+    http_get(URL, R1, MergedOptions),
     json_utils:term_json_dict(R1, Reply).
 
-invoke(ARN, Options, Payload, Reply) :-
+:- multifile
+       faas:invoke/4.
+
+faas:invoke(ARN, Options, Payload, Reply) :-
+    atomic_list_concat([arn, aws, lambda |_ ], ':', ARN), !,
+    %% writeln(aws(invoke(ARN))),
     atom_json_dict(PayloadText, Payload, []),
-    aws_api_utils:aws_lambda(invoke, ARN, '', PayloadText, Options),
-    option(url(URL), Options),
-    http_post(URL, atom('application/json', PayloadText), R1, Options),
+    aws_api_utils:aws_lambda(invoke, ARN, '', PayloadText, AwsOptions),
+    merge_options(AwsOptions, Options, MergedOptions),
+    option(url(URL), MergedOptions),
+    http_post(URL, atom('application/json', PayloadText), R1, MergedOptions),
     ( atomic(R1)
       -> Reply = R1
       ;  json_utils:term_json_dict(R1, Reply)
     ).
 
 delete(ARN, Options, Reply) :-
-    aws_api_utils:aws_lambda(delete, ARN, '', '', Options),
-    option(status_code(Code), Options),
-    option(url(URL), Options),
-    http_delete(URL, R1, Options),
+    aws_api_utils:aws_lambda(delete, ARN, '', '', AwsOptions),
+    merge_options(AwsOptions, Options, MergedOptions),
+    option(status_code(Code), MergedOptions),
+    option(url(URL), MergedOptions),
+    http_delete(URL, R1, MergedOptions),
     ( Code = 204
       -> Reply = _{output: ok, status: Code}
       ;  json_utils:term_json_dict(R1, Reply)
