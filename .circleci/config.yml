@@ -7,7 +7,7 @@ jobs:
       - checkout
       - run:
           name: install tools
-          command: apt-get update && apt-get install -y make procps
+          command: apt-get update && apt-get install -y make procps ca-certificates
       - run:
           name: create /logs for testing
           command: mkdir /logs
