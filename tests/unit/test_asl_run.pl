@@ -25,17 +25,17 @@
 
 test(input, Input = _{val1:3, val2:4}) :-
     OriginalInput = _{title: "Numbers to add", numbers: _{val1:3, val2:4}},
-    Optional = [input_path(numbers)],
+    Optional = [input_path('$.numbers')],
     process_input(OriginalInput, Input, Optional).
 
 test(output, Output = 7) :-
     OriginalInput = _{title: "Numbers to add", numbers: _{val1:3, val2:4}},
-    Optional = [input_path(numbers), result_path(sum), output_path(sum)],
+    Optional = [input_path('$.numbers'), result_path('$.sum'), output_path('$.sum')],
     process_output(OriginalInput, 7, Output, Optional).
 
 test(output, Output = _{a:1, parallel:[_{a:1},_{a:1}]}) :-
     OriginalInput = _{a:1},
-    Optional = [result_path(parallel)],
+    Optional = [result_path('$.parallel')],
     Result = [_{a:1}, _{a:1}],
     process_output(OriginalInput, Result, Output, Optional).
 

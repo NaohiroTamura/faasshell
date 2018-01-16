@@ -17,7 +17,9 @@
 
 :- module(json_utils,
           [
-              term_json_dict/2
+              term_json_dict/2,
+              json_path_merge/5,
+              json_path_value/5
          ]).
 
 :- use_module(library(http/json)).
@@ -50,3 +52,52 @@ search_dic(D, K, V, [K1|P]) :-
 %%      (['States', 'FirstMatchState', 'Type'], "Task"), 
 %%      (['States', 'SecondMatchState', 'Type'], "Task"), 
 %%      (['States', 'NextState', 'Type'], "Task")].
+
+%%
+json_path_merge(_Json, Value, [], Value).
+json_path_merge(Json, Value, [H|T], MergedJson) :-
+    json_path_merge(_{}, Value, T, J1),
+    MergedJson = Json.put(H, J1).
+%% json_path_merge(+JsonPath, +Json, +Value, -Keys, -MergedJson)
+json_path_merge(JsonPath, Json, Value, Keys, MergedJson) :-
+    tokenize_atom(JsonPath, Token),
+    json_path(Keys, _Range, Token, []),
+    json_path_merge(Json, Value, Keys, MergedJson).
+
+%%
+json_path_value(Value, [], Range, Value) :-
+    var(Range), !.
+json_path_value(List, [], [I1, I2], Value) :-
+    is_list(List),
+    slice(List, I1, I2, Value).
+json_path_value(Json, [H|T], Range, Value) :-
+    J1 = Json.H,
+    json_path_value(J1, T, Range, Value).
+%% json_path_value(+JsonPath, +Json, -Keys, -Range, -Value)
+json_path_value(JsonPath, Json, Keys, Range, Value) :-
+    tokenize_atom(JsonPath, Token),
+    json_path(Keys, Range, Token, []),
+    json_path_value(Json, Keys, Range, Value).
+
+%%
+json_path(Keys, Range)   --> root, keys(Keys, Range).
+keys([], _)              --> [].
+keys([H|T], Range)       --> key(H, Range), keys(T, Range).
+key(H, Range)            --> plain_key(H, Range) | range_key(H, Range).
+plain_key(Key, _Range)   --> dot, word(Key).
+range_key(Key, [I1, I2]) --> dot, word(Key), range(I1, I2).
+range(I1, I2)            --> lpar, [I1], colon, [I2], rpar.
+word(Key)   --> [X], ['_'], word(Y), {atomic_list_concat([X, '_', Y], Key) }
+              | [Key].
+root  --> ['$'].
+dot   --> ['.'].
+colon --> [':'].
+lpar  --> ['['].
+rpar  --> [']'].
+
+%%
+slice([X|_],0,1,[X]).
+slice([X|Xs],0,K,[X|Ys]) :- K > 0,
+   K1 is K - 1, slice(Xs,0,K1,Ys).
+slice([_|Xs],I,K,Ys) :- I > 0,
+   I1 is I - 1, K1 is K - 1, slice(Xs,I1,K1,Ys).

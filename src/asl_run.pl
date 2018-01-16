@@ -23,6 +23,7 @@
           [ start/4
          ]).
 
+:- use_module(json_utils).
 :- use_module(wsk_api_utils).
 :- use_module(wsk_api_actions, [faas:invoke/4]).
 :- use_module(aws_api_lambda, [faas:invoke/4]).
@@ -376,8 +377,10 @@ wait(State, timestamp(Timestamp), Optional, I, O, _E) :-
 
 wait(State, seconds_path(SecondsPath), Optional, I, O, _E) :-
     mydebug(wait(in), (State, seconds_path(SecondsPath), I, O)),
-    ( number(I.SecondsPath), Wait = I.SecondsPath;
-      string(I.SecondsPath), number_string(Wait, I.SecondsPath)
+    json_utils:json_path_value(SecondsPath, I, _K, _R, WaitValue),
+    mydebug(wait(wait_value), (seconds_path(SecondsPath), WaitValue)),
+    ( number(WaitValue), Wait = WaitValue;
+      string(WaitValue), number_string(Wait, WaitValue)
     ),
     mydebug(wait(sleep), Wait),
     sleep(Wait),
@@ -386,7 +389,8 @@ wait(State, seconds_path(SecondsPath), Optional, I, O, _E) :-
 
 wait(State, timestamp_path(TimestampPath), Optional, I, O, _E) :-
     mydebug(wait(in), (State, timestamp_path(TimestampPath), I, O)),
-    parse_time(I.TimestampPath, TargetStamp),
+    json_utils:json_path_value(TimestampPath, I, _K, _R, TimestampValue),
+    parse_time(TimestampValue, TargetStamp),
     get_time(CurrentStamp),
     Wait is TargetStamp - CurrentStamp,
     ( Wait > 0
@@ -522,128 +526,147 @@ lookup_state(_Target, [], _) :- fail.
 
 'BooleanEquals'(Variable, Value, I, O, _E) :-
     mydebug('BooleanEquals'(in), (Variable, Value, I, O)),
-    catch((I.Variable == Value ->  O = true; O = false ), _, O = false),
+    catch((json_utils:json_path_value(Variable, I, _K, _R, V),
+           V == Value ->  O = true; O = false ), _, O = false),
     mydebug('BooleanEquals'(out), (Variable, Value, I, O)).
 
 'NumericEquals'(Variable, Value, I, O, _E) :-
     mydebug('NumericEquals'(in), (Variable, Value, I, O)),
-    catch((I.Variable =:= Value ->  O = true; O = false), _, O = false),
+    catch((json_utils:json_path_value(Variable, I, _K, _R, V),
+           V =:= Value ->  O = true; O = false), _, O = false),
     mydebug('NumericEquals'(out), (Variable, Value, I, O)).
 
 'NumericGreaterThan'(Variable, Value, I, O, _E) :-
     mydebug('NumericGreaterThan'(in), (Variable, Value, I, O)),
-    catch((I.Variable > Value ->  O = true; O = false ), _, O = false),
+    catch((json_utils:json_path_value(Variable, I, _K, _R, V),
+           V > Value ->  O = true; O = false ), _, O = false),
     mydebug('NumericGreaterThan'(out), (Variable, Value, I, O)).
 
 'NumericGreaterThanEquals'(Variable, Value, I, O, _E) :-
     mydebug('NumericGreaterThanEquals'(in), (Variable, Value, I, O)),
-    catch((I.Variable >= Value ->  O = true; O = false ), _, O = false),
+    catch((json_utils:json_path_value(Variable, I, _K, _R, V),
+           V >= Value ->  O = true; O = false ), _, O = false),
     mydebug('NumericGreaterThanEquals'(out), (Variable, Value, I, O)).
 
 'NumericLessThan'(Variable, Value, I, O, _E) :-
     mydebug('NumericLessThan'(in), (Variable, Value, I, O)),
-    catch((I.Variable < Value ->  O = true; O = false ), _, O = false),
+    catch((json_utils:json_path_value(Variable, I, _K, _R, V),
+           V < Value ->  O = true; O = false ), _, O = false),
     mydebug('NumericLessThan'(out), (Variable, Value, I, O)).
 
 'NumericLessThanEquals'(Variable, Value, I, O, _E) :-
     mydebug('NumericLessThanEquals'(in), (Variable, Value, I, O)),
-    catch((I.Variable =< Value ->  O = true; O = false ), _, O = false),
+    catch((json_utils:json_path_value(Variable, I, _K, _R, V),
+           V =< Value ->  O = true; O = false ), _, O = false),
     mydebug('NumericLessThanEquals'(out), (Variable, Value, I, O)).
 
 'StringEquals'(Variable, Value, I, O, _E) :-
     mydebug('StringEquals'(in), (Variable, Value, I, O)),
-    catch( ( atomic_list_concat([$|K], '.', Variable),
-             json_utils:search_dic(I, _, V, K),
-             (V == Value ->  O = true; O = false )
-           ), _, O = false),
+    catch((json_utils:json_path_value(Variable, I, _K, _R, V),
+           V == Value ->  O = true; O = false ), _, O = false),
     mydebug('StringEquals'(out), (Variable, Value, I, O)).
 
 'StringGreaterThan'(Variable, Value, I, O, _E) :-
     mydebug('StringGreaterThan'(in), (Variable, Value, I, O)),
-    catch((I.Variable @> Value ->  O = true; O = false ), _, O = false),
+    catch((json_utils:json_path_value(Variable, I, _K, _R, V),
+           V @> Value ->  O = true; O = false ), _, O = false),
     mydebug('StringGreaterThan'(out), (Variable, Value, I, O)).
 
 'StringGreaterThanEquals'(Variable, Value, I, O, _E) :-
     mydebug('StringGreaterThanEquals'(in), (Variable, Value, I, O)),
-    catch((I.Variable @>= Value ->  O = true; O = false ), _, O = false),
+    catch((json_utils:json_path_value(Variable, I, _K, _R, V),
+           V @>= Value ->  O = true; O = false ), _, O = false),
     mydebug('StringGreaterThanEquals'(out), (Variable, Value, I, O)).
 
 'StringLessThan'(Variable, Value, I, O, _E) :-
     mydebug('StringLessThan'(in), (Variable, Value, I, O)),
-    catch((I.Variable @< Value ->  O = true; O = false ), _, O = false),
+    catch((json_utils:json_path_value(Variable, I, _K, _R, V),
+           V @< Value ->  O = true; O = false ), _, O = false),
     mydebug('StringLessThan'(out), (Variable, Value, I, O)).
 
 'StringLessThanEquals'(Variable, Value, I, O, _E) :-
     mydebug('StringLessThanEquals'(in), (Variable, Value, I, O)),
-    catch((I.Variable @=< Value ->  O = true; O = false ), _, O = false),
+    catch((json_utils:json_path_value(Variable, I, _K, _R, V),
+           V @=< Value ->  O = true; O = false ), _, O = false),
     mydebug('StringLessThanEquals'(out), (Variable, Value, I, O)).
 
 'TimestampEquals'(Variable, Value, I, O, _E) :-
     mydebug('TimestampEquals'(in), (Variable, Value, I, O)),
-    parse_time(Variable, VariableStamp),
-    parse_time(Value, ValueStamp),
-    catch((I.VariableStamp =:= ValueStamp ->  O = true; O = false ), _, O = false),
+    catch((json_utils:json_path_value(Variable, I, _K, _R, V),
+           parse_time(V, VariableStamp),
+           parse_time(Value, ValueStamp),
+           VariableStamp =:= ValueStamp ->  O = true; O = false ), _, O = false),
     mydebug('TimestampEquals'(out), (Variable, Value, I, O)).
 
 'TimestampGreaterThan'(Variable, Value, I, O, _E) :-
     mydebug('TimestampGreaterThan'(in), (Variable, Value, I, O)),
-    parse_time(Variable, VariableStamp),
-    parse_time(Value, ValueStamp),
-    catch((I.VariableStamp > ValueStamp ->  O = true; O = false ), _, O = false),
+    catch((json_utils:json_path_value(Variable, I, _K, _R, V),
+           parse_time(V, VariableStamp),
+           parse_time(Value, ValueStamp),
+           VariableStamp > ValueStamp ->  O = true; O = false ), _, O = false),
     mydebug('TimestampGreaterThan'(out), (Variable, Value, I, O)).
 
 'TimestampGreaterThanEquals'(Variable, Value, I, O, _E) :-
     mydebug('TimestampGreaterThanEquals'(in), (Variable, Value, I, O)),
-    parse_time(Variable, VariableStamp),
-    parse_time(Value, ValueStamp),
-    catch((I.VariableStamp >= ValueStamp ->  O = true; O = false ), _, O = false),
+    catch((json_utils:json_path_value(Variable, I, _K, _R, V),
+           parse_time(V, VariableStamp),
+           parse_time(Value, ValueStamp),
+           VariableStamp >= ValueStamp ->  O = true; O = false ), _, O = false),
     mydebug('TimestampGreaterThanEquals'(out), (Variable, Value, I, O)).
 
 'TimestampLessThan'(Variable, Value, I, O, _E) :-
     mydebug('TimestampLessThan'(in), (Variable, Value, I, O)),
-    parse_time(Variable, VariableStamp),
-    parse_time(Value, ValueStamp),
-    catch((I.VariableStamp < ValueStamp ->  O = true; O = false ), _, O = false),
+    catch((json_utils:json_path_value(Variable, I, _K, _R, V),
+           parse_time(V, VariableStamp),
+           parse_time(Value, ValueStamp),
+           VariableStamp < ValueStamp ->  O = true; O = false ), _, O = false),
     mydebug('TimestampLessThan'(out), (Variable, Value, I, O)).
 
 'TimestampLessThanEquals'(Variable, Value, I, O, _E) :-
     mydebug('TimestampLessThanEquals'(in), (Variable, Value, I, O)),
-    parse_time(Variable, VariableStamp),
-    parse_time(Value, ValueStamp),
-    catch((I.VariableStamp =< ValueStamp ->  O = true; O = false ), _, O = false),
+    catch((json_utils:json_path_value(Variable, I, _K, _R, V),
+           parse_time(V, VariableStamp),
+           parse_time(Value, ValueStamp),
+           VariableStamp =< ValueStamp ->  O = true; O = false ), _, O = false),
     mydebug('TimestampLessThanEquals'(out), (Variable, Value, I, O)).
 
 %% Input and Output Processing
-%% (TODO: full JsonPath syntax support)
 process_input(OriginalInput, Input, Optional) :-
+    mydebug(process_input3(in), (OriginalInput, Input, Optional)),
     var(Input),
-    option(input_path(InputPath), Optional)
-    -> ( InputPath = null
-         -> Input = _{}
-         ;  Input = OriginalInput.InputPath
-       )
-    ;  Input = OriginalInput.
+    ( option(input_path(InputPath), Optional)
+      -> ( InputPath = null
+           -> Input = _{}
+           ;  json_utils:json_path_value(InputPath, OriginalInput, _K, _R, Input)
+         )
+      ;  Input = OriginalInput
+    ),
+    mydebug(process_input3(out), Input).
 
 process_output(Input, Output, Optional) :-
+    mydebug(process_output3(in), (Input, Output, Optional)),
     var(Output),
-    option(output_path(OutputPath), Optional)
-    -> Output = Input.OutputPath
-    ;  Output = Input.
+    ( option(output_path(OutputPath), Optional)
+      -> json_utils:json_path_value(OutputPath, Input, _K, _R, Output)
+      ;  Output = Input
+    ),
+    mydebug(process_output3(out), Output).
 
 process_output(OriginalInput, Result, Output, Optional) :-
-    mydebug(process_output(in), (OriginalInput, Result, Output, Optional)),
+    mydebug(process_output4(in), (OriginalInput, Result, Output, Optional)),
     var(Output),
     catch( ( ( option(result_path(ResultPath), Optional)
                -> % AWS Lambda function can return not only dict, but also value.
                   % However OpenWhisk action can retrun only dict.
-                  I = OriginalInput.put(ResultPath, Result)
+                  json_utils:json_path_merge(ResultPath, OriginalInput,
+                                             Result, _K1, I)
                ;  % ResultPath has the default value of $
                   % The type of Result from Parallel state is List.
                   I = Result
              ),
              mydebug(process_output(result_path), (I, ResultPath, Result, Output)),
              ( option(output_path(OutputPath), Optional)
-               -> Output = I.OutputPath
+               -> json_utils:json_path_value(OutputPath, I, _K2, _R, Output)
                ;  Output = I
              ),
              mydebug(process_output(output_path), (Output, OutputPath))
@@ -653,7 +676,7 @@ process_output(OriginalInput, Result, Output, Optional) :-
              error_code(Error, Output)
            )
          ),
-    mydebug(process_output(out), Output).
+    mydebug(process_output4(out), Output).
 
 %%
 %% misc.

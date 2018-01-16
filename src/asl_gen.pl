@@ -399,9 +399,7 @@ task_fallback(States, StateKey, Dsl, Graph, Path) :-
 %% Misc.
 %%
 dollarvar_key(DollarVar, Key) :-
-    string_concat("$.", KeyStr, DollarVar)
-    -> atom_string(Key, KeyStr)
-    ;  atom_string(Key, DollarVar).
+    atom_string(Key, DollarVar).
 
 %%
 %% Semantic Checks
