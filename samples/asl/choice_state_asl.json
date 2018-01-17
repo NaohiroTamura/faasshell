@@ -1,56 +1,54 @@
 {
-    "asl": {
-        "Comment": "An example of the Amazon States Language using a choice state.",
-        "StartAt": "FirstState",
-        "States": {
-            "FirstState": {
-                "Type": "Task",
-                "Resource": "wsk:/whisk.system/utils/echo",
-                "Next": "ChoiceState"
-            },
-            "ChoiceState": {
-                "Type" : "Choice",
-                "Choices": [
-                    {
-                        "Variable": "$.foo",
-                        "NumericEquals": 1,
-                        "Next": "FirstMatchState"
-                    },
-                    {
-                        "Variable": "$.foo",
-                        "NumericEquals": 2,
-                        "Next": "SecondMatchState"
-                    }
-                ],
-                "Default": "DefaultState"
-            },
+    "Comment": "An example of the Amazon States Language using a choice state.",
+    "StartAt": "FirstState",
+    "States": {
+        "FirstState": {
+            "Type": "Task",
+            "Resource": "wsk:/whisk.system/utils/echo",
+            "Next": "ChoiceState"
+        },
+        "ChoiceState": {
+            "Type" : "Choice",
+            "Choices": [
+                {
+                    "Variable": "$.foo",
+                    "NumericEquals": 1,
+                    "Next": "FirstMatchState"
+                },
+                {
+                    "Variable": "$.foo",
+                    "NumericEquals": 2,
+                    "Next": "SecondMatchState"
+                }
+            ],
+            "Default": "DefaultState"
+        },
 
-            "FirstMatchState": {
-                "Type" : "Task",
-                "Resource": "wsk:hello",
-                "ResultPath": "$.first_match_state",
-                "Next": "NextState"
-            },
+        "FirstMatchState": {
+            "Type" : "Task",
+            "Resource": "wsk:hello",
+            "ResultPath": "$.first_match_state",
+            "Next": "NextState"
+        },
 
-            "SecondMatchState": {
-                "Type" : "Task",
-                "Resource": "wsk:hello",
-                "ResultPath": "$.second_match_state",
-                "Next": "NextState"
-            },
+        "SecondMatchState": {
+            "Type" : "Task",
+            "Resource": "wsk:hello",
+            "ResultPath": "$.second_match_state",
+            "Next": "NextState"
+        },
 
-            "DefaultState": {
-                "Type": "Fail",
-                "Error": "DefaultStateError",
-                "Cause": "No Matches!"
-            },
+        "DefaultState": {
+            "Type": "Fail",
+            "Error": "DefaultStateError",
+            "Cause": "No Matches!"
+        },
 
-            "NextState": {
-                "Type": "Task",
-                "Resource": "wsk:hello",
-                "ResultPath": "$.next_state",
-                "End": true
-            }
+        "NextState": {
+            "Type": "Task",
+            "Resource": "wsk:hello",
+            "ResultPath": "$.next_state",
+            "End": true
         }
     }
 }

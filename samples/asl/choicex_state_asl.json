@@ -1,75 +1,70 @@
 {
-    "input": {
-        "type": "Public"
-    },
-    "asl": {
-        "Comment": "An example of the Amazon States Language using a choice state.",
-        "StartAt": "FirstState",
-        "States": {
-            "FirstState": {
-                "Type": "Task",
-                "Resource": "wsk:/whisk.system/utils/echo",
-                "Next": "ChoiceStateX"
-            },
-            "ChoiceStateX": {
-                "Type": "Choice",
-                "Choices": [
-                    {
-                        "Not": {
-                            "Variable": "$.type",
-                            "StringEquals": "Private"
+    "Comment": "An example of the Amazon States Language using a choice state.",
+    "StartAt": "FirstState",
+    "States": {
+        "FirstState": {
+            "Type": "Task",
+            "Resource": "wsk:/whisk.system/utils/echo",
+            "Next": "ChoiceStateX"
+        },
+        "ChoiceStateX": {
+            "Type": "Choice",
+            "Choices": [
+                {
+                    "Not": {
+                        "Variable": "$.type",
+                        "StringEquals": "Private"
+                    },
+                    "Next": "Public"
+                },
+                {
+                    "Variable": "$.value",
+                    "NumericEquals": 0,
+                    "Next": "ValueIsZero"
+                },
+                {
+                    "And": [
+                        {
+                            "Variable": "$.value",
+                            "NumericGreaterThanEquals": 20
                         },
-                        "Next": "Public"
-                    },
-                    {
-                        "Variable": "$.value",
-                        "NumericEquals": 0,
-                        "Next": "ValueIsZero"
-                    },
-                    {
-                        "And": [
-                            {
-                                "Variable": "$.value",
-                                "NumericGreaterThanEquals": 20
-                            },
-                            {
-                                "Variable": "$.value",
-                                "NumericLessThan": 30
-                            }
-                        ],
-                        "Next": "ValueInTwenties"
-                    }
-                ],
-                "Default": "DefaultState"
-            },
-            "Public": {
-                "Type" : "Task",
-                "Resource": "wsk:hello",
-                "ResultPath": "$.public_state",
-                "Next": "NextState"
-            },
-            "ValueIsZero": {
-                "Type" : "Task",
-                "Resource": "wsk:hello",
-                "ResultPath": "$.value_is_zero_state",
-                "Next": "NextState"
-            },
-            "ValueInTwenties": {
-                "Type" : "Task",
-                "Resource": "wsk:hello",
-                "ResultPath": "$.value_in_twenties_state",
-                "Next": "NextState"
-            },
-            "DefaultState": {
-                "Type": "Fail",
-                "Cause": "No Matches!"
-            },
-            "NextState": {
-                "Type": "Task",
-                "Resource": "wsk:hello",
-                "ResultPath": "$.next_state",
-                "End": true
-            }
+                        {
+                            "Variable": "$.value",
+                            "NumericLessThan": 30
+                        }
+                    ],
+                    "Next": "ValueInTwenties"
+                }
+            ],
+            "Default": "DefaultState"
+        },
+        "Public": {
+            "Type" : "Task",
+            "Resource": "wsk:hello",
+            "ResultPath": "$.public_state",
+            "Next": "NextState"
+        },
+        "ValueIsZero": {
+            "Type" : "Task",
+            "Resource": "wsk:hello",
+            "ResultPath": "$.value_is_zero_state",
+            "Next": "NextState"
+        },
+        "ValueInTwenties": {
+            "Type" : "Task",
+            "Resource": "wsk:hello",
+            "ResultPath": "$.value_in_twenties_state",
+            "Next": "NextState"
+        },
+        "DefaultState": {
+            "Type": "Fail",
+            "Cause": "No Matches!"
+        },
+        "NextState": {
+            "Type": "Task",
+            "Resource": "wsk:hello",
+            "ResultPath": "$.next_state",
+            "End": true
         }
     }
 }

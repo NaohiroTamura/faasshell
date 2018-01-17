@@ -108,7 +108,11 @@ statemachine(Request) :-
     option(namespace(nil), Request)
     -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
     ;  memberchk(method(Method), Request),
-       statemachine(Method, Request).
+       catch( statemachine(Method, Request),
+              error(Message, Code),
+              ( http_log('~w~n', [catch(error(Message, Code))]),
+                reply_json_dict(_{error: Message}, [status(Code)])
+              )).
 
 %% get state machine information
 %% $ curl -sLX GET localhost:8080/statemachine/{statemachine}
@@ -116,8 +120,8 @@ statemachine(Request) :-
 statemachine(get, Request) :-
     option(namespace(NS), Request),
     ( memberchk(path_info(File), Request)
-      -> atomics_to_string([NS, "/", File], NS_File),
-         cdb_api:doc_read(faasshell, NS_File, Code1, Dict1),
+      -> atomics_to_string([NS, "/", File], NSFile),
+         cdb_api:doc_read(faasshell, NSFile, Code1, Dict1),
          http_log('~w~n', [doc_read(Code1)]),
          ( Code1 = 200
            -> select_dict(_{'_id':_, '_rev':_}, Dict1, Dict1Rest),
@@ -148,23 +152,23 @@ statemachine(put, Request) :-
     http_log('~w~n', [params(Dict)]),
     ( option(path_info(File), Request),
       option(namespace(NS), Request)
-      -> NS_Dict = Dict.put(_{name: File, namespace: NS}),
-         atomics_to_string([NS, "/", File], NS_File),
-         asl_gen:gen_dsl(Dict.asl, Dsl),
-         http_log('~w: ~w~n', [NS_File, dsl(Dsl)]),
+      -> atomics_to_string([NS, "/", File], NSFile),
+         asl_gen:gen_dsl(Dict, Dsl),
+         http_log('~w: ~w~n', [NSFile, dsl(Dsl)]),
          term_string(Dsl, DslStr),
          ( Dsl = asl(_)
-           -> http_parameters(Request, [overwrite(Overwrite, [default(false)])]),
+           -> AslDict = _{name: File, namespace: NS, asl: Dict, dsl: DslStr},
+              http_parameters(Request, [overwrite(Overwrite, [default(false)])]),
               http_log('~w~n', [overwrite(Overwrite)]),
               ( Overwrite = false
-                -> cdb_api:doc_create(faasshell, NS_File, NS_Dict, Code, Res),
+                -> cdb_api:doc_create(faasshell, NSFile, AslDict, Code, Res),
                    http_log('~w~n', [doc_create(Code, Res)])
-                ;  cdb_api:doc_update(faasshell, NS_File, NS_Dict, Code, Res),
+                ;  cdb_api:doc_update(faasshell, NSFile, AslDict, Code, Res),
                    http_log('~w~n', [doc_update(Code, Res)])
               ),
               ( Code = 201
-                -> Output = NS_Dict.put(_{output:ok, dsl: DslStr})
-                ;  Output = NS_Dict.put(_{output:ng}).put(Res)
+                -> Output = AslDict.put(_{output:ok, dsl: DslStr})
+                ;  Output = AslDict.put(_{output:ng}).put(Res)
               )
            ;  Output = Dict.put(_{output:ng, error: "syntax error!", dsl: DslStr})
          )
@@ -176,30 +180,28 @@ statemachine(put, Request) :-
 %% $ curl -sX POST localhost:8080/statemachine/{statemachine} \
 %%        -H 'Content-Type: application/json' -d '{"input":{"arg":1}}'
 statemachine(post, Request) :-
-    ( http_read_json_dict(Request, Params, []); Params = _{} ),
+    ( http_read_json_dict(Request, Params, []); Params = _{input:_{}} ),
     http_log('~w~n', [params(Params)]),
+    ( get_dict(input, Params, Input);
+      throw(error('Missing input key in params', 400))),
     ( memberchk(path_info(File), Request),
       option(namespace(NS), Request)
-      -> atomics_to_string([NS, "/", File], NS_File),
-         cdb_api:doc_read(faasshell, NS_File, Code, Dict),
+      -> atomics_to_string([NS, "/", File], NSFile),
+         cdb_api:doc_read(faasshell, NSFile, Code, Dict),
          http_log('~w~n', [doc_read(File, Code)]),
          select_dict(_{'_id':_, '_rev':_}, Dict, DictRest),
+         DictParams = DictRest.put(Params),
          ( Code = 200
-           -> asl_gen:gen_dsl(Dict.asl, Dsl),
-              % http_log('~w~n', [dsl(Dsl)]),
-              term_string(Dsl, DslStr),
-              ( Dsl = asl(_)
-                -> option(api_key(ID-PW), Request),
-                   wsk_api_utils:openwhisk(Defaults),
-                   merge_options([api_key(ID-PW)], Defaults, Options),
-                   Input = Dict.put(Params),
-                   asl_run:start(Dsl, Options, Input.input, O),
-                   Output = DictRest.put(_{output:O})
-                ;  Output = DictRest.put(_{output:ng, error: DslStr})
-              )
-           ;  Output = DictRest.put(_{output:ng, error: "syntax error!"})
+           -> % http_log('~w~n', [dsl(Dict.Dsl)]),
+              option(api_key(ID-PW), Request),
+              wsk_api_utils:openwhisk(Defaults),
+              merge_options([api_key(ID-PW)], Defaults, Options),
+              term_string(Dsl, Dict.dsl),
+              asl_run:start(Dsl, Options, Input, O),
+              Output = DictParams.put(_{output:O})
+           ;  throw(error('database error', 500))
          )
-      ;  Output = _{output:ng, error:"statemashine missing!"}
+      ;  throw(error('Missing statemashine name', 400))
     ),
     reply_json_dict(Output).
 
@@ -208,8 +210,8 @@ statemachine(post, Request) :-
 statemachine(delete, Request) :-
     ( memberchk(path_info(File), Request),
       option(namespace(NS), Request)
-      -> atomics_to_string([NS, "/", File], NS_File),
-         cdb_api:doc_delete(faasshell, NS_File, Code, Res),
+      -> atomics_to_string([NS, "/", File], NSFile),
+         cdb_api:doc_delete(faasshell, NSFile, Code, Res),
          http_log('~w~n', [doc_delete(Code, Res)]),
          ( Code = 200
            -> Output = _{output:ok}
@@ -224,8 +226,8 @@ statemachine(delete, Request) :-
 statemachine(patch, Request) :-
     memberchk(path_info(File), Request),
     option(namespace(NS), Request)
-    -> atomics_to_string([NS, "/", File], NS_File),
-       cdb_api:doc_read(faasshell, NS_File, Code, Dict),
+    -> atomics_to_string([NS, "/", File], NSFile),
+       cdb_api:doc_read(faasshell, NSFile, Code, Dict),
        http_log('~w~n', [doc_read(Code)]),
        ( Code = 200
          -> format('Content-type: text/plain~n~n'),
@@ -247,7 +249,11 @@ shell(Request) :-
     option(namespace(nil), Request)
     -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
     ;  memberchk(method(Method), Request),
-       shell(Method, Request).
+       catch( shell(Method, Request),
+              error(Message, Code),
+              ( http_log('~w~n', [catch(error(Message, Code))]),
+                reply_json_dict(_{error: Message}, [status(Code)])
+              )).
 
 %% get shell information
 %% $ curl -sLX GET localhost:8080/shell/{shell.dsl}
@@ -255,8 +261,8 @@ shell(Request) :-
 shell(get, Request) :-
     option(namespace(NS), Request),
     ( memberchk(path_info(File), Request)
-      -> atomics_to_string([NS, "/", File], NS_File),
-         cdb_api:doc_read(faasshell, NS_File, Code1, Dict1),
+      -> atomics_to_string([NS, "/", File], NSFile),
+         cdb_api:doc_read(faasshell, NSFile, Code1, Dict1),
          http_log('~w~n', [doc_read(Code1, Dict1)]),
          ( Code1 = 200
            -> select_dict(_{'_id':_, '_rev':_}, Dict1, Dict1Rest),
@@ -289,14 +295,14 @@ shell(put, Request) :-
     ( Dsl = asl(_)
       -> ( memberchk(path_info(File), Request),
            option(namespace(NS), Request)
-           -> atomics_to_string([NS, "/", File], NS_File),
+           -> atomics_to_string([NS, "/", File], NSFile),
               http_parameters(Request, [overwrite(Overwrite, [default(false)])]),
               http_log('~w~n', [overwrite(Overwrite)]),
               Dict = _{dsl: DslStr, name: File, namespace: NS},
               ( Overwrite = false
-                -> cdb_api:doc_create(faasshell, NS_File, Dict, Code, Res),
+                -> cdb_api:doc_create(faasshell, NSFile, Dict, Code, Res),
                    http_log('~w~n', [doc_create(Code, Res)])
-                ;  cdb_api:doc_update(faasshell, NS_File, Dict, Code, Res),
+                ;  cdb_api:doc_update(faasshell, NSFile, Dict, Code, Res),
                    http_log('~w~n', [doc_update(Code, Code, Res)])
               ),
               ( Code = 201
@@ -311,30 +317,30 @@ shell(put, Request) :-
 
 %% execute shell
 %% $ curl -sX POST localhost:8080/shell/{shell.dsl} \
-%%        -H 'Content-Type: application/json' -d '{"arg":1}'
+%%        -H 'Content-Type: application/json' -d '{"input":{"arg":1}}'
 shell(post, Request) :-
-    ( http_read_json_dict(Request, Params, []); Params = _{} ),
+    ( http_read_json_dict(Request, Params, []); Params = _{input:_{}} ),
     http_log('~w~n', [params(Params)]),
+    ( get_dict(input, Params, Input);
+      throw(error('Missing input key in params', 400))),
     ( memberchk(path_info(File), Request),
       option(namespace(NS), Request)
-      -> atomics_to_string([NS, "/", File], NS_File),
-         cdb_api:doc_read(faasshell, NS_File, Code, Dict),
-         http_log('~w~n', [doc_read(NS_File, Code)]),
+      -> atomics_to_string([NS, "/", File], NSFile),
+         cdb_api:doc_read(faasshell, NSFile, Code, Dict),
+         http_log('~w~n', [doc_read(NSFile, Code)]),
          select_dict(_{'_id':_, '_rev':_}, Dict, DictRest),
+         DictParams = DictRest.put(Params),
          ( Code = 200
-           -> term_string(Dsl, Dict.dsl),
-              % http_log('~w~n', [dsl(Dsl)]),
-              ( Dsl = asl(_)
-                -> option(api_key(ID-PW), Request),
-                   wsk_api_utils:openwhisk(Defaults),
-                   merge_options([api_key(ID-PW)], Defaults, Options),
-                   asl_run:start(Dsl, Options, Params, O),
-                   Output = DictRest.put(_{output:O})
-                ;  Output = DictRest.put(_{output:ng, error: "syntax error!"})
-              )
-           ;  Output = _{output:ng}.put(DictRest)
+           -> % http_log('~w~n', [dsl(Dsl)]),
+              option(api_key(ID-PW), Request),
+              wsk_api_utils:openwhisk(Defaults),
+              merge_options([api_key(ID-PW)], Defaults, Options),
+              term_string(Dsl, Dict.dsl),
+              asl_run:start(Dsl, Options, Input, O),
+              Output = DictParams.put(_{output:O})
+           ;  throw(error('database error', 500))
          )
-      ; Output = _{output:ng, error:"shell name missing!"}
+      ; throw(error('Missing shell name', 400))
     ),
     reply_json_dict(Output).
 
@@ -343,9 +349,9 @@ shell(post, Request) :-
 shell(delete, Request) :-
     ( memberchk(path_info(File), Request),
       option(namespace(NS), Request)
-      -> atomics_to_string([NS, "/", File], NS_File),
-         cdb_api:doc_delete(faasshell, NS_File, Code, Res),
-         http_log('~w~n', [doc_delete(NS_File, Code, Res)]),
+      -> atomics_to_string([NS, "/", File], NSFile),
+         cdb_api:doc_delete(faasshell, NSFile, Code, Res),
+         http_log('~w~n', [doc_delete(NSFile, Code, Res)]),
          ( Code = 200
            -> Output = _{output:ok}
            ;  Output = _{output:ng}.put(Res)

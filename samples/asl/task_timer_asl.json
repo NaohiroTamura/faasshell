@@ -1,26 +1,24 @@
 {
-    "asl": {
-        "Comment": "A Task Timer example of the Amazon States Language scheduling a task",
-        "StartAt": "Wait for Timestamp",
-        "States": {
-            "Wait for Timestamp": {
-                "Type": "Wait",
-                "TimestampPath": "$.trigger_date",
-                "Next": "Send SNS Message"
-            },
-            "Send SNS Message": {
-                "Type": "Task",
-                "Resource": "unknown",
-                "Retry" : [
-                    {
-                        "ErrorEquals": [ "States.ALL" ],
-                        "IntervalSeconds": 1,
-                        "MaxAttempts": 3,
-                        "BackoffRate": 2.0
-                    }
-                ],
-                "End": true
-            }
+    "Comment": "A Task Timer example of the Amazon States Language scheduling a task",
+    "StartAt": "Wait for Timestamp",
+    "States": {
+        "Wait for Timestamp": {
+            "Type": "Wait",
+            "TimestampPath": "$.trigger_date",
+            "Next": "Send SNS Message"
+        },
+        "Send SNS Message": {
+            "Type": "Task",
+            "Resource": "unknown",
+            "Retry" : [
+                {
+                    "ErrorEquals": [ "States.ALL" ],
+                    "IntervalSeconds": 1,
+                    "MaxAttempts": 3,
+                    "BackoffRate": 2.0
+                }
+            ],
+            "End": true
         }
     }
 }

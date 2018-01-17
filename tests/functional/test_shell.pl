@@ -85,17 +85,26 @@ test(get_not_exit, Output = _{output:"ng", error:"not_found", reason:_}) :-
 test(post, Output = "Hello, FaaS Shell!") :-
     api_host(Host), api_key(ID-PW),
     string_concat(Host, '/shell/hello_world_task.dsl', URL),
-    http_post(URL, json(json(['name'='FaaS Shell'])), Data,
+    http_post(URL, json(json(['input'=json(['name'='FaaS Shell'])])), Data,
               [authorization(basic(ID, PW))]),
     term_json_dict(Data, Dict),
     get_dict(payload, Dict.output, Output).
 
-test(post_no_param, Output = "Hello, World!") :-
+test(post_empty_input, Output = "Hello, World!") :-
     api_host(Host), api_key(ID-PW),
     string_concat(Host, '/shell/hello_world_task.dsl', URL),
-    http_post(URL, json(json([])), Data, [authorization(basic(ID, PW))]),
+    http_post(URL, json(json(['input'=json([])])), Data,
+              [authorization(basic(ID, PW))]),
     term_json_dict(Data, Dict),
     get_dict(payload, Dict.output, Output).
+
+test(post_no_input, Code = 400) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/shell/hello_world_task.dsl', URL),
+    http_post(URL, json(json([])), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{error: "Missing input key in params"} = Dict).
 
 test(delete, Output = "ok") :-
     api_host(Host), api_key(ID-PW),

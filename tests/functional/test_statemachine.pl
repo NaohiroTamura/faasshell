@@ -84,7 +84,7 @@ test(get_not_exit, Output = _{output:"ng", error:"not_found", reason:_}) :-
     http_get(URL, Data, [authorization(basic(ID, PW))]),
     term_json_dict(Data, Output).
 
-test(post_no_param, Output = "Hello, World!") :-
+test(post_empty_input, Output = "Hello, World!") :-
     api_host(Host), api_key(ID-PW),
     string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
     http_post(URL, json(json(['input'=json([])])), Data,
@@ -99,6 +99,14 @@ test(post, Output = "Hello, Curl!") :-
               [authorization(basic(ID, PW))]),
     term_json_dict(Data, Dict),
     get_dict(payload, Dict.output, Output).
+
+test(post_no_input, Code = 400) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
+    http_post(URL, json(json([])), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{error: "Missing input key in params"} = Dict).
 
 test(patch, Output = "digraph graph_name {") :-
     api_host(Host), api_key(ID-PW),
