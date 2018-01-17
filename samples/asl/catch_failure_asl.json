@@ -1,7 +1,4 @@
 {
-    "input": {
-        "test": "unknown action"
-    },
     "asl": {
         "Comment": "A Catch example of the Amazon States Language using an AWS Lambda function",
         "StartAt": "CreateAccount",

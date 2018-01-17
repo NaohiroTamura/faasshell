@@ -84,10 +84,11 @@ test(get_not_exit, Output = _{output:"ng", error:"not_found", reason:_}) :-
     http_get(URL, Data, [authorization(basic(ID, PW))]),
     term_json_dict(Data, Output).
 
-test(post_no_param, Output = "Hello, FaaS Shell!") :-
+test(post_no_param, Output = "Hello, World!") :-
     api_host(Host), api_key(ID-PW),
     string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
-    http_post(URL, json(json([])), Data, [authorization(basic(ID, PW))]),
+    http_post(URL, json(json(['input'=json([])])), Data,
+              [authorization(basic(ID, PW))]),
     term_json_dict(Data, Dict),
     get_dict(payload, Dict.output, Output).
 
@@ -126,31 +127,33 @@ test(delete_not_exist, Output = _{output:"ng", error:"not_found", reason:_}) :-
 test(scenario) :-
     %% 1.
     api_host(Host), api_key(ID-PW),
-    string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
-    http_delete(URL, Data1, [authorization(basic(ID, PW))]),
+    string_concat(Host, '/statemachine/hello_world_task_asl.json', URL1),
+    http_delete(URL1, Data1, [authorization(basic(ID, PW))]),
     term_json_dict(Data1, Dict1),
     assertion((Dict1.output = "ok"; Dict1.error = "not_found")),
 
     %% 2.
     load_json('samples/asl/job_status_poller_asl.json', Term),
-    http_put(URL, json(Term), Data2, [authorization(basic(ID, PW))]),
+    string_concat(Host, '/statemachine/job_status_poller_asl.json', URL2),
+    http_put(URL2, json(Term), Data2, [authorization(basic(ID, PW))]),
     term_json_dict(Data2, Dict2),
     assertion(Dict2.output = "ok"),
 
     %% 3.
-    http_post(URL,
+    http_post(URL2,
               json(json([input=json([params=['DEFAULT', 'SUCCEEDED'],
-                                     wait_time=1])])),
+                                     wait_time=1, name="Poller"])])),
               Data3, [authorization(basic(ID, PW))]),
     term_json_dict(Data3, Dict3),
-    assertion(Dict3.output.status = "SUCCEEDED"),
+    assertion(Dict3.output = _{payload:"Hello, Poller!"}),
 
     %% 4.
-    http_post(URL,
+    http_post(URL2,
               json(json([input=json([params=['DEFAULT', 'FAILED'],
                                      wait_time=1])])),
               Data4, [authorization(basic(ID, PW))]),
     term_json_dict(Data4, Dict4),
-    assertion(Dict4.output.status = "FAILED").
+    assertion(Dict4.output = _{cause:"AWS Batch Job Failed",
+                               error:"DescribeJob returned FAILED"}).
 
 :- end_tests(job_status_poller).

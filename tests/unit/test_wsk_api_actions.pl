@@ -35,7 +35,8 @@ test(ns_hello, Name = "echo") :-
 
 test(echo, R = _{foo:1}) :-
     wsk_api_utils:openwhisk(Options),
-    wsk_api_actions:invoke("/whisk.system/utils/echo", Options, _{foo:1}, R).
+    wsk_api_actions:faas:invoke("wsk:/whisk.system/utils/echo", Options,
+                                _{foo:1}, R).
 
 :- end_tests(invoke).
 
@@ -75,15 +76,15 @@ test(scenarios) :-
     assertion((Name4, Version4) = ("hello", "0.0.2")),
 
     %% 5. invoke_default_hello_with_no_param
-    wsk_api_actions:invoke(hello, Options, _{}, R5),
+    wsk_api_actions:faas:invoke('wsk:hello', Options, _{}, R5),
     assertion(R5 = _{payload: "Hello, World!"}),
 
     %% 6. invoke_ns_hello_with_no_param
-    wsk_api_actions:invoke('/guest/hello', Options, _{}, R6),
+    wsk_api_actions:faas:invoke('wsk:/guest/hello', Options, _{}, R6),
     assertion(R6 = _{payload: "Hello, World!"}),
 
     %% 7. invoke_hello_param,
-    wsk_api_actions:invoke(hello, Options, _{name:"wsk"}, R7),
+    wsk_api_actions:faas:invoke('wsk:hello', Options, _{name:"wsk"}, R7),
     assertion(R7 = _{payload:"Hello, wsk!"}),
 
     %% 8. delete_hello,

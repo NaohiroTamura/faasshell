@@ -1,14 +1,11 @@
 {
-    "input": {
-        "wait_time": 1
-    },
     "asl": {
         "Comment": "A state machine that submits a Job to AWS Batch and monitors the Job until it completes.",
         "StartAt": "Submit Job",
         "States": {
             "Submit Job": {
                 "Type": "Task",
-                "Resource": "/whisk.system/utils/echo",
+                "Resource": "wsk:/whisk.system/utils/echo",
                 "ResultPath": "$.guid",
                 "Next": "Wait X Seconds"
             },
@@ -19,20 +16,21 @@
             },
             "Get Job Status": {
                 "Type": "Task",
-                "Resource": "job",
+                "Resource": "wsk:job",
                 "Next": "Job Complete?",
-                "InputPath": "$.guid"
+                "InputPath": "$.guid",
+                "ResultPath": "$.guid"
             },
             "Job Complete?": {
                 "Type": "Choice",
                 "Choices": [
                     {
-                        "Variable": "$.status",
+                        "Variable": "$.guid.status",
                         "StringEquals": "FAILED",
                         "Next": "Job Failed"
                     },
                     {
-                        "Variable": "$.status",
+                        "Variable": "$.guid.status",
                         "StringEquals": "SUCCEEDED",
                         "Next": "Get Final Job Status"
                     }
@@ -46,8 +44,7 @@
             },
             "Get Final Job Status": {
                 "Type": "Task",
-                "Resource": "hello",
-                "InputPath": "$.guid",
+                "Resource": "wsk:hello",
                 "End": true
             }
         }

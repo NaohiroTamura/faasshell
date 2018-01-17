@@ -1,7 +1,4 @@
 {
-    "input": {
-        "trigger_date": "2015-09-04T01:59:00Z"
-    },
     "asl": {
         "Comment": "A Task Timer example of the Amazon States Language scheduling a task",
         "StartAt": "Wait for Timestamp",

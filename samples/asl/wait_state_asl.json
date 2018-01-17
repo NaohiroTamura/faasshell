@@ -1,16 +1,11 @@
 {
-    "input": {
-        "expirydate": "2017-09-04T01:59:00Z",
-        "expiryseconds": 5,
-        "sleep": 1
-    },
     "asl": {
         "Comment": "An example of the Amazon States Language using wait states",
         "StartAt": "FirstState",
         "States": {
             "FirstState": {
                 "Type": "Task",
-                "Resource": "helloPython",
+                "Resource": "wsk:helloPython",
                 "ResultPath": "$.first_state",
                 "Next": "wait_using_seconds"
             },
@@ -36,7 +31,7 @@
             },
             "FinalState": {
                 "Type": "Task",
-                "Resource": "hello",
+                "Resource": "wsk:hello",
                 "End": true
             }
         }

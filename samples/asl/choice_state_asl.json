@@ -1,14 +1,11 @@
 {
-    "input": {
-        "foo": 1
-    },
     "asl": {
         "Comment": "An example of the Amazon States Language using a choice state.",
         "StartAt": "FirstState",
         "States": {
             "FirstState": {
                 "Type": "Task",
-                "Resource": "hello",
+                "Resource": "wsk:/whisk.system/utils/echo",
                 "Next": "ChoiceState"
             },
             "ChoiceState": {
@@ -30,14 +27,14 @@
 
             "FirstMatchState": {
                 "Type" : "Task",
-                "Resource": "hello",
+                "Resource": "wsk:hello",
                 "ResultPath": "$.first_match_state",
                 "Next": "NextState"
             },
 
             "SecondMatchState": {
                 "Type" : "Task",
-                "Resource": "hello",
+                "Resource": "wsk:hello",
                 "ResultPath": "$.second_match_state",
                 "Next": "NextState"
             },
@@ -50,7 +47,7 @@
 
             "NextState": {
                 "Type": "Task",
-                "Resource": "hello",
+                "Resource": "wsk:hello",
                 "ResultPath": "$.next_state",
                 "End": true
             }

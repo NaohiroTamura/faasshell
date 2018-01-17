@@ -34,7 +34,7 @@ test(hello, (Code, Name) = (200, "hello")) :-
 :- begin_tests(invoke).
 
 test(hello, (Code, R) = (200, _{payload:"Hello, lambda!"})) :-
-    aws_api_lambda:invoke('arn:aws:lambda:us-east-2:410388484666:function:hello',
+    aws_api_lambda:faas:invoke('arn:aws:lambda:us-east-2:410388484666:function:hello',
                           [status_code(Code)], _{name:"lambda"}, R).
 
 :- end_tests(invoke).

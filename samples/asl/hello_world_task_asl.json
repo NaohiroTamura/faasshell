@@ -1,16 +1,12 @@
 {
-    "input" : {
-        "name": "FaaS Shell"
-    },
     "asl" :{
         "Comment": "A Hello World example of the Amazon States Language using an AWS Lambda function",
         "StartAt": "HelloWorld",
         "States": {
             "HelloWorld": {
                 "Type": "Task",
-                "Resource": "hello",
-                "TimeoutSeconds": 300,
-                "HeartbeatSeconds": 60,
+                "Resource": "wsk:hello",
+                "TimeoutSeconds": 5,
                 "End": true
             }
         }

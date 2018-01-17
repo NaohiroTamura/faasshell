@@ -8,7 +8,7 @@
         "States": {
             "FirstState": {
                 "Type": "Task",
-                "Resource": "hello",
+                "Resource": "wsk:/whisk.system/utils/echo",
                 "Next": "ChoiceStateX"
             },
             "ChoiceStateX": {
@@ -44,19 +44,19 @@
             },
             "Public": {
                 "Type" : "Task",
-                "Resource": "hello",
+                "Resource": "wsk:hello",
                 "ResultPath": "$.public_state",
                 "Next": "NextState"
             },
             "ValueIsZero": {
                 "Type" : "Task",
-                "Resource": "hello",
+                "Resource": "wsk:hello",
                 "ResultPath": "$.value_is_zero_state",
                 "Next": "NextState"
             },
             "ValueInTwenties": {
                 "Type" : "Task",
-                "Resource": "hello",
+                "Resource": "wsk:hello",
                 "ResultPath": "$.value_in_twenties_state",
                 "Next": "NextState"
             },
@@ -66,7 +66,7 @@
             },
             "NextState": {
                 "Type": "Task",
-                "Resource": "hello",
+                "Resource": "wsk:hello",
                 "ResultPath": "$.next_state",
                 "End": true
             }
