@@ -27,4 +27,7 @@ load_json(File, Term) :-
             close(S)).
 
 term_json_dict(Term, Dict) :-
+    ground(Term), !,
     atom_json_term(Atom, Term, []), atom_json_dict(Atom, Dict, []).
+term_json_dict(Term, Dict) :-
+    atom_json_dict(Atom, Dict, []), atom_json_term(Atom, Term, []).

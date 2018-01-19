@@ -171,7 +171,10 @@ doc_update(DB, Doc, Data, Code, Res) :-
          json_utils:term_json_dict(Json, DataRev),
          http_put(URL, json(Json), Reply, Options),
          json_utils:term_json_dict(Reply, Res)
-      ;  Code = Code1, Res = R1
+      ;  ( Code1 = 404
+           -> doc_create(DB, Doc, Data, Code, Res)
+           ;  Code = Code1, Res = R1
+         )
     ).
 
 doc_delete(DB, Doc, Code, Res) :-
@@ -207,7 +210,10 @@ design_update(DB, Doc, Data, Code, Res) :-
          json_utils:term_json_dict(Json, DataRev),
          http_put(URL, json(Json), Reply, Options),
          json_utils:term_json_dict(Reply, Res)
-      ;  Code = Code1, Res = R1
+      ;  ( Code1 = 404
+           -> design_create(DB, Doc, Data, Code, Res)
+           ;  Code = Code1, Res = R1
+         )
     ).
 
 design_delete(DB, Doc, Code, Res) :-

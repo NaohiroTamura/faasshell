@@ -79,7 +79,11 @@ faas(Request) :-
     option(namespace(nil), Request)
     -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
     ;  memberchk(method(Method), Request),
-       faas(Method, Request).
+       catch( faas(Method, Request),
+              (Message, Code),
+              ( http_log('~w~n', [catch((Message, Code))]),
+                reply_json_dict(Message, [status(Code)])
+              )).
 
 faas(get, Request) :-
     option(api_key(ID-PW), Request),
@@ -109,9 +113,9 @@ statemachine(Request) :-
     -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
     ;  memberchk(method(Method), Request),
        catch( statemachine(Method, Request),
-              error(Message, Code),
-              ( http_log('~w~n', [catch(error(Message, Code))]),
-                reply_json_dict(_{error: Message}, [status(Code)])
+              (Message, Code),
+              ( http_log('~w~n', [catch((Message, Code))]),
+                reply_json_dict(Message, [status(Code)])
               )).
 
 %% get state machine information
@@ -126,7 +130,7 @@ statemachine(get, Request) :-
          ( Code1 = 200
            -> select_dict(_{'_id':_, '_rev':_}, Dict1, Dict1Rest),
               Output = _{output:ok}.put(Dict1Rest)
-           ;  Output = _{output:ng}.put(Dict1)
+           ;  throw((Dict1, Code1))
          )
       ;  format(string(Query), '["asl","~w"]',[NS]),
          uri_encoded(query_value, Query, EncordedQuery),
@@ -139,7 +143,7 @@ statemachine(get, Request) :-
                           Elm = _{namespace: Namespace, name: Name}
                       ), Dict2.rows, Value),
               Output = _{output:ok}.put(asl, Value)
-           ;  Output = _{output:ng}.put(Dict2)
+           ;  throw((Dict2, Code2))
          )
     ),
     reply_json_dict(Output).
@@ -168,11 +172,13 @@ statemachine(put, Request) :-
               ),
               ( Code = 201
                 -> Output = AslDict.put(_{output:ok, dsl: DslStr})
-                ;  Output = AslDict.put(_{output:ng}).put(Res)
+                ;  throw((Res, Code))
               )
-           ;  Output = Dict.put(_{output:ng, error: "syntax error!", dsl: DslStr})
+           ;  http_header:status_number(server_error, S_500),
+              throw((_{error: 'syntax error', reason: DslStr}, S_500))
          )
-      ; Output = _{output:ng, error:"statemashine missing!"}
+      ; http_header:status_number(bad_request, S_400),
+        throw((_{error: 'Missing statemashine name'}, S_400))
     ),
     reply_json_dict(Output).
 
@@ -183,7 +189,8 @@ statemachine(post, Request) :-
     ( http_read_json_dict(Request, Params, []); Params = _{input:_{}} ),
     http_log('~w~n', [params(Params)]),
     ( get_dict(input, Params, Input);
-      throw(error('Missing input key in params', 400))),
+      http_header:status_number(bad_request, S_400),
+      throw((_{error:'Missing input key in params'}, S_400))),
     ( memberchk(path_info(File), Request),
       option(namespace(NS), Request)
       -> atomics_to_string([NS, "/", File], NSFile),
@@ -199,9 +206,10 @@ statemachine(post, Request) :-
               term_string(Dsl, Dict.dsl),
               asl_run:start(Dsl, Options, Input, O),
               Output = DictParams.put(_{output:O})
-           ;  throw(error('database error', 500))
+           ;  throw((_{error: 'database error'}, 500))
          )
-      ;  throw(error('Missing statemashine name', 400))
+      ;  http_header:status_number(bad_request, S_400),
+         throw((_{error: 'Missing statemashine name'}, S_400))
     ),
     reply_json_dict(Output).
 
@@ -215,9 +223,10 @@ statemachine(delete, Request) :-
          http_log('~w~n', [doc_delete(Code, Res)]),
          ( Code = 200
            -> Output = _{output:ok}
-           ;  Output = _{output:ng}.put(Res)
+           ;  throw((Res, Code))
          )
-      ; Output = _{output:ng, error:"statemashine missing!"}
+      ; http_header:status_number(bad_request, S_400),
+        throw((_{error: 'Missing statemashine name'}, S_400))
     ),
     reply_json_dict(Output).
 
@@ -232,9 +241,10 @@ statemachine(patch, Request) :-
        ( Code = 200
          -> format('Content-type: text/plain~n~n'),
             asl_gen:gen_dot(Dict.asl)
-         ;  reply_json_dict(_{output:ng}.put(Dict))
+         ;  throw((Dict, Code))
        )
-    ; reply_json_dict(_{output:ng, error: "statemachine missing!"}).
+    ; http_header:status_number(bad_request, S_400),
+      throw((_{error: 'Missing statemashine name'}, S_400)).
 
 %%    GET: get shell.dsl information
 %%    PUT: create shell.dsl
@@ -250,9 +260,9 @@ shell(Request) :-
     -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
     ;  memberchk(method(Method), Request),
        catch( shell(Method, Request),
-              error(Message, Code),
-              ( http_log('~w~n', [catch(error(Message, Code))]),
-                reply_json_dict(_{error: Message}, [status(Code)])
+              (Message, Code),
+              ( http_log('~w~n', [catch((Message, Code))]),
+                reply_json_dict(Message, [status(Code)])
               )).
 
 %% get shell information
@@ -267,7 +277,7 @@ shell(get, Request) :-
          ( Code1 = 200
            -> select_dict(_{'_id':_, '_rev':_}, Dict1, Dict1Rest),
               Output = _{output:ok}.put(Dict1Rest)
-           ;  Output = _{output:ng}.put(Dict1)
+           ;  throw((Dict1, Code1))
          )
       ;  format(string(Query), '["dsl","~w"]',[NS]),
          uri_encoded(query_value, Query, EncordedQuery),
@@ -280,7 +290,7 @@ shell(get, Request) :-
                           Elm = _{namespace: Namespace, name: Name}
                       ), Dict2.rows, Value),
               Output = _{output:ok}.put(dsl, Value)
-           ;  Output = _{output:ng}.put(Dict2)
+           ;  throw((Dict2, Code2))
          )
     ),
     reply_json_dict(Output).
@@ -290,11 +300,11 @@ shell(get, Request) :-
 %%        -H 'Content-Type: text/plain' -d @shell.dsl
 shell(put, Request) :-
     http_read_data(Request, DslStr, [text/plain]),
-    term_string(Dsl, DslStr),
     http_log('~w~n', [put(Dsl)]),
-    ( Dsl = asl(_)
-      -> ( memberchk(path_info(File), Request),
-           option(namespace(NS), Request)
+    ( memberchk(path_info(File), Request),
+      option(namespace(NS), Request)
+      -> ( term_string(Dsl, DslStr),
+           Dsl = asl(_)
            -> atomics_to_string([NS, "/", File], NSFile),
               http_parameters(Request, [overwrite(Overwrite, [default(false)])]),
               http_log('~w~n', [overwrite(Overwrite)]),
@@ -307,11 +317,13 @@ shell(put, Request) :-
               ),
               ( Code = 201
                 -> Output = Dict.put(_{output:ok})
-                ;  Output = Dict.put(_{output:ng}).put(Res)
+                ;  throw((Res, Code))
               )
-           ; Output = _{output:ng, error: "shell name missing!"}
+           ; http_header:status_number(server_error, S_500),
+             throw((_{error: 'syntax error', reason: DslStr}, S_500))
          )
-      ; Output = _{output:ng, error: "syntax error!"}
+      ; http_header:status_number(bad_request, S_400),
+        throw((_{error: 'Missing shell name'}, S_400))
     ),
     reply_json_dict(Output).
 
@@ -322,25 +334,27 @@ shell(post, Request) :-
     ( http_read_json_dict(Request, Params, []); Params = _{input:_{}} ),
     http_log('~w~n', [params(Params)]),
     ( get_dict(input, Params, Input);
-      throw(error('Missing input key in params', 400))),
+      http_header:status_number(bad_request, S_400),
+      throw((_{error: 'Missing input key in params'}, S_400))),
     ( memberchk(path_info(File), Request),
       option(namespace(NS), Request)
       -> atomics_to_string([NS, "/", File], NSFile),
          cdb_api:doc_read(faasshell, NSFile, Code, Dict),
          http_log('~w~n', [doc_read(NSFile, Code)]),
-         select_dict(_{'_id':_, '_rev':_}, Dict, DictRest),
-         DictParams = DictRest.put(Params),
          ( Code = 200
-           -> % http_log('~w~n', [dsl(Dsl)]),
+           -> select_dict(_{'_id':_, '_rev':_}, Dict, DictRest),
+              DictParams = DictRest.put(Params),
+              % http_log('~w~n', [dsl(Dsl)]),
               option(api_key(ID-PW), Request),
               wsk_api_utils:openwhisk(Defaults),
               merge_options([api_key(ID-PW)], Defaults, Options),
               term_string(Dsl, Dict.dsl),
               asl_run:start(Dsl, Options, Input, O),
               Output = DictParams.put(_{output:O})
-           ;  throw(error('database error', 500))
+           ;  throw((Dict, Code))
          )
-      ; throw(error('Missing shell name', 400))
+      ; http_header:status_number(bad_request, S_400),
+        throw((_{error: 'Missing shell name'}, S_400))
     ),
     reply_json_dict(Output).
 
@@ -354,9 +368,10 @@ shell(delete, Request) :-
          http_log('~w~n', [doc_delete(NSFile, Code, Res)]),
          ( Code = 200
            -> Output = _{output:ok}
-           ;  Output = _{output:ng}.put(Res)
+           ;  throw((Res, Code))
          )
-      ; Output = _{output:ng, error: "shell name missing!"}
+      ; http_header:status_number(bad_request, S_400),
+        throw((_{error: 'Missing shell name'}, S_400))
     ),
     reply_json_dict(Output).
 

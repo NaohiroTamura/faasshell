@@ -82,8 +82,9 @@ test(doc_read_not_found, (Code, Res) = (404, _{error:"not_found", reason:_})) :-
 test(doc_update, (Code, Res) = (201, _{id:"sample", ok:true, rev:_})) :-
     doc_update(unit_test_db, "sample",  _{asl: "updated!"}, Code, Res).
 
-test(doc_update_not_found, (Code, Res) = (404, _{error:"not_found", reason:_})) :-
-    doc_update(unit_test_db, "not_existd",  _{asl: "updated!"}, Code, Res).
+test(doc_update_create, (Code1, Code2) = (201, 200)) :-
+    doc_update(unit_test_db, "new_sample",  _{asl: "created!"}, Code1, _Res1),
+    doc_delete(unit_test_db, "new_sample", Code2, _Res2).
 
 test(doc_delete_not_found, (Code, Res) = (404, _{error:"not_found", reason:_})) :-
     doc_delete(unit_test_db, "not_exited", Code, Res).
