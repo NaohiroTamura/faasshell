@@ -335,3 +335,29 @@ test(wait_state, Code = 200) :-
 
 
 :- end_tests(wait_state).
+
+%%
+:- begin_tests(parallel).
+
+test(put_overwrite_true, Code = 200) :-
+    load_json('samples/asl/parallel_asl.json', Term),
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/parallel_asl.json?overwrite=true',
+                  URL),
+    http_put(URL, json(Term), Data,
+             [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{output: "ok", name: "parallel_asl.json",
+                namespace: "guest", dsl: _, asl: _} = Dict).
+
+test(wait_state, Code = 200) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/parallel_asl.json', URL),
+    term_json_dict(Json, _{input: _{var:1}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _, input: _{var:1}, name: _, namespace: _,
+                output: [_{var:1}, _{var:1}]} :< Dict).
+
+:- end_tests(parallel).
