@@ -1,4 +1,4 @@
-asl([task('FirstState',"wsk:helloPython",[result_path('$.first_state')]),
+asl([task('FirstState',"wsk:hello",[result_path('$.first_state')]),
          wait(wait_using_seconds,seconds(3),[]),
          wait(wait_using_timestamp,timestamp("2015-09-04T01:59:00Z"),[]),
          wait(wait_using_timestamp_path,timestamp_path('$.expirydate'),[]),

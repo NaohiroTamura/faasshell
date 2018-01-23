@@ -232,3 +232,35 @@ test(default_state, Code = 200) :-
                 output: _{cause:"No Matches!", error:null}} :< Dict).
 
 :- end_tests(choicex_state).
+
+%%
+:- begin_tests(wait_state).
+
+test(put_overwrite_true, Code = 200) :-
+    load_json('samples/aws/asl/wait_state.json', Term),
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/wait_state.json?overwrite=true',
+                  URL),
+    http_put(URL, json(Term), Data,
+             [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{output: "ok", name: "wait_state.json",
+                namespace: "guest", dsl: _, asl: _} = Dict).
+
+test(wait_state, Code = 200) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/wait_state.json', URL),
+    term_json_dict(Json, _{input: _{name: "Lambda",
+                                    expirydate: "2017-09-04T01:59:00Z",
+                                    expiryseconds: 1}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _,
+                input: _{name: "Lambda",
+                         expirydate: "2017-09-04T01:59:00Z",
+                         expiryseconds: 1}, name: _, namespace: _,
+                output: _{payload: "Hello, Lambda!"}} :< Dict).
+
+
+:- end_tests(wait_state).
