@@ -82,7 +82,7 @@ test(get_view, Code = 200) :-
     string_concat(Host, '/statemachine/', URL),
     http_get(URL, Data, [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{output: "ok", asl: [_]} :< Dict).
+    assertion(_{output: "ok", asl: [_|_]} :< Dict).
 
 test(get_not_exit, Code = 404) :-
     api_host(Host), api_key(ID-PW),
@@ -196,3 +196,110 @@ test(put_create, Code = 500) :-
     assertion(_{error:"syntax error", reason: _} = Dict).
 
 :- end_tests(has_dupes_asl).
+
+%%
+:- begin_tests(choice_state).
+
+test(put_overwrite_true, Code = 200) :-
+    load_json('samples/asl/choice_state_asl.json', Term),
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/choice_state_asl.json?overwrite=true',
+                  URL),
+    http_put(URL, json(Term), Data,
+             [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{output: "ok", name: "choice_state_asl.json",
+                namespace: "guest", dsl: _, asl: _} = Dict).
+
+test(first_state, Code = 200) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/choice_state_asl.json', URL),
+    term_json_dict(Json, _{input: _{foo: 1}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _, input: _{foo:1}, name: _, namespace: _,
+                output: _{foo: 1, first_match_state: _, next_state: _}} :< Dict).
+
+test(second_state, Code = 200) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/choice_state_asl.json', URL),
+    term_json_dict(Json, _{input: _{foo: 2}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _, input: _{foo:2}, name: _, namespace: _,
+                output: _{foo: 2, second_match_state: _, next_state: _}} :< Dict).
+
+test(default_state, Code = 200) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/choice_state_asl.json', URL),
+    term_json_dict(Json, _{input: _{foo: 3}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _, input: _{foo:3}, name: _, namespace: _,
+                output: _{cause:"No Matches!",error:"DefaultStateError"}} :< Dict).
+
+:- end_tests(choice_state).
+
+%%
+:- begin_tests(choicex_state).
+
+test(put_overwrite_true, Code = 200) :-
+    load_json('samples/asl/choicex_state_asl.json', Term),
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/choicex_state_asl.json?overwrite=true',
+                  URL),
+    http_put(URL, json(Term), Data,
+             [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{output: "ok", name: "choicex_state_asl.json",
+                namespace: "guest", dsl: _, asl: _} = Dict).
+
+test(public_state, Code = 200) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/choicex_state_asl.json', URL),
+    term_json_dict(Json, _{input: _{type: "Public"}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _, input: _{type: "Public"}, name: _, namespace: _,
+                output: _{type: "Public", public_state: _, next_state: _}} :< Dict).
+
+test(value_is_zero_state, Code = 200) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/choicex_state_asl.json', URL),
+    term_json_dict(Json, _{input: _{type:"Private", value:0}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _, input: _{type:"Private", value:0},
+                name: _, namespace: _,
+                output: _{type:"Private", value:0,
+                          value_is_zero_state: _, next_state: _}} :< Dict).
+
+test(value_in_twenties_state, Code = 200) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/choicex_state_asl.json', URL),
+    term_json_dict(Json, _{input: _{type:"Private", value:25}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _, input: _{type:"Private", value:25},
+                name: _, namespace: _,
+                output: _{type:"Private", value:25,
+                          value_in_twenties_state: _, next_state: _}} :< Dict).
+
+test(default_state, Code = 200) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/choicex_state_asl.json', URL),
+    term_json_dict(Json, _{input: _{type:"Private", value:35}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _, input: _{type:"Private", value:35},
+                name: _, namespace: _,
+                output: _{cause:"No Matches!", error:null}} :< Dict).
+
+:- end_tests(choicex_state).

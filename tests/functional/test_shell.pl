@@ -77,7 +77,7 @@ test(get_view, Code = 200) :-
     string_concat(Host, '/shell/', URL),
     http_get(URL, Data, [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{output: "ok", dsl: [_]} :< Dict).
+    assertion(_{output: "ok", dsl: [_|_]} :< Dict).
 
 test(get_not_exit, Code = 404) :-
     api_host(Host), api_key(ID-PW),

@@ -1,0 +1,54 @@
+{
+    "Comment": "An example of the Amazon States Language using a choice state.",
+    "StartAt": "FirstState",
+    "States": {
+        "FirstState": {
+            "Type": "Task",
+            "Resource": "arn:aws:lambda:us-east-2:410388484666:function:echo",
+            "Next": "ChoiceState"
+        },
+        "ChoiceState": {
+            "Type" : "Choice",
+            "Choices": [
+                {
+                    "Variable": "$.foo",
+                    "NumericEquals": 1,
+                    "Next": "FirstMatchState"
+                },
+                {
+                    "Variable": "$.foo",
+                    "NumericEquals": 2,
+                    "Next": "SecondMatchState"
+                }
+            ],
+            "Default": "DefaultState"
+        },
+
+        "FirstMatchState": {
+            "Type" : "Task",
+            "Resource": "arn:aws:lambda:us-east-2:410388484666:function:hello",
+            "ResultPath": "$.first_match_state",
+            "Next": "NextState"
+        },
+
+        "SecondMatchState": {
+            "Type" : "Task",
+            "Resource": "arn:aws:lambda:us-east-2:410388484666:function:hello",
+            "ResultPath": "$.second_match_state",
+            "Next": "NextState"
+        },
+
+        "DefaultState": {
+            "Type": "Fail",
+            "Error": "DefaultStateError",
+            "Cause": "No Matches!"
+        },
+
+        "NextState": {
+            "Type": "Task",
+            "Resource": "arn:aws:lambda:us-east-2:410388484666:function:hello",
+            "ResultPath": "$.next_state",
+            "End": true
+        }
+    }
+}

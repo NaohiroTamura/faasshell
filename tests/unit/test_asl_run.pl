@@ -93,7 +93,7 @@ test(casex3, O = _{value_in_twenties_state:_, type:"Private", value:25,
     wsk_api_utils:openwhisk(Options),
     start('samples/dsl/choice_statex.dsl', Options, _{type:"Private", value:25}, O).
 
-test(defaultx, O = _{cause:"No Matches!"}) :-
+test(defaultx, O = _{cause:"No Matches!", error:null}) :-
     wsk_api_utils:openwhisk(Options),
     start('samples/dsl/choice_statex.dsl', Options, _{type:"Private", value:35}, O).
 

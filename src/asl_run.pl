@@ -411,9 +411,10 @@ succeed(State, Optional, I, O, _E) :-
 %% fail state
 fail(State, Optional, I, O, _E) :-
     mydebug(fail(in), (State, Optional, I, O)),
-    (option(cause(Cause), Optional) -> O1 = _{cause: Cause}; O1 = _{}),
-    (option(error(Error), Optional) -> O2 = O1.put(error, Error); O2 = O1),
-    O = O2,
+    option(cause(Cause), Optional, null),
+    O1 = _{cause: Cause},
+    option(error(Error), Optional, null),
+    O = O1.put(error, Error),
     mydebug(fail(out), (State, I, O)).
 
 %% parallel state
