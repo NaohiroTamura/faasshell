@@ -30,7 +30,7 @@ remove_hello_action :-
             true)).
 
 %%
-create_action(Action, File, Kind) :-
+create_action(Action, File, Kind, Container) :-
     wsk_api_utils:openwhisk(Options),
     open(File, read, S),
     call_cleanup(
@@ -42,7 +42,11 @@ create_action(Action, File, Kind) :-
                           code: Code
                         }
                },
-    catch( wsk_api_actions:create(Action, Options, Payload, _R),
+    ( option(image(Image), Container)
+      -> PayloadOpt = Payload.exec.put(_{image: Image})
+      ;  PayloadOpt = Payload
+    ),
+    catch( wsk_api_actions:create(Action, Options, PayloadOpt, _R),
            _Error,
            (print_message(warning,
                           format("confirmed '~w' exists.", [Action])),
@@ -50,6 +54,5 @@ create_action(Action, File, Kind) :-
 
 %%
 functional_test_setup :-
-    create_action("hello", 'samples/actions/hello.js', "nodejs:6"),
-    create_action("helloPython", 'samples/actions/helloPython.py', "python:2"),
-    create_action("job", 'samples/actions/job.py', "python:2").
+    create_action("hello", 'samples/actions/hello.js', "nodejs:6", []),
+    create_action("job", 'samples/actions/job.py', "python:2", []).

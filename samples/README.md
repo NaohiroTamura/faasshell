@@ -65,12 +65,6 @@ Endpoint is opened at http://$(minikube ip):30954 in case of Minikube.
 ```sh
 ubuntu@trusty:~/faasshell[master]$ wsk action create hello samples/actions/hello.js -i
 ok: created action hello
-
-ubuntu@trusty:~/faasshell[master]$ wsk action create helloPython samples/actions/helloPython.py -i
-ok: created action helloPython
-
-ubuntu@trusty:~/faasshell[master]$ wsk action create job samples/actions/job.py -i
-ok: created action job
 ```
 ```sh
 ubuntu@trusty:~/faasshell[master]$ . ~/.wskprops
@@ -78,20 +72,6 @@ ubuntu@trusty:~/faasshell[master]$ . ~/.wskprops
 ```sh
 ubuntu@trusty:~/faasshell[master]$ curl -sLX GET http://172.17.0.1:8080/faas/ -u $AUTH
 [
-  {
-    "annotations": [ {"key":"exec", "value":"python:2"} ],
-    "name":"helloPython",
-    "namespace":"guest",
-    "publish":false,
-    "version":"0.0.1"
-  },
-  {
-    "annotations": [ {"key":"exec", "value":"python:2"} ],
-    "name":"job",
-    "namespace":"guest",
-    "publish":false,
-    "version":"0.0.1"
-  },
   {
     "annotations": [ {"key":"exec", "value":"nodejs:6"} ],
     "name":"hello",

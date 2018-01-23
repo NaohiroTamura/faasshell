@@ -93,3 +93,59 @@ test(scenarios) :-
     assertion((Name8, Version8) = ("hello", "0.0.2")).
 
 :- end_tests(all_actions).
+
+%%
+:- begin_tests(custom_error,
+               [setup(create_action("error",
+                                    'samples/actions/error.js', "nodejs:6", [])),
+                setup(create_action("raise",
+                                    'samples/actions/raise.py', "python:2", [])),
+                setup(create_action("exception",
+                                    'samples/actions/exception.pl', "blackbox",
+                                    [image("nao16t/swipl7action")]))
+               ]).
+
+test(nodejs, Code = 502) :-
+    wsk_api_utils:openwhisk(Options),
+    wsk_api_actions:faas:invoke('wsk:error', [status_code(Code)|Options], _{}, R),
+    assertion(R = _{error:"An error has occurred: CustomError: This is a custom error!"}).
+
+test(nodejs_dynamic, Code = 502) :-
+    wsk_api_utils:openwhisk(Options),
+    wsk_api_actions:faas:invoke('wsk:error', [status_code(Code)|Options],
+                                _{error: "new Error('Created dynamically!')"}, R),
+    assertion(R = _{error:"An error has occurred: Error: Created dynamically!"}).
+
+test(python, Code = 502) :-
+    wsk_api_utils:openwhisk(Options),
+    wsk_api_actions:faas:invoke('wsk:raise', [status_code(Code)|Options], _{}, R),
+    %% OpenWhisk Python Runtime Issue
+    %% assertion(R = _{error:"An error has occurred: CustomError: This is a custom error!"}).
+    assertion(R = _{error:"The action did not return a dictionary."}).
+
+test(python_dynamic, Code = 502) :-
+    wsk_api_utils:openwhisk(Options),
+    wsk_api_actions:faas:invoke('wsk:raise', [status_code(Code)|Options],
+                                _{error: "AssertionError('Created dynamically!')"}, R),
+    %% OpenWhisk Python Runtime Issue
+    %% assertion(R = _{error:"An error has occurred: AssertionError: Created dynamically!"}).
+    assertion(R = _{error:"The action did not return a dictionary."}).
+
+/* requires openwhisk-runtime-prolog which implemented AWS Lambda compatible
+   CustomError handling */
+test(prolog, Code = 200) :-
+    wsk_api_utils:openwhisk(Options),
+    wsk_api_actions:faas:invoke('wsk:exception',
+                                [status_code(Code)|Options], _{}, R),
+    assertion(R = _{errorMessage: "This is a custom error!",
+                    errorType: "CustomError"}).
+
+test(prolog_dynamic, Code = 200) :-
+    wsk_api_utils:openwhisk(Options),
+    wsk_api_actions:faas:invoke(
+        'wsk:exception', [status_code(Code)|Options],
+        _{error: "'MyCustomError'('This is my custom error!', 200)"}, R),
+    assertion(R = _{errorMessage: "This is my custom error!",
+                    errorType: "MyCustomError"}).
+
+:- end_tests(custom_error).

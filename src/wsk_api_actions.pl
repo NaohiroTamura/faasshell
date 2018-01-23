@@ -49,31 +49,40 @@ wsk_url(Method, Action, Options, DefaultQuery, URL, ID-PW, Timeout) :-
 %%
 list(Action, Options, Reply) :-
     wsk_url(get, Action, Options, [], URL, ID-PW, Timeout),
+    ( option(status_code(Code), Options)
+      -> StatusCode = [status_code(Code)]
+      ;  StatusCode = []
+    ),
     http_get(URL, R1,
-             [%% status_code(_Code),
-              timeout(Timeout),
+             [timeout(Timeout),
               authorization(basic(ID, PW)),
-              cert_verify_hook(cert_accept_any)]),
+              cert_verify_hook(cert_accept_any) | StatusCode]),
     json_utils:term_json_dict(R1, Reply).
 
 create(Action, Options, Payload, Reply) :-
     wsk_url(put, Action, Options, [], URL, ID-PW, Timeout),
     json_utils:term_json_dict(Json, Payload),
+    ( option(status_code(Code), Options)
+      -> StatusCode = [status_code(Code)]
+      ;  StatusCode = []
+    ),
     http_put(URL, json(Json), R1,
-              [%% status_code(_Code),
-               timeout(Timeout),
+              [timeout(Timeout),
                authorization(basic(ID, PW)),
-               cert_verify_hook(cert_accept_any)]),
+               cert_verify_hook(cert_accept_any) | StatusCode]),
     json_utils:term_json_dict(R1, Reply).
 
 update(Action, Options, Payload, Reply) :-
     wsk_url(put, Action, Options, [overwrite=true], URL, ID-PW, Timeout),
     json_utils:term_json_dict(Json, Payload),
+    ( option(status_code(Code), Options)
+      -> StatusCode = [status_code(Code)]
+      ;  StatusCode = []
+    ),
     http_put(URL, json(Json), R1,
-              [%% status_code(_Code),
-               timeout(Timeout),
+              [timeout(Timeout),
                authorization(basic(ID, PW)),
-               cert_verify_hook(cert_accept_any)]),
+               cert_verify_hook(cert_accept_any) | StatusCode]),
     json_utils:term_json_dict(R1, Reply).
 
 :- multifile
@@ -84,18 +93,24 @@ faas:invoke(WRN, Options, Payload, Reply) :-
     %% writeln(wsk(invoke(Action))),
     wsk_url(post, Action, Options, [blocking=true,result=true], URL, ID-PW, Timeout),
     json_utils:term_json_dict(Json, Payload),
+    ( option(status_code(Code), Options)
+      -> StatusCode = [status_code(Code)]
+      ;  StatusCode = []
+    ),
     http_post(URL, json(Json), R1,
-              [%% status_code(_Code),
-               timeout(Timeout),
+              [timeout(Timeout),
                authorization(basic(ID, PW)),
-               cert_verify_hook(cert_accept_any)]),
+               cert_verify_hook(cert_accept_any) | StatusCode]),
     json_utils:term_json_dict(R1, Reply).
 
 delete(Action, Options, Reply) :-
     wsk_url(delete, Action, Options, [], URL, ID-PW, Timeout),
+    ( option(status_code(Code), Options)
+      -> StatusCode = [status_code(Code)]
+      ;  StatusCode = []
+    ),
     http_delete(URL, R1,
-             [%% status_code(_Code),
-              timeout(Timeout),
+             [timeout(Timeout),
               authorization(basic(ID, PW)),
-              cert_verify_hook(cert_accept_any)]),
+              cert_verify_hook(cert_accept_any) | StatusCode]),
     json_utils:term_json_dict(R1, Reply).
