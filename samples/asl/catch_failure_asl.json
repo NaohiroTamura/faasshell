@@ -1,25 +1,29 @@
 {
-    "Comment": "A Catch example of the Amazon States Language using an AWS Lambda function",
-    "StartAt": "CreateAccount",
+    "Comment": "A Catch example of the Amazon States Language using an AWS Lambda Function",
+    "StartAt": "HelloWorld",
     "States": {
-        "CreateAccount": {
+        "HelloWorld": {
             "Type": "Task",
-            "Resource": "unknown",
-            "Catch": [ {
-                "ErrorEquals": ["CustomError"],
-                "Next": "CustomErrorFallback"
-            }, {
-                "ErrorEquals": ["States.TaskFailed"],
-                "Next": "ReservedTypeFallback"
-            }, {
-                "ErrorEquals": ["States.ALL"],
-                "Next": "CatchAllFallback"
-            } ],
+            "Resource": "wsk:error",
+            "Catch": [
+                {
+                    "ErrorEquals": ["CustomError"],
+                    "Next": "CustomErrorFallback"
+                },
+                {
+                    "ErrorEquals": ["States.TaskFailed"],
+                    "Next": "ReservedTypeFallback"
+                },
+                {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "CatchAllFallback"
+                }
+            ],
             "End": true
         },
         "CustomErrorFallback": {
             "Type": "Pass",
-            "Result": "This is a fallback from a custom Lambda function exception",
+            "Result": "This is a fallback from a custom lambda function exception",
             "End": true
         },
         "ReservedTypeFallback": {
@@ -29,7 +33,7 @@
         },
         "CatchAllFallback": {
             "Type": "Pass",
-            "Result": "This is a fallback from any error code",
+            "Result": "This is a fallback from a reserved error code",
             "End": true
         }
     }

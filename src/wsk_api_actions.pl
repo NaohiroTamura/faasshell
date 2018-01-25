@@ -95,13 +95,18 @@ faas:invoke(WRN, Options, Payload, Reply) :-
     json_utils:term_json_dict(Json, Payload),
     ( option(status_code(Code), Options)
       -> StatusCode = [status_code(Code)]
-      ;  StatusCode = []
+      ;  StatusCode = [status_code(_)] %% supress exception for custom error
     ),
     http_post(URL, json(Json), R1,
               [timeout(Timeout),
                authorization(basic(ID, PW)),
                cert_verify_hook(cert_accept_any) | StatusCode]),
-    json_utils:term_json_dict(R1, Reply).
+    json_utils:term_json_dict(R1, D1),
+    ( _{error: Error} :< D1,
+      split_string(Error, ":", " ", [_, ErrorType, ErrorMessage])
+      -> Reply = _{error: ErrorType, cause: ErrorMessage}
+      ;  Reply = D1
+    ).
 
 delete(Action, Options, Reply) :-
     wsk_url(delete, Action, Options, [], URL, ID-PW, Timeout),

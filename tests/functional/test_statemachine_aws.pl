@@ -290,3 +290,66 @@ test(wait_state, Code = 200) :-
                 output: [_{var:1}, _{var:1}]} :< Dict).
 
 :- end_tests(parallel).
+
+%%
+:- begin_tests(pass_state).
+
+test(put_overwrite_true, Code = 200) :-
+    load_json('samples/aws/asl/hello_world.json', Term),
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/hello_world.json?overwrite=true',
+                  URL),
+    http_put(URL, json(Term), Data,
+             [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{output: "ok", name: "hello_world.json",
+                namespace: "guest", dsl: _, asl: _} = Dict).
+
+test(hello_world, Code = 200) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/hello_world.json', URL),
+    term_json_dict(Json, _{input: _{}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _, input: _{}, name: _, namespace: _,
+                output: "Hello World!"} :< Dict).
+
+:- end_tests(pass_state).
+
+%%
+:- begin_tests(catch_failure).
+
+test(put_overwrite_true, Code = 200) :-
+    load_json('samples/aws/asl/catch_failure.json', Term),
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/catch_failure.json?overwrite=true',
+                  URL),
+    http_put(URL, json(Term), Data,
+             [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{output: "ok", name: "catch_failure.json",
+                namespace: "guest", dsl: _, asl: _} = Dict).
+
+test(custom_error, Code = 200) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/catch_failure.json', URL),
+    term_json_dict(Json, _{input: _{}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _, input: _{}, name: _, namespace: _,
+                output: "This is a fallback from a custom lambda function exception"} :< Dict).
+
+test(reserved_type, Code = 200) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/catch_failure.json', URL),
+    term_json_dict(Json, _{input: _{error: "new Error('Created dynamically!')"}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _,  name: _, namespace: _,
+                input: _{error: "new Error('Created dynamically!')"},
+                output: "This is a fallback from a reserved error code"} :< Dict).
+
+:- end_tests(catch_failure).

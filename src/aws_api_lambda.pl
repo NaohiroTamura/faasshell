@@ -51,7 +51,17 @@ faas:invoke(ARN, Options, Payload, Reply) :-
     http_post(URL, atom('application/json', PayloadText), R1, MergedOptions),
     ( atomic(R1)
       -> Reply = R1
-      ;  json_utils:term_json_dict(R1, Reply)
+      ;  %% json_utils:term_json_dict(R1, Reply)
+         custom_error(R1, Reply)
+    ).
+
+%% process AWS Lambda Function Errors
+custom_error(In, Out) :-
+    json_utils:term_json_dict(In, O1),
+    ( _{errorMessage: _ErrorMessage, errorType: ErrorType,
+        stackTrace: _StackTrace } :< O1
+      -> Out = _{error: ErrorType, cause: O1}
+      ;  Out = O1
     ).
 
 delete(ARN, Options, Reply) :-

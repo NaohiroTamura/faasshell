@@ -108,13 +108,13 @@ test(scenarios) :-
 test(nodejs, Code = 502) :-
     wsk_api_utils:openwhisk(Options),
     wsk_api_actions:faas:invoke('wsk:error', [status_code(Code)|Options], _{}, R),
-    assertion(R = _{error:"An error has occurred: CustomError: This is a custom error!"}).
+    assertion(R = _{cause:"This is a custom error!",error:"CustomError"}).
 
 test(nodejs_dynamic, Code = 502) :-
     wsk_api_utils:openwhisk(Options),
     wsk_api_actions:faas:invoke('wsk:error', [status_code(Code)|Options],
                                 _{error: "new Error('Created dynamically!')"}, R),
-    assertion(R = _{error:"An error has occurred: Error: Created dynamically!"}).
+    assertion(R = _{cause:"Created dynamically!",error:"Error"}).
 
 test(python, Code = 502) :-
     wsk_api_utils:openwhisk(Options),

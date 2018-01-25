@@ -55,9 +55,10 @@ test(nodejs, Code = 200) :-
         'arn:aws:lambda:us-east-2:410388484666:function:error',
         [status_code(Code)], _{}, R),
 
-    assertion(R = _{errorMessage: "This is a custom error!",
-                    errorType: "CustomError",
-                    stackTrace: _ }).
+    assertion(R = _{error: "CustomError",
+                    cause: _{errorMessage: "This is a custom error!",
+                             errorType: "CustomError",
+                             stackTrace: _ }}).
 
 test(nodejs_dynamic, Code = 200) :-
     aws_api_lambda:faas:invoke(
@@ -65,18 +66,20 @@ test(nodejs_dynamic, Code = 200) :-
         [status_code(Code)],
         _{error: "new Error('Created dynamically!')"}, R),
 
-    assertion(R = _{errorMessage: "Created dynamically!",
-                    errorType: "Error",
-                    stackTrace: _ }).
+    assertion(R = _{error: "Error",
+                    cause: _{errorMessage: "Created dynamically!",
+                             errorType: "Error",
+                             stackTrace: _ }}).
 
 test(python, Code = 200) :-
     aws_api_lambda:faas:invoke(
         'arn:aws:lambda:us-east-2:410388484666:function:raise',
         [status_code(Code)], _{}, R),
 
-    assertion(R = _{errorMessage: "This is a custom error!",
-                    errorType: "CustomError",
-                    stackTrace: _ }).
+    assertion(R = _{error: "CustomError",
+                    cause: _{errorMessage: "This is a custom error!",
+                             errorType: "CustomError",
+                             stackTrace: _ }}).
 
 test(python_dynamic, Code = 200) :-
     aws_api_lambda:faas:invoke(
@@ -84,8 +87,9 @@ test(python_dynamic, Code = 200) :-
         [status_code(Code)],
         _{error: "AssertionError('Created dynamically!')"}, R),
 
-    assertion(R = _{errorMessage: "Created dynamically!",
-                    errorType: "AssertionError",
-                    stackTrace: _ }).
+    assertion(R = _{error: "AssertionError",
+                    cause: _{errorMessage: "Created dynamically!",
+                             errorType: "AssertionError",
+                             stackTrace: _ }}).
 
 :- end_tests(custom_error).
