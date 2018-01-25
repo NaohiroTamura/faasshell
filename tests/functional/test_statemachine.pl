@@ -424,3 +424,40 @@ test(reserved_type, Code = 200) :-
                 output: "This is a fallback from a reserved error code"} :< Dict).
 
 :- end_tests(catch_failure).
+
+%%
+:- begin_tests(retry_failure).
+
+test(put_overwrite_true, Code = 200) :-
+    load_json('samples/asl/retry_failure_asl.json', Term),
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/retry_failure_asl.json?overwrite=true',
+                  URL),
+    http_put(URL, json(Term), Data,
+             [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{output: "ok", name: "retry_failure_asl.json",
+                namespace: "guest", dsl: _, asl: _} = Dict).
+
+test(custom_error, Code = 200) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/retry_failure_asl.json', URL),
+    term_json_dict(Json, _{input: _{}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _, input: _{}, name: _, namespace: _,
+                output: _{error: "CustomError"}} :< Dict).
+
+test(reserved_type, Code = 200) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/retry_failure_asl.json', URL),
+    term_json_dict(Json, _{input: _{error: "new Error('Created dynamically!')"}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _,  name: _, namespace: _,
+                input: _{error: "new Error('Created dynamically!')"},
+                output: _{error: "Error"}} :< Dict).
+
+:- end_tests(retry_failure).

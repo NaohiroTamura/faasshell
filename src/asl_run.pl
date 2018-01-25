@@ -493,6 +493,10 @@ lookup_state(_Target, [], _) :- fail.
 %%
 'ErrorEquals'(["States.ALL"], I, true, _E) :- !,
     mydebug('ErrorEquals'("States.ALL"), (I, true)).
+'ErrorEquals'(["States.TaskFailed"], I, O, _E) :- !,
+    mydebug('ErrorEquals'(in), ("States.TaskFailed", I, O)),
+    (re_match("Error"/i, I) -> O = true; O = false),
+    mydebug('ErrorEquals'(out), ("States.TaskFailed", I, O)).
 'ErrorEquals'(ErrorNames, I, O, _E) :-
     mydebug('ErrorEquals'(in), (ErrorNames, I, O)),
     (memberchk(I, ErrorNames) -> O = true; O = false),

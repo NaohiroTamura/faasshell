@@ -33,7 +33,7 @@
         },
         "CatchAllFallback": {
             "Type": "Pass",
-            "Result": "This is a fallback from a reserved error code",
+            "Result": "This is a fallback from any error code",
             "End": true
         }
     }
