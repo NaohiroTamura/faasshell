@@ -19,9 +19,58 @@
 % AWS Signature Version 4 Signing Process
 %
 :- module(aws_api_utils,
-          [ aws_lambda/5
+          [ aws_lambda/5,
+            aws_step_functions/5
          ]).
 
+
+aws_step_functions(Action, ARN, RequestParameters, Payload, Options) :-
+    getenv('AWS_ACCESS_KEY_ID', AWS_ACCESS_KEY_ID),
+    getenv('AWS_SECRET_ACCESS_KEY', AWS_SECRET_ACCESS_KEY),
+    atomic_list_concat([arn, aws, Service, Region |_ ], ':', ARN),
+    Method = 'POST',
+    Scheme = 'https',
+    Path = '',
+    Resource = '/',
+    atomic_list_concat([Service, Region, 'amazonaws', 'com'], '.', Host),
+    uri_components(Endpoint, uri_components(Scheme, Host, Path, _, _)),
+    %%Endpoint = 'https://status.us-east-2.amazonaws.com/',
+
+    %% http_header:http_post_data/3 appends encoding automatically
+    ContentType = 'application/x-amz-json-1.0; charset=UTF-8',
+    atomic_concat('AWSStepFunctions.', Action, AmzTarget),
+
+    %% TASK 1: CREATE A CANONICAL REQUEST
+    canonical_request(step_function,
+                      Method, Host, Path, Resource, RequestParameters, Payload,
+                      ContentType, AmzTarget,
+                      AmzDate, DateStamp, CanonicalRequest, SignedHeaders),
+
+    %% TASK 2: CREATE THE STRING TO SIGN
+    string_to_sign(AmzDate, DateStamp, Region, Service, CanonicalRequest,
+                   Algorithm, CredentialScope, StringToSign),
+
+    %% TASK 3: CALCULATE THE SIGNATURE
+    calc_signature(AWS_SECRET_ACCESS_KEY, DateStamp, Region, Service, StringToSign,
+                   Signature),
+
+    %% TASK 4: ADD SIGNING INFORMATION TO THE REQUEST
+    auth_header(Algorithm, AWS_ACCESS_KEY_ID, CredentialScope, SignedHeaders,
+                Signature, AuthorizationHeader),
+
+    ( RequestParameters = ''
+      -> atomics_to_string([Endpoint, Resource], URL)
+      ;  atomics_to_string([Endpoint, Resource, '?', RequestParameters], URL)
+    ),
+    Options = [
+        aws_access_key_id(AWS_ACCESS_KEY_ID),
+        aws_secret_access_key(AWS_SECRET_ACCESS_KEY),
+        url(URL),
+        request_header('X-Amz-Date'=AmzDate),
+        request_header('X-Amz-Target'=AmzTarget),
+        request_header('Authorization'=AuthorizationHeader)].
+
+%%
 lambda(list, 'GET', Function, Resource) :-
     atomic_list_concat(['/', Function], Resource).
 lambda(invoke, 'POST', Function, Resource) :-
@@ -43,7 +92,8 @@ aws_lambda(Action, ARN, RequestParameters, Payload, Options) :-
     %%Endpoint = 'https://lambda.us-east-2.amazonaws.com/2015-03-31/functions',
 
     %% TASK 1: CREATE A CANONICAL REQUEST
-    canonical_request(Method, Host, Path, Resource, RequestParameters, Payload,
+    canonical_request(lambda,
+                      Method, Host, Path, Resource, RequestParameters, Payload,
                       AmzDate, DateStamp, CanonicalRequest, SignedHeaders),
 
     %% TASK 2: CREATE THE STRING TO SIGN
@@ -70,7 +120,23 @@ aws_lambda(Action, ARN, RequestParameters, Payload, Options) :-
         request_header('Authorization'=AuthorizationHeader)].
 
 %% TASK 1: CREATE A CANONICAL REQUEST
-canonical_request(Method, Host, Path, Resource, RequestParameters, Payload,
+canonical_request(step_function, Method, Host, Path, Resource, RequestParameters,
+                  Payload, ContentType, AmzTarget,
+                  AmzDate, DateStamp, CanonicalRequest, SignedHeaders) :-
+    amzdate(AmzDate, DateStamp),
+    atom_concat(Path, Resource, CanonicalUri),
+    CanonicalQuerystring = RequestParameters,
+    format(string(CanonicalHeaders),
+           'content-type:~w~nhost:~w~nx-amz-date:~w~nx-amz-target:~w~n',
+           [ContentType, Host, AmzDate, AmzTarget]),
+    SignedHeaders = 'content-type;host;x-amz-date;x-amz-target',
+    sha256_hexdigest(Payload, PayloadHash),
+    /* writeln(payload_hash(PayloadHash)), */
+    format(string(CanonicalRequest), '~w~n~w~n~w~n~w~n~w~n~w',
+           [Method, CanonicalUri, CanonicalQuerystring, CanonicalHeaders,
+            SignedHeaders, PayloadHash]).
+
+canonical_request(lambda, Method, Host, Path, Resource, RequestParameters, Payload,
                   AmzDate, DateStamp, CanonicalRequest, SignedHeaders) :-
     amzdate(AmzDate, DateStamp),
     atom_concat(Path, Resource, CanonicalUri),
