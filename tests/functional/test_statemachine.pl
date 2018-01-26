@@ -461,3 +461,43 @@ test(reserved_type, Code = 200) :-
                 output: _{error: "Error"}} :< Dict).
 
 :- end_tests(retry_failure).
+
+%%
+:- begin_tests(task_timer).
+
+test(put_overwrite_true, Code = 200) :-
+    load_json('samples/asl/task_timer_asl.json', Term),
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/task_timer_asl.json?overwrite=true',
+                  URL),
+    http_put(URL, json(Term), Data,
+             [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{output: "ok", name: "task_timer_asl.json",
+                namespace: "guest", dsl: _, asl: _} = Dict).
+
+test(succeeded, Code = 200) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/task_timer_asl.json', URL),
+    term_json_dict(Json, _{input: _{timer_seconds:1, status: "Sent"}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _, name: _, namespace: _,
+                input: _{timer_seconds:1, status: "Sent"},
+                output: _{timer_seconds:1, status: "Sent"}} :< Dict).
+
+test(failed, Code = 200) :-
+    api_host(Host), api_key(ID-PW),
+    string_concat(Host, '/statemachine/task_timer_asl.json', URL),
+    term_json_dict(Json, _{input: _{timer_seconds:1, status:"ERROR"}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _,  name: _, namespace: _,
+                input: _{timer_seconds:1, status:"ERROR"},
+                %% OpenWhisk Invoker / Python Runtime Issue
+                %% output: _{error: "Exception"}} :< Dict).
+                output: _{error: "The action did not return a dictionary."}} :< Dict).
+
+:- end_tests(task_timer).

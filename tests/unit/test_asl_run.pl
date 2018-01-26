@@ -140,3 +140,23 @@ test(failed, O = _{cause:"AWS Batch Job Failed",
           _{wait_time:1, params:["DEFAULT", "FAILED"], name:"Poller"}, O).
 
 :- end_tests(job_status_poller).
+
+:- begin_tests(task_timer,
+               [setup(create_action("sns",
+                                    'samples/actions/sns.py', "python:2", []))
+               ]).
+
+test(succeeded, Code = 200) :-
+    wsk_api_utils:openwhisk(Options),
+    start('samples/dsl/task_timer.dsl', [status_code(Code) | Options],
+          _{timer_seconds:1, status:"Sent"}, O),
+    assertion(O = _{timer_seconds:1, status: "Sent"}).
+
+test(failed, Code = 502 ) :-
+    wsk_api_utils:openwhisk(Options),
+    start('samples/dsl/task_timer.dsl', [status_code(Code) | Options],
+          _{timer_seconds:1, status:"ERROR"}, O),
+    %% OpenWhisk Invoker / Python Runtime Issue regarding exception handling
+    assertion(O = _{error:"The action did not return a dictionary."}).
+
+:- end_tests(task_timer).
