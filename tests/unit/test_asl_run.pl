@@ -160,3 +160,37 @@ test(failed, Code = 502 ) :-
     assertion(O = _{error:"The action did not return a dictionary."}).
 
 :- end_tests(task_timer).
+
+:- begin_tests(activity_task).
+
+test(success, Code = 200) :-
+    wsk_api_utils:openwhisk(Options),
+    message_queue_create(MQueue),
+    thread_create(
+            start('samples/dsl/activity_task.dsl',
+                  [activity_queue(MQueue), status_code(Code) | Options],
+                  _{name: "Activity"}, O),
+            Id),
+    uuid(Sender),
+    thread_send_message(
+            MQueue,
+            get_activity_task(Sender,
+                              "arn:aws:states:us-east-2:410388484666:activity:test")
+        ),
+    thread_get_message(MQueue, reply_activity_task(Sender, InputText)),
+    atom_json_dict(InputText, Input, []),
+
+    thread_send_message(MQueue, send_task_heartbeat(Sender)),
+    thread_get_message(MQueue, reply_task_heartbeat(Sender)),
+
+    atomics_to_string(["Hello, ", Input.name, "!"], Output),
+    atom_json_dict(OutputText, _{payload: Output}, []),
+    thread_send_message(MQueue, send_task_success(Sender, OutputText)),
+
+    thread_join(Id, _Status),
+    assertion(O = _{payload:"Hello, Activity!"}).
+
+%%test(success, Code = 200) :-
+%% send_task_failure,
+
+:- end_tests(activity_task).

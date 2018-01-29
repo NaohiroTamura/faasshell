@@ -201,6 +201,37 @@ task_heartbeat(TaskControlMBox, TaskToken, HeartbeatSeconds) :-
     message_queue_destroy(HeartBeatMBox),
     mydebug(task_heartbeat(out), HeartBeatMBox).
 
+activity_task(Action, Optional, I, O, E) :-
+    mydebug(activity_task(in), (I, O)),
+    %% ASL spec defines the default value is 99999999
+    option(timeout_seconds(TimeoutSeconds), Optional, 99999999),
+    mydebug(activity_task(timeout), TimeoutSeconds),
+    %% ASL spec defines the default value is 99999999
+    option(heartbeat_seconds(HeartbeatSeconds), Optional, 99999999),
+    mydebug(activity_task(heartbeat_seconds), HeartbeatSeconds),
+    %%
+    option(activity_queue(MQueue), E.faas),
+    mydebug(activity_task(activity_queue), MQueue),
+
+    thread_get_message(MQueue, get_activity_task(Sender, Action),
+                       [timeout(TimeoutSeconds)]),
+    mydebug(activity_task(get_message), get_activity_task(Sender, Action)),
+
+    atom_json_dict(InputText, I, []),
+    thread_send_message(MQueue, reply_activity_task(Sender, InputText)),
+    mydebug(activity_task(send_message), reply_activity_task(Sender, InputText)),
+
+    thread_get_message(MQueue, send_task_heartbeat(Sender)),
+    mydebug(activity_task(get_message), send_task_heartbeat(Sender)),
+
+    thread_send_message(MQueue, reply_task_heartbeat(Sender)),
+    mydebug(activity_task(send_message), reply_task_heartbeat(Sender)),
+
+    thread_get_message(MQueue, send_task_success(Sender, OutputText)),
+    mydebug(activity_task(get_message), send_task_success(Sender, OutputText)),
+    atom_json_dict(OutputText, O, []),
+
+    mydebug(activity_task(out), (I, O)).
 
 task_control_message(task_completed(O), true, O) :- !,
     mydebug(task_control_message(task_completed(O)), true).
@@ -259,11 +290,16 @@ task_control(Action, Optional, I, O, E) :-
 task_execute(Action, Optional, I, O, E) :-
     mydebug(task_execute(in), (I, O)),
     option(task_control_mbox(TaskControlMBox), Optional),
-    option(timeout_seconds(TimeoutSeconds), Optional, infinite),
-    mydebug(task_execute(timeout), TimeoutSeconds),
-    ApiEnv = [timeout(TimeoutSeconds) | E.faas],
-    catch( ( %% call plugin
-             faas:invoke(Action, ApiEnv, I, O),
+    catch( ( ( atomic_list_concat([_, _, states, _, _, activity, _], ':', Action)
+               -> %% process activity
+                  activity_task(Action, Optional, I, O, E)
+               ;  %% process function, call faas plugin
+                  %% ASL spec defines the default value is 99999999
+                  option(timeout_seconds(TimeoutSeconds), Optional, infinite),
+                  mydebug(function_task(timeout), TimeoutSeconds),
+                  ApiEnv = [timeout(TimeoutSeconds) | E.faas],
+                  faas:invoke(Action, ApiEnv, I, O)
+             ),
              thread_send_message(TaskControlMBox, task_completed(O)),
              mydebug(task_execute(out), (I, O))
            ),
