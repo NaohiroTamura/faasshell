@@ -99,9 +99,9 @@ pass(State, Optional, I, O, _E) :-
 task(State, Action, Optional, I, O, E) :-
     mydebug(task(in), (State, Action, Optional, I, O)),
     process_input(I, I1, Optional),
-    task_control(Action, Optional, I1, M1, E),
+    task_execute(Action, Optional, I1, M1, E),
     ( option(retry(R), Optional), is_dict(M1), get_dict(error, M1, Error1)
-      -> retry(task_control(Action, Optional, I1), R, Error1, M2, E)
+      -> retry(task_execute(Action, Optional, I1), R, Error1, M2, E)
       ;  M2 = M1
     ),
     ( option(fallback(F), Optional), is_dict(M2), get_dict(error, M2, Error2)
@@ -111,207 +111,104 @@ task(State, Action, Optional, I, O, E) :-
     process_output(I, M3, O, Optional),
     mydebug(task(out), (I, O)).
 
-error_code(time_limit_exceeded, _{error: "States.Timeout"}) :-
-    mydebug(error_code, time_limit_exceeded), !.
-
-error_code(error(timeout_error(_, _), _), _{error: "States.Timeout"}) :-
-    mydebug(error_code, timeout_error), !.
-
-error_code(heartbeat_error, _{error: "States.TaskFailed"}) :-
-    mydebug(error_code, heartbeat_error), !.
-
-error_code(Error, O) :-
-    Error = error(permission_error(_, _), context(_, Status)), !,
-    mydebug(error_code(permission(in)), (Status, O)),
-    print_message(error, Error),
-    O = _{error: "States.Permissions"},
-    mydebug(error_code(permission(out)), (Status, O)).
-
-error_code(Error, O) :-
-    Error = error(existence_error(_, _), context(_, Status)), !,
-    mydebug(error_code(existence_error(in)), (Status, O)),
-    print_message(error, Error),
-    O = _{error: "States.TaskFailed"},
-    mydebug(error_code(existence_error(out)), (Status, O)).
-
-error_code(Error, O) :-
-    Error = error(type_error(_, _), context(_, Status)), !,
-    mydebug(error_code(type_error(in)), (Status, O)),
-    print_message(error, Error),
-    O = _{error: "States.TaskFailed"},
-    mydebug(error_code(type_error(out)), (Status, O)).
-
-error_code(task_execute_kill, _) :-
-    print_message(warning, format('caught task_execute_kill message', [])).
-
-error_code(Error, _{error: Error}) :-
-    print_message(error, Error).
-
-heartbeat(HeartBeatMBox, _TaskToken) :-
-    mydebug(heartbeat, in),
-    catch( ( repeat,
-             %% TODO: get_heartbeat(TaskToken)
-             sleep(5),
-             %% 
-             thread_send_message(HeartBeatMBox, heartbeat),
-             false
-           ),
-           Error,
-           mydebug(heartbeat(catch), Error)
-         ).
-
-heartbeat_message(stop, true) :- !,
-    mydebug(task_heartbeat(repeat), stop).
-
-heartbeat_message(Msg, false) :-
-    mydebug(task_heartbeat(repeat), continue(Msg)).
-
-task_heartbeat(TaskControlMBox, TaskToken, HeartbeatSeconds) :-
-    mydebug(task_heartbeat(in), HeartbeatSeconds),
-    %% TODO: token
-    message_queue_create(HeartBeatMBox),
-    thread_create(heartbeat(HeartBeatMBox, TaskToken), HeartBeatId),
-    catch( ( ( repeat,
-               mydebug(task_heartbeat(repeat), in),
-               ( thread_get_message(HeartBeatMBox, Msg,
-                                    [timeout(HeartbeatSeconds)])
-                 -> heartbeat_message(Msg, Ret)
-                 ;  ( mydebug(task_heartbeat(repeat), timeout(HeartbeatSeconds)),
-                      %% task failed to send heartbeat within HeartbeatSeconds
-                      error_code(heartbeat_error, O),
-                      thread_send_message(TaskControlMBox, task_failed(O)),
-                      Ret = true
-                    )
-               ),
-               Ret
-             ),
-             mydebug(task_heartbeat(repeat), out)
-           ),
-           Error,
-           mydebug(task_heartbeat(catch), Error)
-         ),
-    !,
-    ( is_thread(HeartBeatId),
-      thread_property(HeartBeatId, status(running))
-      -> thread_signal(HeartBeatId, throw(heart_beat_kill)),
-         thread_join(HeartBeatId, HeartBeatStatus),
-         mydebug(task_heartbeat(out), heartbeat(HeartBeatStatus))
-      ; true
+activity_task_heartbeat(ActivityTaskId, WorkerQueue, Sender, TaskToken,
+                        HeartbeatSeconds) :-
+    mydebug(activity_task_heartbeat(in), (Sender, TaskToken, HeartbeatSeconds)),
+    ( repeat,
+      ( thread_get_message(WorkerQueue, send_task_heartbeat(Sender, TaskToken),
+                           [timeout(HeartbeatSeconds)])
+        -> mydebug(activity_task_heartbeat(get_message),
+                   send_task_heartbeat(Sender, TaskToken)),
+           thread_send_message(WorkerQueue,
+                               reply_task_heartbeat(Sender, TaskToken)),
+           mydebug(activity_task_heartbeat(send_message),
+                   reply_task_heartbeat(Sender, TaskToken)),
+           Ret = false
+        ; thread_signal(ActivityTaskId, throw(heartbeat_timeout)),
+          Ret = true
+      ),
+      Ret
     ),
-    message_queue_destroy(HeartBeatMBox),
-    mydebug(task_heartbeat(out), HeartBeatMBox).
+    mydebug(activity_task_heartbeat(out), (Sender, TaskToken, HeartbeatSeconds)).
 
 activity_task(Action, Optional, I, O, E) :-
     mydebug(activity_task(in), (I, O)),
-    %% ASL spec defines the default value is 99999999
-    option(timeout_seconds(TimeoutSeconds), Optional, 99999999),
-    mydebug(activity_task(timeout), TimeoutSeconds),
-    %% ASL spec defines the default value is 99999999
-    option(heartbeat_seconds(HeartbeatSeconds), Optional, 99999999),
-    mydebug(activity_task(heartbeat_seconds), HeartbeatSeconds),
-    %%
-    option(activity_queue(MQueue), E.faas),
-    mydebug(activity_task(activity_queue), MQueue),
 
-    thread_get_message(MQueue, get_activity_task(Sender, Action),
-                       [timeout(TimeoutSeconds)]),
+    option(activity_queue(WorkerQueue), E.faas),
+    mydebug(activity_task(activity_queue), WorkerQueue),
+
+    thread_get_message(WorkerQueue, get_activity_task(Sender, Action)),
     mydebug(activity_task(get_message), get_activity_task(Sender, Action)),
 
     atom_json_dict(InputText, I, []),
-    thread_send_message(MQueue, reply_activity_task(Sender, InputText)),
-    mydebug(activity_task(send_message), reply_activity_task(Sender, InputText)),
+    uuid(TaskToken),
+    thread_send_message(WorkerQueue,
+                        reply_activity_task(Sender, TaskToken, InputText)),
+    mydebug(activity_task(send_message),
+            reply_activity_task(Sender, TaskToken, InputText)),
 
-    thread_get_message(MQueue, send_task_heartbeat(Sender)),
-    mydebug(activity_task(get_message), send_task_heartbeat(Sender)),
-
-    thread_send_message(MQueue, reply_task_heartbeat(Sender)),
-    mydebug(activity_task(send_message), reply_task_heartbeat(Sender)),
-
-    thread_get_message(MQueue, send_task_success(Sender, OutputText)),
-    mydebug(activity_task(get_message), send_task_success(Sender, OutputText)),
-    atom_json_dict(OutputText, O, []),
-
-    mydebug(activity_task(out), (I, O)).
-
-task_control_message(task_completed(O), true, O) :- !,
-    mydebug(task_control_message(task_completed(O)), true).
-
-task_control_message(task_failed(O), true, O) :- !,
-    mydebug(task_control_message(task_failed(O)), true).
-
-task_control_message(Message, false, _) :-
-    mydebug(task_control_message(Message), false).
-
-task_control(Action, Optional, I, O, E) :-
-    mydebug(task_control(in), (I, O)),
-    message_queue_create(TaskControlMBox),
-    %% TODO: generate TaskToken
     ( option(heartbeat_seconds(HeartbeatSeconds), Optional)
-      -> thread_create(task_heartbeat(TaskControlMBox, TaskToken, HeartbeatSeconds),
-                       TaskHeartBeatId)
-      ;  TaskHeartBeatId = _
+      -> mydebug(activity_task, heartbeat_seconds(HeartbeatSeconds)),
+         thread_self(ActivityTaskId),
+         thread_create(
+                 activity_task_heartbeat(ActivityTaskId, WorkerQueue, Sender,
+                                         TaskToken, HeartbeatSeconds),
+                 HeartbeatId)
+      ;  mydebug(activity_task, heartbeat_seconds(not_specified)),
+         HeartbeatId = _
     ),
-    thread_create(task_execute(Action,
-                               [task_control_mbox(TaskControlMBox) | Optional],
-                               I, O, E), TaskExecuteId),
-    catch( ( ( repeat,
-               mydebug(task_control(repeat(in)), (I, O)),
-               ( thread_get_message(TaskControlMBox, Msg),
-                 task_control_message(Msg, Ret, O)
-               ),
-               Ret
-             ),
-             mydebug(task_control(repeat(out)), (I, O))
-           ),
-           Error,
-           mydebug(task_control(catch), Error)
-         ),
-    !,
-    ( is_thread(TaskExecuteId),
-      thread_property(TaskExecuteId, status(running))
-      -> thread_signal(TaskExecuteId, throw(task_execute_kill)),
-         thread_join(TaskExecuteId, TaskExecuteStatus),
-         mydebug(task_control(cleanup), task_execute(TaskExecuteStatus))
-      ;  true
-    ),
-    
-    ( ground(TaskHeartBeatId),
-      is_thread(TaskHeartBeatId),
-      thread_property(TaskHeartBeatId, status(running))
-      -> thread_signal(TaskHeartBeatId, throw(task_heartbeat_kill)),
-         thread_join(TaskHeartBeatId, TaskHeartBeatStatus),
-         mydebug(task_control(cleanup), task_heartbeat(TaskHeartBeatStatus))
-      ;  true
-    ),
-    message_queue_destroy(TaskControlMBox),
-    mydebug(task_control(out), (I, O)).
 
+    catch( ( thread_get_message(WorkerQueue,
+                                 send_task_result(Result, Sender, TaskToken,
+                                                  OutputText)),
+              mydebug(activity_task(get_message),
+                      send_task_result(Result, Sender, TaskToken, OutputText)),
+              atom_json_dict(OutputText, O, [])
+            ),
+            Error,
+            ( error_code(Error, O),
+              mydebug(activity_task(catch), Error),
+              ( Error = heartbeat_timeout
+                -> thread_join(HeartbeatId, HeartbeatStatus),
+                   mydebug(activity_task(heartbeat_timeout_cleanup),
+                           heartbeat(HeartbeatStatus))
+                ; true
+              )
+            )
+         ),
+
+    ( is_thread(HeartbeatId),
+      thread_property(HeartbeatId, status(running))
+      -> thread_signal(HeartbeatId, throw(heartbeat_kill)),
+         thread_join(HeartbeatId, HeartbeatStatus),
+         mydebug(activity_task(hearbeat_kill_cleanup), heartbeat(HeartbeatStatus))
+      ;  true
+    ),
+    mydebug(activity_task(out), (I, O)).
 
 task_execute(Action, Optional, I, O, E) :-
     mydebug(task_execute(in), (I, O)),
-    option(task_control_mbox(TaskControlMBox), Optional),
-    catch( ( ( atomic_list_concat([_, _, states, _, _, activity, _], ':', Action)
-               -> %% process activity
-                  activity_task(Action, Optional, I, O, E)
-               ;  %% process function, call faas plugin
-                  %% ASL spec defines the default value is 99999999
-                  option(timeout_seconds(TimeoutSeconds), Optional, infinite),
-                  mydebug(function_task(timeout), TimeoutSeconds),
-                  ApiEnv = [timeout(TimeoutSeconds) | E.faas],
-                  faas:invoke(Action, ApiEnv, I, O)
-             ),
-             thread_send_message(TaskControlMBox, task_completed(O)),
-             mydebug(task_execute(out), (I, O))
+    catch( ( atomic_list_concat([_, _, states, _, _, activity, _], ':', Action)
+             -> %% process activity
+                %% ASL spec defines the default timeout value is 99999999
+                option(timeout_seconds(TimeoutSeconds), Optional, 99999999),
+                mydebug(task_execute(activity), timeout_seconds(TimeoutSeconds)),
+                call_with_time_limit(TimeoutSeconds,
+                                     activity_task(Action, Optional, I, O, E))
+             ;  %% process function, call faas plugin
+                %% http_open causes the following error if timeout is 99999999
+                %% "SSL(SSL_eof) negotiate: Unexpected end-of-file".
+                option(timeout_seconds(TimeoutSeconds), Optional, infinite),
+                mydebug(task_execute(function), timeout_seconds(TimeoutSeconds)),
+                ApiEnv = [timeout(TimeoutSeconds) | E.faas],
+                faas:invoke(Action, ApiEnv, I, O)
            ),
            Error,
            ( error_code(Error, O),
-             mydebug(task_execute(catch), Error),
-             ( Error = task_execute_kill
-              -> true
-              ;  thread_send_message(TaskControlMBox, task_failed(O))
-             )
+             mydebug(task_execute(catch), Error)
            )
-         ).
+         ),
+    mydebug(task_execute(out), (I, O)).
 
 retry(_PartialFunc, [], O, O, _E) :-
     mydebug(retry(done), O).
@@ -718,6 +615,46 @@ process_output(OriginalInput, Result, Output, Optional) :-
            )
          ),
     mydebug(process_output4(out), Output).
+
+%%
+%% erro code
+%%
+error_code(time_limit_exceeded, _{error: "States.Timeout"}) :-
+    mydebug(error_code, time_limit_exceeded), !.
+
+error_code(error(timeout_error(_, _), _), _{error: "States.Timeout"}) :-
+    mydebug(error_code, timeout_error), !.
+
+error_code(heartbeat_timeout, _{error: "States.Timeout",
+                                cause: "heartbeat timeout"}) :-
+    mydebug(error_code, heartbeat_timeout), !.
+
+error_code(Error, O) :-
+    Error = error(permission_error(_, _), context(_, Status)), !,
+    mydebug(error_code(permission(in)), (Status, O)),
+    print_message(error, Error),
+    O = _{error: "States.Permissions"},
+    mydebug(error_code(permission(out)), (Status, O)).
+
+error_code(Error, O) :-
+    Error = error(existence_error(_, _), context(_, Status)), !,
+    mydebug(error_code(existence_error(in)), (Status, O)),
+    print_message(error, Error),
+    O = _{error: "States.TaskFailed"},
+    mydebug(error_code(existence_error(out)), (Status, O)).
+
+error_code(Error, O) :-
+    Error = error(type_error(_, _), context(_, Status)), !,
+    mydebug(error_code(type_error(in)), (Status, O)),
+    print_message(error, Error),
+    O = _{error: "States.TaskFailed"},
+    mydebug(error_code(type_error(out)), (Status, O)).
+
+error_code(heartbeat_kill, _) :-
+    print_message(warning, format('caught heartbeat_kill message', [])).
+
+error_code(Error, _{error: Error}) :-
+    print_message(error, Error).
 
 %%
 %% misc.

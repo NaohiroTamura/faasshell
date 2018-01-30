@@ -163,13 +163,15 @@ test(failed, Code = 502 ) :-
 
 :- begin_tests(activity_task).
 
-test(success, Code = 200) :-
+test(activity_task_dsl_success, Status = true) :-
     wsk_api_utils:openwhisk(Options),
     message_queue_create(MQueue),
     thread_create(
-            start('samples/dsl/activity_task.dsl',
-                  [activity_queue(MQueue), status_code(Code) | Options],
-                  _{name: "Activity"}, O),
+            ( start('samples/dsl/activity_task.dsl',
+                    [activity_queue(MQueue) | Options],
+                    _{name: "Activity"}, O),
+              thread_send_message(MQueue, test_result(O))
+            ),
             Id),
     uuid(Sender),
     thread_send_message(
@@ -177,20 +179,150 @@ test(success, Code = 200) :-
             get_activity_task(Sender,
                               "arn:aws:states:us-east-2:410388484666:activity:test")
         ),
-    thread_get_message(MQueue, reply_activity_task(Sender, InputText)),
+    thread_get_message(MQueue, reply_activity_task(Sender, TaskToken, InputText)),
     atom_json_dict(InputText, Input, []),
-
-    thread_send_message(MQueue, send_task_heartbeat(Sender)),
-    thread_get_message(MQueue, reply_task_heartbeat(Sender)),
 
     atomics_to_string(["Hello, ", Input.name, "!"], Output),
     atom_json_dict(OutputText, _{payload: Output}, []),
-    thread_send_message(MQueue, send_task_success(Sender, OutputText)),
+    thread_send_message(MQueue, send_task_result(success, Sender, TaskToken,
+                                                 OutputText)),
 
-    thread_join(Id, _Status),
+    thread_join(Id, Status),
+    thread_get_message(MQueue, test_result(O)),
     assertion(O = _{payload:"Hello, Activity!"}).
 
-%%test(success, Code = 200) :-
-%% send_task_failure,
+test(activity_task_dsl_failure, Status = true) :-
+    wsk_api_utils:openwhisk(Options),
+    message_queue_create(MQueue),
+    thread_create(
+            ( start('samples/dsl/activity_task.dsl',
+                    [activity_queue(MQueue) | Options],
+                    _{comment: "failure test"}, O),
+              thread_send_message(MQueue, test_result(O))
+            ),
+            Id),
+    uuid(Sender),
+    thread_send_message(
+            MQueue,
+            get_activity_task(Sender,
+                              "arn:aws:states:us-east-2:410388484666:activity:test")
+        ),
+    thread_get_message(MQueue, reply_activity_task(Sender, TaskToken, InputText)),
+    atom_json_dict(InputText, Input, []),
+
+    catch( atomics_to_string(["Hello, ", Input.name, "!"], _Output),
+           error(existence_error(Key ,Name,_),_),
+           true),
+
+    format(string(Cause), "~w '~w' doesn't exist", [Key, Name]),
+    atom_json_dict(OutputText, _{error: "existence_error", cause: Cause}, []),
+    thread_send_message(MQueue, send_task_result(success, Sender, TaskToken,
+                                                 OutputText)),
+
+    thread_join(Id, Status),
+    thread_get_message(MQueue, test_result(O)),
+    assertion(O = _{error: "existence_error", cause: "key 'name' doesn't exist"}).
+
+test(activity_task_timeout_dsl) :-
+    wsk_api_utils:openwhisk(Options),
+    message_queue_create(MQueue),
+    start('samples/dsl/activity_task_timeout.dsl',
+          [activity_queue(MQueue) | Options], _{name: "Activity Timeout"}, O),
+    assertion(O = _{error:"States.Timeout"}).
+
+test(activity_task_heartbeat_dsl_success, Status = true) :-
+    wsk_api_utils:openwhisk(Options),
+    message_queue_create(MQueue),
+    thread_create(
+            ( start('samples/dsl/activity_task_heartbeat.dsl',
+                    [activity_queue(MQueue) | Options],
+                    _{name: "Activity"}, O),
+              thread_send_message(MQueue, test_result(O))
+            ),
+            Id),
+    uuid(Sender),
+    thread_send_message(
+            MQueue,
+            get_activity_task(Sender,
+                              "arn:aws:states:us-east-2:410388484666:activity:test")
+        ),
+    thread_get_message(MQueue, reply_activity_task(Sender, TaskToken, InputText)),
+    atom_json_dict(InputText, Input, []),
+    sleep(2),
+
+    thread_send_message(MQueue, send_task_heartbeat(Sender, TaskToken)),
+    thread_get_message(MQueue, reply_task_heartbeat(Sender, TaskToken)),
+    sleep(2),
+
+    thread_send_message(MQueue, send_task_heartbeat(Sender, TaskToken)),
+    thread_get_message(MQueue, reply_task_heartbeat(Sender, TaskToken)),
+    sleep(2),
+
+    atomics_to_string(["Hello, ", Input.name, "!"], Output),
+    atom_json_dict(OutputText, _{payload: Output}, []),
+    thread_send_message(MQueue, send_task_result(success, Sender, TaskToken,
+                                                 OutputText)),
+
+    thread_join(Id, Status),
+    thread_get_message(MQueue, test_result(O)),
+    assertion(O = _{payload:"Hello, Activity!"}).
+
+test(activity_task_heartbeat_dsl_hearbeat_timeout, Status = true) :-
+    wsk_api_utils:openwhisk(Options),
+    message_queue_create(MQueue),
+    thread_create(
+            ( start('samples/dsl/activity_task_heartbeat.dsl',
+                    [activity_queue(MQueue) | Options],
+                    _{name: "Activity"}, O),
+              thread_send_message(MQueue, test_result(O))
+            ),
+            Id),
+    uuid(Sender),
+    thread_send_message(
+            MQueue,
+            get_activity_task(Sender,
+                              "arn:aws:states:us-east-2:410388484666:activity:test")
+        ),
+    thread_get_message(MQueue, reply_activity_task(Sender, TaskToken, _InputText)),
+    sleep(2),
+
+    thread_send_message(MQueue, send_task_heartbeat(Sender, TaskToken)),
+    thread_get_message(MQueue, reply_task_heartbeat(Sender, TaskToken)),
+    sleep(4),
+
+    thread_join(Id, Status),
+    thread_get_message(MQueue, test_result(O)),
+    assertion(O = _{error:"States.Timeout", cause:"heartbeat timeout"}).
+
+test(activity_task_timeout_heartbeat_dsl_timeout, Status = true) :-
+    wsk_api_utils:openwhisk(Options),
+    message_queue_create(MQueue),
+    thread_create(
+            ( start('samples/dsl/activity_task_timeout_heartbeat.dsl',
+                    [activity_queue(MQueue) | Options],
+                    _{name: "Activity"}, O),
+              thread_send_message(MQueue, test_result(O))
+            ),
+            Id),
+    uuid(Sender),
+    thread_send_message(
+            MQueue,
+            get_activity_task(Sender,
+                              "arn:aws:states:us-east-2:410388484666:activity:test")
+        ),
+    thread_get_message(MQueue, reply_activity_task(Sender, TaskToken, _InputText)),
+    sleep(2),
+
+    thread_send_message(MQueue, send_task_heartbeat(Sender, TaskToken)),
+    thread_get_message(MQueue, reply_task_heartbeat(Sender, TaskToken)),
+    sleep(2),
+
+    thread_send_message(MQueue, send_task_heartbeat(Sender, TaskToken)),
+    thread_get_message(MQueue, reply_task_heartbeat(Sender, TaskToken)),
+    sleep(2),
+
+    thread_join(Id, Status),
+    thread_get_message(MQueue, test_result(O)),
+    assertion(O = _{error:"States.Timeout"}).
 
 :- end_tests(activity_task).
