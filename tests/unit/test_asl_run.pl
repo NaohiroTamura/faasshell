@@ -173,18 +173,19 @@ test(activity_task_dsl_success, Status = true) :-
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
-    uuid(Sender),
-    thread_send_message(
-            MQueue,
-            get_activity_task(Sender,
-                              "arn:aws:states:us-east-2:410388484666:activity:test")
-        ),
-    thread_get_message(MQueue, reply_activity_task(Sender, TaskToken, InputText)),
+    Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
+    uuid(TaskToken),
+    thread_send_message(MQueue, get_activity_task(Activity, TaskToken)),
+    thread_get_message(MQueue, reply_activity_task(Activity, TaskToken, InputText)),
     atom_json_dict(InputText, Input, []),
+    assertion(Input = _{name: "Activity"}),
+
+    thread_send_message(MQueue, send_task_heartbeat(Activity, TaskToken)),
+    thread_get_message(MQueue, reply_task_heartbeat(Activity, TaskToken)),
 
     atomics_to_string(["Hello, ", Input.name, "!"], Output),
     atom_json_dict(OutputText, _{payload: Output}, []),
-    thread_send_message(MQueue, send_task_result(success, Sender, TaskToken,
+    thread_send_message(MQueue, send_task_result(success, Activity, TaskToken,
                                                  OutputText)),
 
     thread_join(Id, Status),
@@ -201,22 +202,23 @@ test(activity_task_dsl_failure, Status = true) :-
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
-    uuid(Sender),
-    thread_send_message(
-            MQueue,
-            get_activity_task(Sender,
-                              "arn:aws:states:us-east-2:410388484666:activity:test")
-        ),
-    thread_get_message(MQueue, reply_activity_task(Sender, TaskToken, InputText)),
+    Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
+    uuid(TaskToken),
+    thread_send_message(MQueue, get_activity_task(Activity, TaskToken)),
+    thread_get_message(MQueue, reply_activity_task(Activity, TaskToken, InputText)),
     atom_json_dict(InputText, Input, []),
+    assertion(Input = _{comment: "failure test"}),
 
     catch( atomics_to_string(["Hello, ", Input.name, "!"], _Output),
            error(existence_error(Key ,Name,_),_),
            true),
 
+    thread_send_message(MQueue, send_task_heartbeat(Activity, TaskToken)),
+    thread_get_message(MQueue, reply_task_heartbeat(Activity, TaskToken)),
+
     format(string(Cause), "~w '~w' doesn't exist", [Key, Name]),
     atom_json_dict(OutputText, _{error: "existence_error", cause: Cause}, []),
-    thread_send_message(MQueue, send_task_result(success, Sender, TaskToken,
+    thread_send_message(MQueue, send_task_result(failure, Activity, TaskToken,
                                                  OutputText)),
 
     thread_join(Id, Status),
@@ -240,27 +242,25 @@ test(activity_task_heartbeat_dsl_success, Status = true) :-
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
-    uuid(Sender),
-    thread_send_message(
-            MQueue,
-            get_activity_task(Sender,
-                              "arn:aws:states:us-east-2:410388484666:activity:test")
-        ),
-    thread_get_message(MQueue, reply_activity_task(Sender, TaskToken, InputText)),
+    Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
+    uuid(TaskToken),
+    thread_send_message(MQueue, get_activity_task(Activity, TaskToken)),
+    thread_get_message(MQueue, reply_activity_task(Activity, TaskToken, InputText)),
     atom_json_dict(InputText, Input, []),
+    assertion(Input = _{name: "Activity"}),
     sleep(2),
 
-    thread_send_message(MQueue, send_task_heartbeat(Sender, TaskToken)),
-    thread_get_message(MQueue, reply_task_heartbeat(Sender, TaskToken)),
+    thread_send_message(MQueue, send_task_heartbeat(Activity, TaskToken)),
+    thread_get_message(MQueue, reply_task_heartbeat(Activity, TaskToken)),
     sleep(2),
 
-    thread_send_message(MQueue, send_task_heartbeat(Sender, TaskToken)),
-    thread_get_message(MQueue, reply_task_heartbeat(Sender, TaskToken)),
+    thread_send_message(MQueue, send_task_heartbeat(Activity, TaskToken)),
+    thread_get_message(MQueue, reply_task_heartbeat(Activity, TaskToken)),
     sleep(2),
 
     atomics_to_string(["Hello, ", Input.name, "!"], Output),
     atom_json_dict(OutputText, _{payload: Output}, []),
-    thread_send_message(MQueue, send_task_result(success, Sender, TaskToken,
+    thread_send_message(MQueue, send_task_result(success, Activity, TaskToken,
                                                  OutputText)),
 
     thread_join(Id, Status),
@@ -277,17 +277,16 @@ test(activity_task_heartbeat_dsl_hearbeat_timeout, Status = true) :-
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
-    uuid(Sender),
-    thread_send_message(
-            MQueue,
-            get_activity_task(Sender,
-                              "arn:aws:states:us-east-2:410388484666:activity:test")
-        ),
-    thread_get_message(MQueue, reply_activity_task(Sender, TaskToken, _InputText)),
+    Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
+    uuid(TaskToken),
+    thread_send_message(MQueue, get_activity_task(Activity, TaskToken)),
+    thread_get_message(MQueue, reply_activity_task(Activity, TaskToken, InputText)),
+    atom_json_dict(InputText, Input, []),
+    assertion(Input = _{name: "Activity"}),
     sleep(2),
 
-    thread_send_message(MQueue, send_task_heartbeat(Sender, TaskToken)),
-    thread_get_message(MQueue, reply_task_heartbeat(Sender, TaskToken)),
+    thread_send_message(MQueue, send_task_heartbeat(Activity, TaskToken)),
+    thread_get_message(MQueue, reply_task_heartbeat(Activity, TaskToken)),
     sleep(4),
 
     thread_join(Id, Status),
@@ -304,21 +303,20 @@ test(activity_task_timeout_heartbeat_dsl_timeout, Status = true) :-
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
-    uuid(Sender),
-    thread_send_message(
-            MQueue,
-            get_activity_task(Sender,
-                              "arn:aws:states:us-east-2:410388484666:activity:test")
-        ),
-    thread_get_message(MQueue, reply_activity_task(Sender, TaskToken, _InputText)),
+    uuid(TaskToken),
+    Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
+    thread_send_message(MQueue, get_activity_task(Activity, TaskToken)),
+    thread_get_message(MQueue, reply_activity_task(Activity, TaskToken, InputText)),
+    atom_json_dict(InputText, Input, []),
+    assertion(Input = _{name: "Activity"}),
     sleep(2),
 
-    thread_send_message(MQueue, send_task_heartbeat(Sender, TaskToken)),
-    thread_get_message(MQueue, reply_task_heartbeat(Sender, TaskToken)),
+    thread_send_message(MQueue, send_task_heartbeat(Activity, TaskToken)),
+    thread_get_message(MQueue, reply_task_heartbeat(Activity, TaskToken)),
     sleep(2),
 
-    thread_send_message(MQueue, send_task_heartbeat(Sender, TaskToken)),
-    thread_get_message(MQueue, reply_task_heartbeat(Sender, TaskToken)),
+    thread_send_message(MQueue, send_task_heartbeat(Activity, TaskToken)),
+    thread_get_message(MQueue, reply_task_heartbeat(Activity, TaskToken)),
     sleep(2),
 
     thread_join(Id, Status),

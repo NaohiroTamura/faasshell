@@ -53,6 +53,8 @@
 %%
 main :-
     set_setting(http:logfile,'/logs/httpd.log'), % docker volume /tmp
+    message_queue_create(Q, [max_size(10)]),     % TODO: queue size
+    assertz(activity_task_queue(Q)),
     catch(db_init(faasshell, faas, _Codes),
           Error,
           (print_message(error, Error), halt(1))),
@@ -68,6 +70,101 @@ server(Port) :-
 hup(_Signal) :-
     thread_send_message(main, stop),
     halt(0).
+
+%% activity task messaging
+:- dynamic
+       activity_task_queue/1.
+
+%%
+%%
+:- http_handler('/activity/', activity,
+                [methods([get, post, patch]), prefix, authentication(openwhisk)]).
+
+activity(Request) :-
+    http_log('~w~n', [request(Request)]),
+    option(namespace(nil), Request)
+    -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
+    ;  memberchk(method(Method), Request),
+       catch( activity(Method, Request),
+              (Message, Code),
+              ( http_log('~w~n', [catch((Message, Code))]),
+                reply_json_dict(Message, [status(Code)])
+              )).
+
+activity(get, Request) :-
+    ( memberchk(path_info(ActivityAtom), Request)
+      -> activity_task_queue(MQueue),
+         uuid(TaskToken),
+         atom_string(ActivityAtom, Activity),
+         http_log('~w, ~w, ~p~n', [activity(get, Activity),
+                                   queue(MQueue), task_token(TaskToken)]),
+         thread_send_message(MQueue,
+                             get_activity_task(Activity, TaskToken),
+                             [timeout(60)]),
+         thread_get_message(MQueue,
+                            reply_activity_task(Activity, TaskToken, InputText),
+                            [timeout(60)]),
+         atom_json_dict(InputText, Input, []),
+         Reply = _{output: "ok", taskToken: TaskToken, input: Input}
+      ;  http_header:status_number(bad_request, S_400),
+         throw((_{error: 'Missing activity task name'}, S_400))
+    ),
+    reply_json_dict(Reply).
+
+activity(post, Request) :-
+    http_read_json_dict(Request, Dict, []),
+    http_log('~w, ~p~n', [activity(post), params(Dict)]),
+    ( _{output: Output, taskToken: TaskTokenStr} :< Dict
+      -> Result = success,
+         atom_json_dict(OutputText, Output, []),
+         http_log('~w, ~p~n', [activity(post(Result)), output_text(OutputText)])
+      ; ( _{error: Error, cause: Cause, taskToken: TaskTokenStr} :< Dict
+          -> Result = failure,
+             atom_json_dict(OutputText, _{error: Error, cause: Cause}, []),
+         http_log('~w, ~p~n', [activity(post(Result)), output_text(OutputText)])
+          ; http_header:status_number(bad_request, S_400),
+            throw((_{error: 'InvalidOutput'}, S_400))
+        )
+    ),
+    ( memberchk(path_info(ActivityAtom), Request)
+      -> atom_string(ActivityAtom, Activity),
+         atom_string(TaskToken, TaskTokenStr),
+         activity_task_queue(MQueue),
+         http_log('~w, ~p~n', [activity(post),
+                  send_task_result(Result, Activity, TaskToken, OutputText)]),
+         thread_send_message(MQueue,
+                             send_task_result(Result, Activity, TaskToken,
+                                              OutputText),
+                             [timeout(60)]),
+         Reply = _{}
+      ;  http_header:status_number(bad_request, S_400),
+         throw((_{error: 'Missing activity task name'}, S_400))
+    ),
+    reply_json_dict(Reply).
+
+activity(patch, Request) :-
+    http_read_json_dict(Request, Dict, []),
+    http_log('~w, ~p~n', [activity(patch), params(Dict)]),
+    ( _{taskToken: TaskTokenStr} :< Dict
+      -> true
+      ; http_header:status_number(bad_request, S_400),
+        throw((_{error: 'InvalidToken'}, S_400))
+    ),
+    ( memberchk(path_info(ActivityAtom), Request)
+      -> atom_string(ActivityAtom, Activity),
+         atom_string(TaskToken, TaskTokenStr),
+         activity_task_queue(MQueue),
+         thread_send_message(MQueue,
+                             send_task_heartbeat(Activity, TaskToken),
+                             [timeout(60)]),
+         thread_get_message(MQueue,
+                            reply_task_heartbeat(Activity, TaskToken),
+                             [timeout(60)]),
+         Reply = _{}
+      ;  http_header:status_number(bad_request, S_400),
+         throw((_{error: 'Missing activity task name'}, S_400))
+    ),
+    reply_json_dict(Reply).
 
 %% $ curl -sLX GET localhost:8080/faas
 %% $ curl -sLX GET localhost:8080/faas/{actionName}
@@ -202,7 +299,9 @@ statemachine(post, Request) :-
            -> % http_log('~w~n', [dsl(Dict.Dsl)]),
               option(api_key(ID-PW), Request),
               wsk_api_utils:openwhisk(Defaults),
-              merge_options([api_key(ID-PW)], Defaults, Options),
+              activity_task_queue(MQueue),
+              merge_options([api_key(ID-PW), activity_queue(MQueue)], Defaults,
+                            Options),
               term_string(Dsl, Dict.dsl),
               asl_run:start(Dsl, Options, Input, O),
               Output = DictParams.put(_{output:O})
@@ -347,7 +446,9 @@ shell(post, Request) :-
               % http_log('~w~n', [dsl(Dsl)]),
               option(api_key(ID-PW), Request),
               wsk_api_utils:openwhisk(Defaults),
-              merge_options([api_key(ID-PW)], Defaults, Options),
+              activity_task_queue(MQueue),
+              merge_options([api_key(ID-PW), activity_queue(MQueue)], Defaults,
+                            Options),
               term_string(Dsl, Dict.dsl),
               asl_run:start(Dsl, Options, Input, O),
               Output = DictParams.put(_{output:O})

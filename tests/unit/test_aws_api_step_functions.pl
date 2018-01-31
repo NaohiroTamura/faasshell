@@ -126,4 +126,47 @@ test(failure, (Code0, Code1, Code2, Code3)  = (200, 200, 200, 200)) :-
                                 taskToken: R1.taskToken}, R3),
     assertion(R3 = _{}).
 
+test(invalid_activity, Code = 400) :-
+    aws_api_step_functions:get_activity_task(
+        'arn:aws:states:us-east-2:410388484666:activity:fake',
+        [status_code(Code)], R),
+    assertion(_{'__type':"com.amazonaws.swf.service.v2.model#ActivityDoesNotExist",
+                message:"Activity Does Not Exist: 'arn:aws:states:us-east-2:410388484666:activity:fake'"} :< R).
+
+test(invalid_token_and_invalid_output,
+     (Code0, Code1, Code2, Code3, Code4) = (200, 200, 400, 400, 200)) :-
+    aws_api_step_functions:start_execution(
+        'arn:aws:states:us-east-2:410388484666:stateMachine:Activitytask',
+        [status_code(Code0)], _{name: "Activity"}, R0),
+    assertion(_{executionArn: _,  startDate: _} :< R0),
+    sleep(1),
+
+    aws_api_step_functions:get_activity_task(
+        'arn:aws:states:us-east-2:410388484666:activity:test',
+        [status_code(Code1)], R1),
+    assertion(_{taskToken: _, input: _} :< R1),
+    atom_json_dict(R1.input, Input, []),
+    sleep(1),
+
+    aws_api_step_functions:send_task_heartbeat(
+        'arn:aws:states:us-east-2:410388484666:activity:test',
+        [status_code(Code2)], "FakeTaskToken", R2),
+    assertion(R2 = _{'__type':"com.amazonaws.swf.service.v2.model#InvalidToken",
+                     message:"Invalid Token: 'Invalid token'"}),
+    sleep(1),
+
+    format(string(Output), '"Hello, ~w!"', [Input.name]),
+    aws_api_step_functions:send_task_success(
+        'arn:aws:states:us-east-2:410388484666:activity:test',
+        [status_code(Code3)], _{fake: Output, taskToken: R1.taskToken}, R3),
+    assertion(R3 = _{'__type':"com.amazon.coral.validate#ValidationException",
+                     message:"1 validation error detected: Value null at 'output' failed to satisfy constraint: Member must not be null"}),
+
+    aws_api_step_functions:stop_execution(
+        'arn:aws:states:us-east-2:410388484666:activity:test',
+        [status_code(Code4)], _{cause: "send stop execution api is called",
+                                error: "invalid token and invalid output test",
+                                executionArn: R0.executionArn}, R4),
+    assertion(R4 = _{stopDate: _}).
+
 :- end_tests(activity_task).
