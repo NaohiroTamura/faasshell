@@ -5,4 +5,7 @@ TAGS
 GPATH
 GRTAGS
 GTAGS
-
+httpd.log
+_site/
+Gemfile.lock
+vendor/
