@@ -43,6 +43,7 @@ spec:
     metadata:
       labels:
         name: faasshell
+        access: db
     spec:
       restartPolicy: Always
       volumes:
