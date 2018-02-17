@@ -24,6 +24,7 @@
          ]).
 
 :- use_module(json_utils).
+:- use_module(mq_utils).
 :- use_module(wsk_api_utils).
 :- use_module(wsk_api_actions, [faas:invoke/4]).
 :- use_module(aws_api_lambda, [faas:invoke/4]).
@@ -111,55 +112,38 @@ task(State, Action, Optional, I, O, E) :-
     process_output(I, M3, O, Optional),
     mydebug(task(out), (I, O)).
 
-activity_task_heartbeat(ActivityTaskId, WorkerQueue, Action, TaskToken,
+activity_task_heartbeat(ActivityTaskId, Action, TaskToken,
                         HeartbeatSeconds) :-
-    mydebug(activity_task_heartbeat(in), (Action, TaskToken, HeartbeatSeconds)),
+    mydebug(activity_task_heartbeat(in), (Action, TaskToken,
+                                          HeartbeatSeconds)),
     ( repeat,
-      ( thread_get_message(WorkerQueue, send_task_heartbeat(Action, TaskToken),
-                           [timeout(HeartbeatSeconds)])
-        -> mydebug(activity_task_heartbeat(get_message),
-                   send_task_heartbeat(Action, TaskToken)),
-           thread_send_message(WorkerQueue, reply_task_heartbeat(Action, TaskToken)),
-           mydebug(activity_task_heartbeat(send_message),
-                   reply_task_heartbeat(Action, TaskToken)),
-           Ret = false
-        ; thread_signal(ActivityTaskId, throw(heartbeat_timeout)),
-          Ret = true
+      ( mq_utils:activity_heartbeated(Action, TaskToken, HeartbeatSeconds)
+        -> Ret = fail
+        ;  thread_signal(ActivityTaskId, throw(heartbeat_timeout)),
+           Ret = true
       ),
       Ret
     ),
-    mydebug(activity_task_heartbeat(out), (Action, TaskToken, HeartbeatSeconds)).
+    mydebug(activity_task_heartbeat(out), (Action, TaskToken,
+                                           HeartbeatSeconds)).
 
-activity_task(Action, Optional, I, O, E) :-
+activity_task(Action, Optional, I, O, _E) :-
     mydebug(activity_task(in), (Action, I, O)),
 
-    option(activity_queue(WorkerQueue), E.faas),
-    mydebug(activity_task(activity_queue), WorkerQueue),
-
-    thread_get_message(WorkerQueue, get_activity_task(Action, TaskToken)),
-    mydebug(activity_task(get_message), get_activity_task(Action, TaskToken)),
-
     atom_json_dict(InputText, I, []),
-    thread_send_message(WorkerQueue,
-                        reply_activity_task(Action, TaskToken, InputText)),
-    mydebug(activity_task(send_message),
-            reply_activity_task(Action, TaskToken, InputText)),
+    mq_utils:activity_started(Action, InputText, TaskToken),
 
     %% ASL spec defines the default timeout value is 99999999
     option(heartbeat_seconds(HeartbeatSeconds), Optional, 99999999),
     mydebug(activity_task, heartbeat_seconds(HeartbeatSeconds)),
     thread_self(ActivityTaskId),
     thread_create(
-            activity_task_heartbeat(ActivityTaskId, WorkerQueue, Action,
-                                    TaskToken, HeartbeatSeconds),
+            activity_task_heartbeat(ActivityTaskId, Action, TaskToken,
+                                    HeartbeatSeconds),
             HeartbeatId),
 
-    catch( ( thread_get_message(WorkerQueue,
-                                 send_task_result(Result, Action, TaskToken,
-                                                  OutputText)),
-              mydebug(activity_task(get_message),
-                      send_task_result(Result, Action, TaskToken, OutputText)),
-              atom_json_dict(OutputText, O, [])
+    catch( ( mq_utils:activity_ended(Action, TaskToken, _Result, OutputText),
+             atom_json_dict(OutputText, O, [])
             ),
             Error,
             ( error_code(Error, O),

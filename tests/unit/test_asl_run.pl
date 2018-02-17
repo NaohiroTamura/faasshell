@@ -165,28 +165,25 @@ test(failed, Code = 502 ) :-
 
 test(activity_task_dsl_success, Status = true) :-
     wsk_api_utils:openwhisk(Options),
+    mq_utils:mq_init,
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/dsl/activity_task.dsl',
-                    [activity_queue(MQueue) | Options],
-                    _{name: "Activity"}, O),
+                    Options, _{name: "Activity"}, O),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
     Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
     uuid(TaskToken),
-    thread_send_message(MQueue, get_activity_task(Activity, TaskToken)),
-    thread_get_message(MQueue, reply_activity_task(Activity, TaskToken, InputText)),
+    mq_utils:activity_start(Activity, TaskToken, InputText),
     atom_json_dict(InputText, Input, []),
     assertion(Input = _{name: "Activity"}),
 
-    thread_send_message(MQueue, send_task_heartbeat(Activity, TaskToken)),
-    thread_get_message(MQueue, reply_task_heartbeat(Activity, TaskToken)),
+    mq_utils:activity_heartbeat(Activity, TaskToken),
 
     atomics_to_string(["Hello, ", Input.name, "!"], Output),
     atom_json_dict(OutputText, _{payload: Output}, []),
-    thread_send_message(MQueue, send_task_result(success, Activity, TaskToken,
-                                                 OutputText)),
+    mq_utils:activity_end(Activity, TaskToken, success, OutputText),
 
     thread_join(Id, Status),
     thread_get_message(MQueue, test_result(O)),
@@ -194,18 +191,17 @@ test(activity_task_dsl_success, Status = true) :-
 
 test(activity_task_dsl_failure, Status = true) :-
     wsk_api_utils:openwhisk(Options),
+    mq_utils:mq_init,
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/dsl/activity_task.dsl',
-                    [activity_queue(MQueue) | Options],
-                    _{comment: "failure test"}, O),
+                    Options, _{comment: "failure test"}, O),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
     Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
     uuid(TaskToken),
-    thread_send_message(MQueue, get_activity_task(Activity, TaskToken)),
-    thread_get_message(MQueue, reply_activity_task(Activity, TaskToken, InputText)),
+    mq_utils:activity_start(Activity, TaskToken, InputText),
     atom_json_dict(InputText, Input, []),
     assertion(Input = _{comment: "failure test"}),
 
@@ -213,13 +209,11 @@ test(activity_task_dsl_failure, Status = true) :-
            error(existence_error(Key ,Name,_),_),
            true),
 
-    thread_send_message(MQueue, send_task_heartbeat(Activity, TaskToken)),
-    thread_get_message(MQueue, reply_task_heartbeat(Activity, TaskToken)),
+    mq_utils:activity_heartbeat(Activity, TaskToken),
 
     format(string(Cause), "~w '~w' doesn't exist", [Key, Name]),
     atom_json_dict(OutputText, _{error: "existence_error", cause: Cause}, []),
-    thread_send_message(MQueue, send_task_result(failure, Activity, TaskToken,
-                                                 OutputText)),
+    mq_utils:activity_end(Activity, TaskToken, failure, OutputText),
 
     thread_join(Id, Status),
     thread_get_message(MQueue, test_result(O)),
@@ -227,41 +221,37 @@ test(activity_task_dsl_failure, Status = true) :-
 
 test(activity_task_timeout_dsl) :-
     wsk_api_utils:openwhisk(Options),
-    message_queue_create(MQueue),
-    start('samples/dsl/activity_task_timeout.dsl',
-          [activity_queue(MQueue) | Options], _{name: "Activity Timeout"}, O),
+    mq_utils:mq_init,
+    start('samples/dsl/activity_task_timeout.dsl', Options,
+          _{name: "Activity Timeout"}, O),
     assertion(O = _{error:"States.Timeout"}).
 
 test(activity_task_heartbeat_dsl_success, Status = true) :-
     wsk_api_utils:openwhisk(Options),
+    mq_utils:mq_init,
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/dsl/activity_task_heartbeat.dsl',
-                    [activity_queue(MQueue) | Options],
-                    _{name: "Activity"}, O),
+                    Options, _{name: "Activity"}, O),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
     Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
     uuid(TaskToken),
-    thread_send_message(MQueue, get_activity_task(Activity, TaskToken)),
-    thread_get_message(MQueue, reply_activity_task(Activity, TaskToken, InputText)),
+    mq_utils:activity_start(Activity, TaskToken, InputText),
     atom_json_dict(InputText, Input, []),
     assertion(Input = _{name: "Activity"}),
     sleep(2),
 
-    thread_send_message(MQueue, send_task_heartbeat(Activity, TaskToken)),
-    thread_get_message(MQueue, reply_task_heartbeat(Activity, TaskToken)),
+    mq_utils:activity_heartbeat(Activity, TaskToken),
     sleep(2),
 
-    thread_send_message(MQueue, send_task_heartbeat(Activity, TaskToken)),
-    thread_get_message(MQueue, reply_task_heartbeat(Activity, TaskToken)),
+    mq_utils:activity_heartbeat(Activity, TaskToken),
     sleep(2),
 
     atomics_to_string(["Hello, ", Input.name, "!"], Output),
     atom_json_dict(OutputText, _{payload: Output}, []),
-    thread_send_message(MQueue, send_task_result(success, Activity, TaskToken,
-                                                 OutputText)),
+    mq_utils:activity_end(Activity, TaskToken, success, OutputText),
 
     thread_join(Id, Status),
     thread_get_message(MQueue, test_result(O)),
@@ -269,24 +259,22 @@ test(activity_task_heartbeat_dsl_success, Status = true) :-
 
 test(activity_task_heartbeat_dsl_hearbeat_timeout, Status = true) :-
     wsk_api_utils:openwhisk(Options),
+    mq_utils:mq_init,
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/dsl/activity_task_heartbeat.dsl',
-                    [activity_queue(MQueue) | Options],
-                    _{name: "Activity"}, O),
+                    Options, _{name: "Activity"}, O),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
     Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
     uuid(TaskToken),
-    thread_send_message(MQueue, get_activity_task(Activity, TaskToken)),
-    thread_get_message(MQueue, reply_activity_task(Activity, TaskToken, InputText)),
+    mq_utils:activity_start(Activity, TaskToken, InputText),
     atom_json_dict(InputText, Input, []),
     assertion(Input = _{name: "Activity"}),
     sleep(2),
 
-    thread_send_message(MQueue, send_task_heartbeat(Activity, TaskToken)),
-    thread_get_message(MQueue, reply_task_heartbeat(Activity, TaskToken)),
+    mq_utils:activity_heartbeat(Activity, TaskToken),
     sleep(4),
 
     thread_join(Id, Status),
@@ -295,28 +283,25 @@ test(activity_task_heartbeat_dsl_hearbeat_timeout, Status = true) :-
 
 test(activity_task_timeout_heartbeat_dsl_timeout, Status = true) :-
     wsk_api_utils:openwhisk(Options),
+    mq_utils:mq_init,
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/dsl/activity_task_timeout_heartbeat.dsl',
-                    [activity_queue(MQueue) | Options],
-                    _{name: "Activity"}, O),
+                    Options, _{name: "Activity"}, O),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
     uuid(TaskToken),
     Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
-    thread_send_message(MQueue, get_activity_task(Activity, TaskToken)),
-    thread_get_message(MQueue, reply_activity_task(Activity, TaskToken, InputText)),
+    mq_utils:activity_start(Activity, TaskToken, InputText),
     atom_json_dict(InputText, Input, []),
     assertion(Input = _{name: "Activity"}),
     sleep(2),
 
-    thread_send_message(MQueue, send_task_heartbeat(Activity, TaskToken)),
-    thread_get_message(MQueue, reply_task_heartbeat(Activity, TaskToken)),
+    mq_utils:activity_heartbeat(Activity, TaskToken),
     sleep(2),
 
-    thread_send_message(MQueue, send_task_heartbeat(Activity, TaskToken)),
-    thread_get_message(MQueue, reply_task_heartbeat(Activity, TaskToken)),
+    mq_utils:activity_heartbeat(Activity, TaskToken),
     sleep(2),
 
     thread_join(Id, Status),

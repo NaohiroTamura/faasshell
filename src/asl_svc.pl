@@ -25,6 +25,7 @@
 :- use_module(asl_gen, [gen_dsl/2]).
 :- use_module(asl_run, [start/4]).
 :- use_module(cdb_api).
+:- use_module(mq_utils).
 
 %% http server
 :- use_module(library(http/thread_httpd)).
@@ -53,8 +54,7 @@
 %%
 main :-
     set_setting(http:logfile,'/logs/httpd.log'), % docker volume /tmp
-    message_queue_create(Q, [max_size(10)]),     % TODO: queue size
-    assertz(activity_task_queue(Q)),
+    mq_utils:mq_init,
     catch(db_init(faasshell, faas, _Codes),
           Error,
           (print_message(error, Error), halt(1))),
@@ -71,14 +71,10 @@ hup(_Signal) :-
     thread_send_message(main, stop),
     halt(0).
 
-%% activity task messaging
-:- dynamic
-       activity_task_queue/1.
-
 %%
 %%
-:- http_handler('/activity/', activity,
-                [methods([get, post, patch]), prefix, authentication(openwhisk)]).
+:- http_handler('/activity/', activity, [methods([get, post, patch]), prefix,
+                                         authentication(openwhisk)]).
 
 activity(Request) :-
     http_log('~w~n', [request(Request)]),
@@ -92,18 +88,11 @@ activity(Request) :-
               )).
 
 activity(get, Request) :-
-    ( memberchk(path_info(ActivityAtom), Request)
-      -> activity_task_queue(MQueue),
-         uuid(TaskToken),
-         atom_string(ActivityAtom, Activity),
-         http_log('~w, ~w, ~p~n', [activity(get, Activity),
-                                   queue(MQueue), task_token(TaskToken)]),
-         thread_send_message(MQueue,
-                             get_activity_task(Activity, TaskToken),
-                             [timeout(60)]),
-         thread_get_message(MQueue,
-                            reply_activity_task(Activity, TaskToken, InputText),
-                            [timeout(60)]),
+    ( memberchk(path_info(Activity), Request)
+      -> uuid(TaskToken),
+         http_log('~w, ~p~n',
+                  [activity(get, Activity), task_token(TaskToken)]),
+         mq_utils:activity_start(Activity, TaskToken, InputText),
          atom_json_dict(InputText, Input, []),
          Reply = _{output: "ok", taskToken: TaskToken, input: Input}
       ;  http_header:status_number(bad_request, S_400),
@@ -114,28 +103,24 @@ activity(get, Request) :-
 activity(post, Request) :-
     http_read_json_dict(Request, Dict, []),
     http_log('~w, ~p~n', [activity(post), params(Dict)]),
-    ( _{output: Output, taskToken: TaskTokenStr} :< Dict
+    ( _{output: Output, taskToken: TaskToken} :< Dict
       -> Result = success,
          atom_json_dict(OutputText, Output, []),
-         http_log('~w, ~p~n', [activity(post(Result)), output_text(OutputText)])
-      ; ( _{error: Error, cause: Cause, taskToken: TaskTokenStr} :< Dict
+         http_log('~w, ~p~n', [activity(post(Result)),
+                               output_text(OutputText)])
+      ; ( _{error: Error, cause: Cause, taskToken: TaskToken} :< Dict
           -> Result = failure,
              atom_json_dict(OutputText, _{error: Error, cause: Cause}, []),
-         http_log('~w, ~p~n', [activity(post(Result)), output_text(OutputText)])
+             http_log('~w, ~p~n', [activity(post(Result)),
+                               output_text(OutputText)])
           ; http_header:status_number(bad_request, S_400),
             throw((_{error: 'InvalidOutput'}, S_400))
         )
     ),
-    ( memberchk(path_info(ActivityAtom), Request)
-      -> atom_string(ActivityAtom, Activity),
-         atom_string(TaskToken, TaskTokenStr),
-         activity_task_queue(MQueue),
-         http_log('~w, ~p~n', [activity(post),
-                  send_task_result(Result, Activity, TaskToken, OutputText)]),
-         thread_send_message(MQueue,
-                             send_task_result(Result, Activity, TaskToken,
-                                              OutputText),
-                             [timeout(60)]),
+    ( memberchk(path_info(Activity), Request)
+      -> http_log('~w, ~p~n', [activity(post),
+                               (Activity, TaskToken, Result, OutputText)]),
+         mq_utils:activity_end(Activity, TaskToken, Result, OutputText),
          Reply = _{}
       ;  http_header:status_number(bad_request, S_400),
          throw((_{error: 'Missing activity task name'}, S_400))
@@ -145,21 +130,13 @@ activity(post, Request) :-
 activity(patch, Request) :-
     http_read_json_dict(Request, Dict, []),
     http_log('~w, ~p~n', [activity(patch), params(Dict)]),
-    ( _{taskToken: TaskTokenStr} :< Dict
+    ( _{taskToken: TaskToken} :< Dict
       -> true
       ; http_header:status_number(bad_request, S_400),
         throw((_{error: 'InvalidToken'}, S_400))
     ),
-    ( memberchk(path_info(ActivityAtom), Request)
-      -> atom_string(ActivityAtom, Activity),
-         atom_string(TaskToken, TaskTokenStr),
-         activity_task_queue(MQueue),
-         thread_send_message(MQueue,
-                             send_task_heartbeat(Activity, TaskToken),
-                             [timeout(60)]),
-         thread_get_message(MQueue,
-                            reply_task_heartbeat(Activity, TaskToken),
-                             [timeout(60)]),
+    ( memberchk(path_info(Activity), Request)
+      -> mq_utils:activity_heartbeat(Activity, TaskToken),
          Reply = _{}
       ;  http_header:status_number(bad_request, S_400),
          throw((_{error: 'Missing activity task name'}, S_400))
@@ -299,9 +276,7 @@ statemachine(post, Request) :-
            -> % http_log('~w~n', [dsl(Dict.Dsl)]),
               option(api_key(ID-PW), Request),
               wsk_api_utils:openwhisk(Defaults),
-              activity_task_queue(MQueue),
-              merge_options([api_key(ID-PW), activity_queue(MQueue)], Defaults,
-                            Options),
+              merge_options([api_key(ID-PW)], Defaults, Options),
               term_string(Dsl, Dict.dsl),
               asl_run:start(Dsl, Options, Input, O),
               Output = DictParams.put(_{output:O})
@@ -446,9 +421,7 @@ shell(post, Request) :-
               % http_log('~w~n', [dsl(Dsl)]),
               option(api_key(ID-PW), Request),
               wsk_api_utils:openwhisk(Defaults),
-              activity_task_queue(MQueue),
-              merge_options([api_key(ID-PW), activity_queue(MQueue)], Defaults,
-                            Options),
+              merge_options([api_key(ID-PW)], Defaults, Options),
               term_string(Dsl, Dict.dsl),
               asl_run:start(Dsl, Options, Input, O),
               Output = DictParams.put(_{output:O})
