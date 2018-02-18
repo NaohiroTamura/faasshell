@@ -44,8 +44,8 @@ test(echo, R = _{foo:1}) :-
 
 test(scenarios) :-
     wsk_api_utils:openwhisk(Options),
-    open('samples/actions/hello.js', read, S),
-    call_cleanup(
+    setup_call_cleanup(
+            open('samples/actions/hello.js', read, S),
             read_string(S, _N, Code),
             close(S)),
     Payload = _{ namespace: "_",

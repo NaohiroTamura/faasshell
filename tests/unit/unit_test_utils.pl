@@ -32,8 +32,8 @@ remove_hello_action :-
 %%
 create_action(Action, File, Kind, Container) :-
     wsk_api_utils:openwhisk(Options),
-    open(File, read, S),
-    call_cleanup(
+    setup_call_cleanup(
+            open(File, read, S),
             read_string(S, _N, Code),
             close(S)),
     Payload = _{ namespace: "_",

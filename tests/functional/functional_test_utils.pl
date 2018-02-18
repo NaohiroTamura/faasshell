@@ -21,8 +21,8 @@ api_host('http://127.0.0.1:8080').
 api_key('23bc46b1-71f6-4ed5-8c54-816aa4f8c502'-'123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP').
 
 load_json(File, Term) :-
-    open(File, read, S),
-    call_cleanup(
+    setup_call_cleanup(
+            open(File, read, S),
             json_read(S, Term, []),
             close(S)).
 

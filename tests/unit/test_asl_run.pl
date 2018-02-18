@@ -161,11 +161,10 @@ test(failed, Code = 502 ) :-
 
 :- end_tests(task_timer).
 
-:- begin_tests(activity_task).
+:- begin_tests(activity_task, [setup(mq_utils:mq_init)]).
 
 test(activity_task_dsl_success, Status = true) :-
     wsk_api_utils:openwhisk(Options),
-    mq_utils:mq_init,
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/dsl/activity_task.dsl',
@@ -173,14 +172,18 @@ test(activity_task_dsl_success, Status = true) :-
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
+
+    sleep(1),
     Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
     uuid(TaskToken),
     mq_utils:activity_start(Activity, TaskToken, InputText),
     atom_json_dict(InputText, Input, []),
     assertion(Input = _{name: "Activity"}),
 
+    sleep(1),
     mq_utils:activity_heartbeat(Activity, TaskToken),
 
+    sleep(1),
     atomics_to_string(["Hello, ", Input.name, "!"], Output),
     atom_json_dict(OutputText, _{payload: Output}, []),
     mq_utils:activity_end(Activity, TaskToken, success, OutputText),
@@ -191,7 +194,6 @@ test(activity_task_dsl_success, Status = true) :-
 
 test(activity_task_dsl_failure, Status = true) :-
     wsk_api_utils:openwhisk(Options),
-    mq_utils:mq_init,
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/dsl/activity_task.dsl',
@@ -199,6 +201,8 @@ test(activity_task_dsl_failure, Status = true) :-
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
+
+    sleep(1),
     Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
     uuid(TaskToken),
     mq_utils:activity_start(Activity, TaskToken, InputText),
@@ -209,8 +213,10 @@ test(activity_task_dsl_failure, Status = true) :-
            error(existence_error(Key ,Name,_),_),
            true),
 
+    sleep(1),
     mq_utils:activity_heartbeat(Activity, TaskToken),
 
+    sleep(1),
     format(string(Cause), "~w '~w' doesn't exist", [Key, Name]),
     atom_json_dict(OutputText, _{error: "existence_error", cause: Cause}, []),
     mq_utils:activity_end(Activity, TaskToken, failure, OutputText),
@@ -221,14 +227,12 @@ test(activity_task_dsl_failure, Status = true) :-
 
 test(activity_task_timeout_dsl) :-
     wsk_api_utils:openwhisk(Options),
-    mq_utils:mq_init,
     start('samples/dsl/activity_task_timeout.dsl', Options,
           _{name: "Activity Timeout"}, O),
     assertion(O = _{error:"States.Timeout"}).
 
 test(activity_task_heartbeat_dsl_success, Status = true) :-
     wsk_api_utils:openwhisk(Options),
-    mq_utils:mq_init,
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/dsl/activity_task_heartbeat.dsl',
@@ -236,6 +240,8 @@ test(activity_task_heartbeat_dsl_success, Status = true) :-
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
+
+    sleep(1),
     Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
     uuid(TaskToken),
     mq_utils:activity_start(Activity, TaskToken, InputText),
@@ -259,7 +265,6 @@ test(activity_task_heartbeat_dsl_success, Status = true) :-
 
 test(activity_task_heartbeat_dsl_hearbeat_timeout, Status = true) :-
     wsk_api_utils:openwhisk(Options),
-    mq_utils:mq_init,
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/dsl/activity_task_heartbeat.dsl',
@@ -267,6 +272,8 @@ test(activity_task_heartbeat_dsl_hearbeat_timeout, Status = true) :-
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
+
+    sleep(1),
     Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
     uuid(TaskToken),
     mq_utils:activity_start(Activity, TaskToken, InputText),
@@ -283,7 +290,6 @@ test(activity_task_heartbeat_dsl_hearbeat_timeout, Status = true) :-
 
 test(activity_task_timeout_heartbeat_dsl_timeout, Status = true) :-
     wsk_api_utils:openwhisk(Options),
-    mq_utils:mq_init,
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/dsl/activity_task_timeout_heartbeat.dsl',
@@ -292,11 +298,13 @@ test(activity_task_timeout_heartbeat_dsl_timeout, Status = true) :-
             ),
             Id),
     uuid(TaskToken),
+
+    sleep(1),
     Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
     mq_utils:activity_start(Activity, TaskToken, InputText),
     atom_json_dict(InputText, Input, []),
     assertion(Input = _{name: "Activity"}),
-    sleep(2),
+    sleep(1),
 
     mq_utils:activity_heartbeat(Activity, TaskToken),
     sleep(2),

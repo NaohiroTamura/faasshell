@@ -46,8 +46,8 @@ mydebug(F, M) :-
 start(File, Options, I, O) :-
     ( atom(File); string(File) ), !,
     set_setting(http:logfile,'/logs/httpd.log'), % docker volume /tmp
-    open(File, read, S),
-    call_cleanup(
+    setup_call_cleanup(
+            open(File, read, S),
             read_term(S, Term, []),
             close(S)),
     start(Term, Options, I, O).

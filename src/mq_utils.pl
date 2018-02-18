@@ -30,36 +30,88 @@
            activity_heartbeated/3
          ]).
 
+:- use_module(kafka_api).
 
 %%
 %% $ swipl -q -l src/kafka_api.pl -g mq_utils:debug_mq
 debug_mq :- debug(mq > user_error).
 
-%% activity task messaging
+%% Message Queue Plugin Interface
 :- dynamic
-       activity_task_queue/1.
-
-:- multifile
-       activity_start/4,
-       activity_started/4,
-       activity_end/5,
-       activity_ended/5,
-       activity_heartbeat/3,
-       activity_heartbeated/4.
+       faasshell_mq/1.
 
 %%
 mq_init :-
-    message_queue_create(Q, [max_size(10)]),     % TODO: queue size
-    assertz(activity_task_queue(Q)).
+    getenv('FAASSHELL_MQ', MQType)
+    -> faas:mq_init(MQType),
+       assertz(faasshell_mq(MQType))
+    ;  faas:mq_init(built_in),
+       assertz(faasshell_mq(built_in)).
 
 %% svc ---- activity_start ----> run
 %%     <--- activity_started ---
 activity_start(Activity, TaskToken, InputText) :-
+    faasshell_mq(MQType),
     atom_string(ActivityAtom, Activity),
     atom_string(TaskTokenAtom, TaskToken),
-    activity_start(built_in, ActivityAtom, TaskTokenAtom, InputText).
+    faas:activity_start(MQType, ActivityAtom, TaskTokenAtom, InputText).
 
-activity_start(built_in, Activity, TaskToken, InputText) :-
+activity_started(Activity, InputText, TaskToken) :-
+    faasshell_mq(MQType),
+    atom_string(ActivityAtom, Activity),
+    faas:activity_started(MQType, ActivityAtom, InputText, TaskToken).
+
+%% svc ---- activity_end ----> run
+%%     <--- activity_ended ---
+activity_end(Activity, TaskToken, Result, OutputText) :-
+    faasshell_mq(MQType),
+    atom_string(ActivityAtom, Activity),
+    atom_string(TaskTokenAtom, TaskToken),
+    faas:activity_end(MQType, ActivityAtom, TaskTokenAtom, Result,
+                      OutputText).
+
+activity_ended(Activity, TaskToken, Result, OutputText) :-
+    faasshell_mq(MQType),
+    atom_string(ActivityAtom, Activity),
+    atom_string(TaskTokenAtom, TaskToken),
+    faas:activity_ended(MQType, ActivityAtom, TaskTokenAtom, Result,
+                   OutputText).
+
+%% svc ---- activity_heartbeat ----> run
+%%     <--- activity_heartbeated ---
+activity_heartbeat(Activity, TaskToken) :-
+    faasshell_mq(MQType),
+    atom_string(ActivityAtom, Activity),
+    atom_string(TaskTokenAtom, TaskToken),
+    faas:activity_heartbeat(MQType, ActivityAtom, TaskTokenAtom).
+
+activity_heartbeated(Activity, TaskToken, HeartbeatSeconds) :-
+    faasshell_mq(MQType),
+    atom_string(ActivityAtom, Activity),
+    atom_string(TaskTokenAtom, TaskToken),
+    faas:activity_heartbeated(MQType, ActivityAtom, TaskTokenAtom,
+                              HeartbeatSeconds).
+
+%%
+%%
+:- multifile
+       faas:mq_init/1,
+       faas:activity_start/4,
+       faas:activity_started/4,
+       faas:activity_end/5,
+       faas:activity_ended/5,
+       faas:activity_heartbeat/3,
+       faas:activity_heartbeated/4.
+
+%% activity task messaging
+:- dynamic
+       activity_task_queue/1.
+
+faas:mq_init(built_in) :-
+    message_queue_create(Q, [max_size(10)]),     % TODO: queue size
+    assertz(activity_task_queue(Q)).
+
+faas:activity_start(built_in, Activity, TaskToken, InputText) :-
     activity_task_queue(MQueue),
     thread_send_message(MQueue,
                         get_activity_task(Activity, TaskToken),
@@ -68,51 +120,26 @@ activity_start(built_in, Activity, TaskToken, InputText) :-
                        reply_activity_task(Activity, TaskToken, InputText),
                        [timeout(60)]).
 
-activity_started(Activity, InputText, TaskToken) :-
-    atom_string(ActivityAtom, Activity),
-    activity_started(built_in, ActivityAtom, InputText, TaskToken).
-
-activity_started(built_in, Activity, InputText, TaskToken) :-
+faas:activity_started(built_in, Activity, InputText, TaskToken) :-
     activity_task_queue(MQueue),
     thread_get_message(MQueue, get_activity_task(Activity, TaskToken)),
     thread_send_message(MQueue,
                         reply_activity_task(Activity, TaskToken, InputText)).
 
-%% svc ---- activity_end ----> run
-%%     <--- activity_ended ---
-activity_end(Activity, TaskToken, Result, OutputText) :-
-    atom_string(ActivityAtom, Activity),
-    atom_string(TaskTokenAtom, TaskToken),
-    activity_end(built_in, ActivityAtom, TaskTokenAtom, Result, OutputText).
-
-activity_end(built_in, Activity, TaskToken, Result, OutputText) :-
+faas:activity_end(built_in, Activity, TaskToken, Result, OutputText) :-
     activity_task_queue(MQueue),
     thread_send_message(MQueue,
                         send_task_result(Activity, TaskToken, Result,
                                          OutputText),
                         [timeout(60)]).
 
-activity_ended(Activity, TaskToken, Result, OutputText) :-
-    atom_string(ActivityAtom, Activity),
-    atom_string(TaskTokenAtom, TaskToken),
-    activity_ended(built_in, ActivityAtom, TaskTokenAtom, Result,
-                   OutputText).
-
-activity_ended(built_in, Activity, TaskToken, Result, OutputText) :-
+faas:activity_ended(built_in, Activity, TaskToken, Result, OutputText) :-
     activity_task_queue(MQueue),
     thread_get_message(MQueue,
                        send_task_result(Activity, TaskToken, Result,
                                         OutputText)).
 
-
-%% svc ---- activity_heartbeat ----> run
-%%     <--- activity_heartbeated ---
-activity_heartbeat(Activity, TaskToken) :-
-    atom_string(ActivityAtom, Activity),
-    atom_string(TaskTokenAtom, TaskToken),
-    activity_heartbeat(built_in, ActivityAtom, TaskTokenAtom).
-
-activity_heartbeat(built_in, Activity, TaskToken) :-
+faas:activity_heartbeat(built_in, Activity, TaskToken) :-
     activity_task_queue(MQueue),
     thread_send_message(MQueue,
                         send_task_heartbeat(Activity, TaskToken),
@@ -121,13 +148,7 @@ activity_heartbeat(built_in, Activity, TaskToken) :-
                        reply_task_heartbeat(Activity, TaskToken),
                        [timeout(60)]).
 
-activity_heartbeated(Activity, TaskToken, HeartbeatSeconds) :-
-    atom_string(ActivityAtom, Activity),
-    atom_string(TaskTokenAtom, TaskToken),
-    activity_heartbeated(built_in, ActivityAtom, TaskTokenAtom,
-                         HeartbeatSeconds).
-
-activity_heartbeated(built_in, Activity, TaskToken, HeartbeatSeconds) :-
+faas:activity_heartbeated(built_in, Activity, TaskToken, HeartbeatSeconds) :-
     activity_task_queue(MQueue),
     thread_get_message(MQueue, send_task_heartbeat(Activity, TaskToken),
                          [timeout(HeartbeatSeconds)])

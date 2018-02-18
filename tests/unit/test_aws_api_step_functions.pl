@@ -26,8 +26,8 @@
 :- begin_tests(invalid_definition).
 
 test(create, Code = 400) :-
-    open('samples/aws/asl/has-dupes.json', read, S),
-    call_cleanup(
+    setup_call_cleanup(
+            open('samples/aws/asl/has-dupes.json', read, S),
             read_string(S, _N, ASL),
             close(S)),
     Request = _{'roleArn': 'arn:aws:iam::410388484666:role/service-role/StatesExecutionRole-us-east-2',
