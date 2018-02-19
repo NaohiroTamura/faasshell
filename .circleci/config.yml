@@ -2,12 +2,9 @@ version: 2
 jobs:
   build:
     docker:
-      - image: swipl:7.5.15
+      - image: nao16t/swipl7jpl
     steps:
       - checkout
-      - run:
-          name: install tools
-          command: apt-get update && apt-get install -y make procps ca-certificates
       - run:
           name: create /logs for testing
           command: mkdir /logs
