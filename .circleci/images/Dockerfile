@@ -2,6 +2,8 @@
 # JPL enabled SWI Prolog 7.5.15
 # https://github.com/NaohiroTamura/docker-swipl/tree/swi-7.5.15-jpl
 #
+# $ docker build -t nao16t/swipl7jpl .
+#
 FROM debian:stretch-slim
 LABEL maintainer "Dave Curylo <dave@curylo.org>, Michael Hendricks <michael@ndrix.org>"
 RUN mkdir -p /usr/share/man/man1

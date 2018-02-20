@@ -2,18 +2,18 @@ version: 2
 jobs:
   build:
     docker:
-      - image: nao16t/swipl7jpl
+      - image: nao16t/swipl7jpl-kafka
     steps:
       - checkout
-      - run:
-          name: create /logs for testing
-          command: mkdir /logs
       - run:
           name: unit test
           command: make unit_test
       - run:
           name: functional test
           command: make functional_test
+      - run:
+          name: test with kafka
+          command: make test_with_kafka -e FAASSHELL_MQ=kafka
       - run:
           name: Print the Current Time
           command: date

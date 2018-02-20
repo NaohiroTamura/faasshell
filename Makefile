@@ -19,6 +19,10 @@ docker_image_tag = :latest
 unit_test_files := $(wildcard tests/unit/test_*.pl)
 functional_test_files := $(wildcard tests/functional/test_*.pl)
 
+JAR = $(PWD)/lib
+export CLASSPATH=$(JAR)/kafka-clients-0.11.0.2.jar:$(JAR)/slf4j-api-1.7.25.jar:$(JAR)/slf4j-log4j12-1.7.25.jar:$(JAR)/log4j-1.2.17.jar
+export _JAVA_OPTIONS="-Dconfig.location=file -Dlog4j.configuration=file://$(JAR)/log4j.properties"
+
 all: unit_test
 
 unit_test:
@@ -29,7 +33,7 @@ unit_test:
 	done
 
 functional_test:
-	@echo "functionalunit  test"
+	@echo "functional  test"
 	swipl -q -l src/asl_svc.pl -g main -t halt &
 	swipl -q -l tests/unit/unit_test_utils.pl -g functional_test_setup -t halt
 	sleep 3
@@ -38,6 +42,16 @@ functional_test:
 		swipl -q -l $$case -g run_tests -t halt; \
 	done
 	pkill -HUP swipl
+
+test_with_kafka:
+	@echo "unit and functional tests with kafka"
+	kafka-server-start.sh /opt/kafka/config/server.properties > /dev/null &
+	sleep 3
+	zookeeper-server-start.sh /opt/kafka/config/zookeeper.properties > /dev/null &
+	sleep 3
+	swipl -q -l tests/unit/test_asl_run.pl -g 'run_tests(activity_task)' -t halt
+	sleep 1
+	swipl -q -l tests/functional/test_activity.pl -g run_tests -t halt
 
 build_image:
 	@echo "create build image"
