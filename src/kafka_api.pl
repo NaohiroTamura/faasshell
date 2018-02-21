@@ -32,19 +32,34 @@
        faas:activity_heartbeated/4.
 
 %%
+%% $ swipl -q -l src/kafka_api.pl -g kafka_api:debug_kafka
+debug_kafka :- debug(kafka > user_error).
+
+%%
 faas:mq_init(kafka) :-
-    message_queue_create(RecvQ),
-    gethostname(Group),
-    kafka_consumer(Consumer, Group),
-    kafka_subscribe(Consumer, faasshell, Group, RecvQ, _ChildId),
-    assertz(activity_task_queue(kafka(Group, RecvQ))).
+    catch( ( activity_task_queue(kafka(_ , _)),
+             debug(kafka, 'faas:mq_init(kafka) has already asserted~n', [])
+           ),
+           _Error,
+           ( message_queue_create(RecvQ),
+             gethostname(Hostname),
+             uuid(Id),
+             atomic_list_concat([Hostname, ':', Id], Group),
+             kafka_consumer(Consumer, Group),
+             kafka_subscribe(Consumer, faasshell, Group, RecvQ, _ChildId),
+             kafka_producer(Producer),
+             assertz(activity_task_queue(kafka(Producer, Group, RecvQ))),
+             debug(kafka, 'faas:mq_init(kafka) asserted.~n', []),
+             sleep(3)  %% needs to wait for establishing Consumer connection
+           )
+         ).
 
 %%
 faas:activity_start(kafka, Activity, TaskToken, InputText) :-
-    activity_task_queue(kafka(Key, MQueue)),
+    activity_task_queue(kafka(Producer, Key, MQueue)),
 
     term_to_atom(get_activity_task(Activity, TaskToken), Value),
-    kafka_send_message(Key, Value),
+    kafka_send_message(Producer, Key, Value),
     debug(kafka, 'send(get_activity_task(~w, ~w))~n', [Activity, TaskToken]),
 
     thread_get_message(MQueue,
@@ -54,26 +69,26 @@ faas:activity_start(kafka, Activity, TaskToken, InputText) :-
           [Activity, TaskToken, InputText]).
 
 faas:activity_started(kafka, Activity, InputText, TaskToken) :-
-    activity_task_queue(kafka(Key, MQueue)),
+    activity_task_queue(kafka(Producer, Key, MQueue)),
 
     thread_get_message(MQueue, get_activity_task(Activity, TaskToken)),
     debug(kafka, 'recv(get_activity_task(~w, ~w))~n', [Activity, TaskToken]),
 
     term_to_atom(reply_activity_task(Activity, TaskToken, InputText), Value),
-    kafka_send_message(Key, Value),
+    kafka_send_message(Producer, Key, Value),
     debug(kafka, 'send(reply_activity_task(~w, ~w, ~w))~n',
           [Activity, TaskToken, InputText]).
 
 faas:activity_end(kafka, Activity, TaskToken, Result, OutputText) :-
-    activity_task_queue(kafka(Key, _MQueue)),
+    activity_task_queue(kafka(Producer, Key, _MQueue)),
 
     term_to_atom(send_task_result(Activity, TaskToken, Result, OutputText), Value),
-    kafka_send_message(Key, Value),
+    kafka_send_message(Producer, Key, Value),
     debug(kafka, 'send(send_task_result(~w, ~w, ~w, ~w))~n',
           [Activity, TaskToken, Result, OutputText]).
 
 faas:activity_ended(kafka, Activity, TaskToken, Result, OutputText) :-
-    activity_task_queue(kafka(_Key, MQueue)),
+    activity_task_queue(kafka(_Producer, _Key, MQueue)),
 
     thread_get_message(MQueue,
                        send_task_result(Activity, TaskToken, Result,
@@ -82,10 +97,10 @@ faas:activity_ended(kafka, Activity, TaskToken, Result, OutputText) :-
           [Activity, TaskToken, Result, OutputText]).
 
 faas:activity_heartbeat(kafka, Activity, TaskToken) :-
-    activity_task_queue(kafka(Key, MQueue)),
+    activity_task_queue(kafka(Producer, Key, MQueue)),
 
     term_to_atom(send_task_heartbeat(Activity, TaskToken), Value),
-    kafka_send_message(Key, Value),
+    kafka_send_message(Producer, Key, Value),
     debug(kafka, 'send(send_task_heartbeat(~w, ~w))~n', [Activity, TaskToken]),
 
     thread_get_message(MQueue,
@@ -94,25 +109,21 @@ faas:activity_heartbeat(kafka, Activity, TaskToken) :-
     debug(kafka, 'recv(reply_task_heartbeat(~w, ~w))~n', [Activity, TaskToken]).
 
 faas:activity_heartbeated(kafka, Activity, TaskToken, HeartbeatSeconds) :-
-    activity_task_queue(kafka(Key, MQueue)),
+    activity_task_queue(kafka(Producer, Key, MQueue)),
 
     thread_get_message(MQueue, send_task_heartbeat(Activity, TaskToken),
                          [timeout(HeartbeatSeconds)])
     -> debug(kafka, 'recv(send_task_heartbeat(~w, ~w))~n', [Activity, TaskToken]),
        term_to_atom(reply_task_heartbeat(Activity, TaskToken), Value),
-       kafka_send_message(Key, Value),
+       kafka_send_message(Producer, Key, Value),
        debug(kafka, 'send(reply_task_heartbeat(~w, ~w))~n', [Activity, TaskToken]).
 
-kafka_send_message(Key, Value) :-
-    setup_call_cleanup(
-            kafka_producer(Producer),
-            kafka_send(Producer, faasshell, Key, Value),
-            kafka_close(Producer)
-        ).
+kafka_send_message(Producer, Key, Value) :-
+    kafka_send(Producer, faasshell, Key, Value).
 
 %%
-%% $ swipl -q -l src/kafka_api.pl -g kafka_api:debug_kafka
-debug_kafka :- debug(kafka > user_error).
+%% $ swipl -q -l src/kafka_api.pl -g kafka_api:debug_jpl
+debug_jpl :- debug(jpl > user_error).
 
 %%
 kafka_apihost(KafkaApiHost) :-
@@ -172,9 +183,9 @@ kafka_subscribe(Consumer, Topic, Key, ParentId) :-
              repeat,
                jpl_call(Consumer, poll, [1000], ConsumerRecords),
                jpl_call(ConsumerRecords, iterator, [], RecordsIter),
-               debug(kafka, 'consumer_records(in)~n', []),
+               debug(jpl, 'consumer_records(in)~n', []),
                iterator(RecordsIter, Topic, Key, ParentId),
-               debug(kafka, 'consumer_records(out)~n', []),
+               debug(jpl, 'consumer_records(out)~n', []),
                fail
            ),
            Error,
@@ -186,7 +197,7 @@ kafka_subscribe(Consumer, Topic, Key, ParentId) :-
          ).
 
 iterator(RecordsIter, Topic, Key, ParentId) :-
-    debug(kafka, 'records_iter(in)', []),
+    debug(jpl, 'records_iter(in)', []),
     ( jpl_iterator_element(RecordsIter, Record)
       -> jpl_call(Record, topic, [], T),
          jpl_call(Record, key, [], K),
@@ -199,7 +210,7 @@ iterator(RecordsIter, Topic, Key, ParentId) :-
            ;  true
          ),
          iterator(RecordsIter, Topic, Key, ParentId)
-      ;  debug(kafka, 'records_iter(out)~n', [])
+      ;  debug(jpl, 'records_iter(out)~n', [])
     ).
 
 kafka_unsubscribe(Consumer, ThreadId) :-
