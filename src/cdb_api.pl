@@ -33,7 +33,9 @@
             design_update/5,
             design_delete/4,
             view_read/6,
-            db_init/3
+            db_init/0,
+            db_init/3,
+            get_user/2
          ]).
 
 :- use_module(json_utils).
@@ -78,9 +80,9 @@ view             --> ["/_view/"].
 
 %%
 db_env(Options) :-
-    ( getenv('DB_WHISK_AUTHS', SubjectDB)
+    ( getenv('DB_IDENTITY', SubjectDB)
       -> AuthDB = [subject_db(SubjectDB)]
-      ;  AuthDB = [subject_db(whisk_local_subjects)]
+      ;  AuthDB = [subject_db(faasshell_subjects)]
     ),
     ( getenv('DB_AUTH', DB_AUTH),
       split_string(DB_AUTH, ':', "", [ID, PW])
@@ -99,7 +101,7 @@ db_env(Options) :-
              )
          )
       ; ( getenv('COUCHDB_SERVICE_HOST', Host),
-          getenv('COUCHDB_SERVICE_PORT_COUCHDB', Port)
+          getenv('COUCHDB_SERVICE_PORT', Port)
           -> Scheme = default,
              atom_string(Host, DB_HOST),
              atom_number(Port, DB_PORT)
@@ -234,6 +236,12 @@ view_read(DB, Design, View, Query, Code, Res) :-
     json_utils:term_json_dict(Reply, Res).
 
 %%
+db_init :-
+    db_init(faasshell, faasshell, _),
+    db_init(faasshell_auths, auths, _),
+    ( create_user(demo, 'ec29e90c-188d-11e8-bb72-00163ec1cd01:0b82fe63b6bd450519ade02c3cb8f77ee581f25a810db28f3910e6cdd9d041bf'); true),
+    db_init(faasshell_executions, executions, _).
+
 db_init(DB, Doc, [C1, C2, C3, C4]) :-
     db_exist(DB, C1, _R1),
     ( C1 = 200
@@ -243,12 +251,13 @@ db_init(DB, Doc, [C1, C2, C3, C4]) :-
     design_read(DB, Doc, C3, _R3),
     ( C3 = 200
       -> C4 = null
-      ;  faas_design(Dict),
-         design_create(DB, faas, Dict, C4, _R4)
+      ;  view_design(Doc, Dict),
+         design_create(DB, Doc, Dict, C4, _R4)
     ).
 
 %% CouchDB View
-faas_design(_{
+view_design(faasshell,
+ _{
    views: _{
      shell: _{
        map: "function (doc) { if (doc.dsl !== undefined) { emit([\"dsl\", doc.namespace], [doc.namespace, doc.name]); } }"
@@ -259,6 +268,61 @@ faas_design(_{
    },
    language: "javascript"
  }).
+
+view_design(auths,
+ _{
+   views: _{
+     identities: _{
+       map: "function (doc) { emit([doc.uid, doc.password], doc.name) }"
+     }
+   },
+   language: "javascript"
+ }).
+
+view_design(executions, _{}).
+
+create_user(Name, Credential) :-
+    atom(Name), atom(Credential), !,
+    atomic_list_concat([Uid, Password], ':', Credential),
+    Data = _{ name: Name,
+              uid: Uid,
+              password: Password
+            },
+    doc_create(faasshell_auths, Name, Data, _Code, _Res).
+create_user(Name, Credential) :-
+    atom(Name), var(Credential),
+    uuid(Uid),
+    crypto_data_hash(Uid, Password, [salt(faasshell)]),
+    Data = _{ name: Name,
+              uid: Uid,
+              password: Password
+            },
+    doc_create(faasshell_auths, Name, Data, Code, _Res),
+    Code = 201
+    -> atomic_list_concat([Uid, Password], ':', Credential).
+
+%% get_user(+Name, ?Credential)
+get_user(Name, Credential) :-
+    atom(Name), !,
+    doc_read(faasshell_auths, Name, _Code, R),
+    atom_string(Name, NameStr),
+    _{'_id': NameStr, '_rev': _, password: Password, name: NameStr, uid: Uid} :< R,
+    atomic_list_concat([Uid, Password], ':', Credential).
+%% get_user(-Name, +Credential)
+get_user(Name, Credential) :-
+    var(Name), atom(Credential),
+    atomic_list_concat([Uid, Password], ':', Credential),
+    format(string(Query), '["~w","~w"]', [Uid, Password]),
+    uri_encoded(query_value, Query, EncodedQuery),
+    view_read(faasshell_auths, auths, identities,
+              ['?key=', EncodedQuery], Code, Dict),
+    Code = 200, length(Dict.rows, 1)
+    -> [Row0] = Dict.rows,
+       atom_string(Uid, UidStr),
+       atom_string(Password, PasswordStr),
+       _{id: NameStr, key: [UidStr, PasswordStr], value: NameStr} :< Row0,
+       atom_string(Name, NameStr).
+
 
 %% DB Configuration
 db_get_reduce_limit(Res) :-

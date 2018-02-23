@@ -16,9 +16,8 @@
 %%
 
 %% Utils
-api_host('http://127.0.0.1:8080').
-%%api_host('http://172.17.0.1:8080').
-api_key('23bc46b1-71f6-4ed5-8c54-816aa4f8c502'-'123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP').
+faasshell_api_host('http://127.0.0.1:8080').
+faasshell_api_key('ec29e90c-188d-11e8-bb72-00163ec1cd01'-'0b82fe63b6bd450519ade02c3cb8f77ee581f25a810db28f3910e6cdd9d041bf').
 
 load_json(File, Term) :-
     setup_call_cleanup(

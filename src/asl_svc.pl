@@ -54,10 +54,10 @@
 %%
 main :-
     set_setting(http:logfile,'/logs/httpd.log'), % docker volume /tmp
-    mq_utils:mq_init,
-    catch(db_init(faasshell, faas, _Codes),
-          Error,
-          (print_message(error, Error), halt(1))),
+    catch( ( mq_utils:mq_init,
+             cdb_api:db_init ),
+           Error,
+           (print_message(error, Error), halt(1))),
     getenv('SVC_PORT', Port) -> server(Port); server(8080).
 
 server(Port) :-
@@ -74,11 +74,11 @@ hup(_Signal) :-
 %%
 %%
 :- http_handler('/activity/', activity, [methods([get, post, patch]), prefix,
-                                         authentication(openwhisk)]).
+                                         authentication(faasshell)]).
 
 activity(Request) :-
     http_log('~w~n', [request(Request)]),
-    option(namespace(nil), Request)
+    option(faasshell_auth(nil), Request)
     -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
     ;  memberchk(method(Method), Request),
        catch( activity(Method, Request),
@@ -146,11 +146,11 @@ activity(patch, Request) :-
 %% $ curl -sLX GET localhost:8080/faas
 %% $ curl -sLX GET localhost:8080/faas/{actionName}
 :- http_handler('/faas/', faas, [methods([get]), prefix,
-                                 authentication(openwhisk)]).
+                                 authentication(faasshell)]).
 
 faas(Request) :-
     http_log('~w~n', [request(Request)]),
-    option(namespace(nil), Request)
+    option(faasshell_auth(nil), Request)
     -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
     ;  memberchk(method(Method), Request),
        catch( faas(Method, Request),
@@ -160,12 +160,10 @@ faas(Request) :-
               )).
 
 faas(get, Request) :-
-    option(api_key(ID-PW), Request),
-    wsk_api_utils:openwhisk(Defaults),
-    merge_options([api_key(ID-PW)], Defaults, Options),
+    wsk_api_utils:openwhisk(Options),
     ( memberchk(path_info(Action), Request)
       -> %% Fully-Qualified Action Name
-         option(namespace(NS), Request),
+         option(faasshell_auth(NS), Request),
          atomics_to_string(["/", NS, "/", Action], FQAN),
          wsk_api_actions:list(FQAN, Options, Reply)
       ;  wsk_api_actions:list(none, Options, Reply)
@@ -179,11 +177,11 @@ faas(get, Request) :-
 %% PATCH : create graph of statemachine
 :- http_handler('/statemachine/', statemachine,
                 [methods([get, put, post, delete, patch]), prefix,
-                 authentication(openwhisk)]).
+                 authentication(faasshell)]).
 
 statemachine(Request) :-
     http_log('~w~n', [request(Request)]),
-    option(namespace(nil), Request)
+    option(faasshell_auth(nil), Request)
     -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
     ;  memberchk(method(Method), Request),
        catch( statemachine(Method, Request),
@@ -196,7 +194,7 @@ statemachine(Request) :-
 %% $ curl -sLX GET localhost:8080/statemachine/{statemachine}
 %% $ curl -sLX GET localhost:8080/statemachine/
 statemachine(get, Request) :-
-    option(namespace(NS), Request),
+    option(faasshell_auth(NS), Request),
     ( memberchk(path_info(File), Request)
       -> atomics_to_string([NS, "/", File], NSFile),
          cdb_api:doc_read(faasshell, NSFile, Code1, Dict1),
@@ -208,7 +206,7 @@ statemachine(get, Request) :-
          )
       ;  format(string(Query), '["asl","~w"]',[NS]),
          uri_encoded(query_value, Query, EncordedQuery),
-         cdb_api:view_read(faasshell, faas, statemachine,
+         cdb_api:view_read(faasshell, faasshell, statemachine,
                            ['?key=', EncordedQuery], Code2, Dict2),
          http_log('~w~n', [view_read(Code2, Dict2)]),
          ( Code2 = 200
@@ -229,7 +227,7 @@ statemachine(put, Request) :-
     http_read_json_dict(Request, Dict, []),
     http_log('~w~n', [params(Dict)]),
     ( option(path_info(File), Request),
-      option(namespace(NS), Request)
+      option(faasshell_auth(NS), Request)
       -> atomics_to_string([NS, "/", File], NSFile),
          asl_gen:gen_dsl(Dict, Dsl),
          http_log('~w: ~w~n', [NSFile, dsl(Dsl)]),
@@ -266,7 +264,7 @@ statemachine(post, Request) :-
       http_header:status_number(bad_request, S_400),
       throw((_{error:'Missing input key in params'}, S_400))),
     ( memberchk(path_info(File), Request),
-      option(namespace(NS), Request)
+      option(faasshell_auth(NS), Request)
       -> atomics_to_string([NS, "/", File], NSFile),
          cdb_api:doc_read(faasshell, NSFile, Code, Dict),
          http_log('~w~n', [doc_read(File, Code)]),
@@ -274,9 +272,7 @@ statemachine(post, Request) :-
          DictParams = DictRest.put(Params),
          ( Code = 200
            -> % http_log('~w~n', [dsl(Dict.Dsl)]),
-              option(api_key(ID-PW), Request),
-              wsk_api_utils:openwhisk(Defaults),
-              merge_options([api_key(ID-PW)], Defaults, Options),
+              wsk_api_utils:openwhisk(Options),
               term_string(Dsl, Dict.dsl),
               asl_run:start(Dsl, Options, Input, O),
               Output = DictParams.put(_{output:O})
@@ -291,7 +287,7 @@ statemachine(post, Request) :-
 %% $ curl -sX DELETE localhost:8080/statemachine/{statemachine}
 statemachine(delete, Request) :-
     ( memberchk(path_info(File), Request),
-      option(namespace(NS), Request)
+      option(faasshell_auth(NS), Request)
       -> atomics_to_string([NS, "/", File], NSFile),
          cdb_api:doc_delete(faasshell, NSFile, Code, Res),
          http_log('~w~n', [doc_delete(Code, Res)]),
@@ -308,7 +304,7 @@ statemachine(delete, Request) :-
 %% $ curl -sX PATTCH localhost:8080/statemachine/{statemachine}
 statemachine(patch, Request) :-
     memberchk(path_info(File), Request),
-    option(namespace(NS), Request)
+    option(faasshell_auth(NS), Request)
     -> atomics_to_string([NS, "/", File], NSFile),
        cdb_api:doc_read(faasshell, NSFile, Code, Dict),
        http_log('~w~n', [doc_read(Code)]),
@@ -326,11 +322,11 @@ statemachine(patch, Request) :-
 %% DELETE: delete shell.dsl
 :- http_handler('/shell/', shell,
                 [methods([get, put, post, delete]), prefix,
-                 authentication(openwhisk)]).
+                 authentication(faasshell)]).
 
 shell(Request) :-
     http_log('~w~n', [request(Request)]),
-    option(namespace(nil), Request)
+    option(faasshell_auth(nil), Request)
     -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
     ;  memberchk(method(Method), Request),
        catch( shell(Method, Request),
@@ -343,7 +339,7 @@ shell(Request) :-
 %% $ curl -sLX GET localhost:8080/shell/{shell.dsl}
 %% $ curl -sLX GET localhost:8080/shell
 shell(get, Request) :-
-    option(namespace(NS), Request),
+    option(faasshell_auth(NS), Request),
     ( memberchk(path_info(File), Request)
       -> atomics_to_string([NS, "/", File], NSFile),
          cdb_api:doc_read(faasshell, NSFile, Code1, Dict1),
@@ -355,7 +351,7 @@ shell(get, Request) :-
          )
       ;  format(string(Query), '["dsl","~w"]',[NS]),
          uri_encoded(query_value, Query, EncordedQuery),
-         cdb_api:view_read(faasshell, faas, shell,
+         cdb_api:view_read(faasshell, faasshell, shell,
                            ['?key=', EncordedQuery], Code2, Dict2),
          http_log('~w~n', [view_read(Code2, Dict2)]),
          ( Code2 = 200
@@ -376,7 +372,7 @@ shell(put, Request) :-
     http_read_data(Request, DslStr, [text/plain]),
     http_log('~w~n', [put(Dsl)]),
     ( memberchk(path_info(File), Request),
-      option(namespace(NS), Request)
+      option(faasshell_auth(NS), Request)
       -> ( term_string(Dsl, DslStr),
            Dsl = asl(_)
            -> atomics_to_string([NS, "/", File], NSFile),
@@ -411,7 +407,7 @@ shell(post, Request) :-
       http_header:status_number(bad_request, S_400),
       throw((_{error: 'Missing input key in params'}, S_400))),
     ( memberchk(path_info(File), Request),
-      option(namespace(NS), Request)
+      option(faasshell_auth(NS), Request)
       -> atomics_to_string([NS, "/", File], NSFile),
          cdb_api:doc_read(faasshell, NSFile, Code, Dict),
          http_log('~w~n', [doc_read(NSFile, Code)]),
@@ -419,9 +415,7 @@ shell(post, Request) :-
            -> select_dict(_{'_id':_, '_rev':_}, Dict, DictRest),
               DictParams = DictRest.put(Params),
               % http_log('~w~n', [dsl(Dsl)]),
-              option(api_key(ID-PW), Request),
-              wsk_api_utils:openwhisk(Defaults),
-              merge_options([api_key(ID-PW)], Defaults, Options),
+              wsk_api_utils:openwhisk(Options),
               term_string(Dsl, Dict.dsl),
               asl_run:start(Dsl, Options, Input, O),
               Output = DictParams.put(_{output:O})
@@ -436,7 +430,7 @@ shell(post, Request) :-
 %% $ curl -sX DELETE localhost:8080/shell/{shell.dsl}
 shell(delete, Request) :-
     ( memberchk(path_info(File), Request),
-      option(namespace(NS), Request)
+      option(faasshell_auth(NS), Request)
       -> atomics_to_string([NS, "/", File], NSFile),
          cdb_api:doc_delete(faasshell, NSFile, Code, Res),
          http_log('~w~n', [doc_delete(NSFile, Code, Res)]),
@@ -464,42 +458,32 @@ debug_auth :- debug(http_authenticate > user_error).
 :- dynamic
        cached_auth/4. % cached_auth(User, Password, Id, Time)
 
-http:authenticate(openwhisk, Request, [api_key(User-Password), namespace(Id)]) :-
+http:authenticate(faasshell, Request, [faasshell_auth(Id)]) :-
     memberchk(authorization(Text), Request),
     debug(http_authenticate, 'Authorization: ~w~n', [Text]),
     http_authorization_data(Text, basic(User, PasswordCode)),
     atom_codes(Password, PasswordCode),
     debug(http_authenticate, 'User: ~w, Password: ~s~n', [User, Password]),
-    ( cached_auth(User, Password, Id, Time),
-      get_time(Now),
-      Now-Time =< 60
+    ( ( cached_auth(User, Password, Id, Time),
+        get_time(Now),
+        Now-Time =< 60
+      )
       -> debug(http_authenticate, 'Hit Cache: ~w, ~w~n', [User, Time]),
-         http_log('Subject(cache): ~w, ~w~n', [User, Time]),
-         true
+         http_log('Subject(cache): ~w, ~w~n', [User, Time])
       ;  ( retract(cached_auth(User, Password, Id, Time))
            -> debug(http_authenticate, 'retracted cache: ~w, ~w~n', [User, Time])
-           ;  debug(http_authenticate, 'cache not exist: ~w, ~w~n', [User, Time]),
-              true
+           ;  debug(http_authenticate, 'cache not exist: ~w, ~w~n', [User, Time])
          ),
-         format(string(Query), '["~w","~w"]',[User, Password]),
-         uri_encoded(query_value, Query, EncodedQuery),
-         cdb_api:db_env(DBOptions),
-         option(subject_db(SubjectDB), DBOptions),
-         cdb_api:view_read(SubjectDB, subjects, identities,
-                           ['?key=', EncodedQuery], Code, Dict),
-         debug(http_authenticate, 'view_read: ~w~n', [Dict]),
-         length(Dict.rows, RowsLen),
-         ( Code = 200, RowsLen = 1
-           -> [Row0] = Dict.rows,
-              debug(http_authenticate, 'Subject: ~w~n Row0: ~w~n', [Dict, Row0]),
-              atom_string(User, UserStr),
-              atom_string(Password, PasswordStr),
-              _{id:IdStr, key:[UserStr,PasswordStr], value:_} :< Row0,
-              atom_string(Id, IdStr),
-              get_time(Updated),
+         atomic_list_concat([User, Password], ':', Credential),
+         debug(http_authenticate, 'check var: ~w, ~w~n', [Id, Credential]),
+         ( cdb_api:get_user(Id, Credential)
+           -> get_time(Updated),
               assertz(cached_auth(User, Password, Id, Updated)),
+              debug(http_authenticate, 'asserted cache: ~w, ~w, ~w~n',
+                    [User, Time, Updated]),
               http_log('Subject(refresh): ~w, ~w-~w~n', [User, Time, Updated])
-           ;  http_log('Authentication failed: ~w~n', [Dict]),
+           ;  http_log('Authentication failed: ~w~n', [User]),
               Id = nil
          )
     ).
+

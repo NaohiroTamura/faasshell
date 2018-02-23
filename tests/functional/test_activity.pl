@@ -32,7 +32,7 @@
 :- begin_tests(activity_task).
 
 test(auth_error, Code = 401) :-
-    api_host(Host),
+    faasshell_api_host(Host),
     string_concat(Host, '/activity/', URL),
     http_get(URL, Data, [authorization(basic(unknown, ng)), status_code(Code)]),
     term_json_dict(Data, Dict),
@@ -40,7 +40,7 @@ test(auth_error, Code = 401) :-
 
 test(succeed, (Code1, Code2, Code3, Code4, Code5, Status)
               = (200, 200, 200, 200, 200, true)) :-
-    api_host(Host), api_key(ID-PW),
+    faasshell_api_host(Host), faasshell_api_key(ID-PW),
 
     load_json('samples/asl/activity_task_asl.json', Term1),
     string_concat(Host, '/statemachine/activity_task_asl.json?overwrite=true',
@@ -49,7 +49,7 @@ test(succeed, (Code1, Code2, Code3, Code4, Code5, Status)
              [authorization(basic(ID, PW)), status_code(Code1)]),
     term_json_dict(Data1, Dict1),
     assertion(_{output: "ok", name: "activity_task_asl.json",
-                namespace: "guest", dsl: _, asl: _} = Dict1),
+                namespace: "demo", dsl: _, asl: _} = Dict1),
 
     string_concat(Host, '/statemachine/activity_task_asl.json', URL2),
     term_json_dict(Term2, _{input: _{name: "Activity"}}),

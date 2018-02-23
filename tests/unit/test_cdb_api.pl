@@ -48,11 +48,11 @@ test(doc, Path = ["/", "unit_test", "/", "sample"]) :-
 test(doc_slash, Path = ["/", "unit_test", "/", "guest%2fsample"]) :-
     db_path(unit_test, 'guest/sample', Path, []).
 
-test(design, Path = ["/","unit_test","/_design/","faas"]) :-
-    db_path(unit_test, design, faas, Path, []).
+test(design, Path = ["/","unit_test","/_design/","faasshell"]) :-
+    db_path(unit_test, design, faasshell, Path, []).
 
-test(view, Path = ["/","unit_test","/_design/","faas","/_view/","statemachine"]) :-
-    db_path(unit_test, design, faas, view, statemachine, Path, []).
+test(view, Path = ["/","unit_test","/_design/","faasshell","/_view/","statemachine"]) :-
+    db_path(unit_test, design, faasshell, view, statemachine, Path, []).
 
 :- end_tests(db_path).
 
@@ -103,15 +103,15 @@ test(db_not_exist, (Code, Res) = (404, _{error:"not_found",reason:_})) :-
 :- begin_tests(db_init).
 
 test(all, Codes = [404, 201, 404, 201]) :-
-    db_delete(test_db_init, _Code, _Res),
-    db_init(test_db_init, faas, Codes).
+     db_delete(test_db_init, _Code, _Res),
+     db_init(test_db_init, faasshell, Codes).
 
 test(ready, Codes = [200, null, 200, null]) :-
-    db_init(test_db_init, faas, Codes).
+    db_init(test_db_init, faasshell, Codes).
 
 test(doc, Codes = [200, null, 404, 201]) :-
-    design_delete(test_db_init, faas, 200, _Res),
-    db_init(test_db_init, faas, Codes).
+    design_delete(test_db_init, faasshell, 200, _Res),
+    db_init(test_db_init, faasshell, Codes).
 
 :- end_tests(db_init).
 
@@ -119,9 +119,9 @@ test(doc, Codes = [200, null, 404, 201]) :-
 
 test(update, (Code, Res) = (201, _{ok:true, id:_, rev:_})) :-
     db_delete(test_db_design, _Code, _Res),
-    db_init(test_db_design, faas, _Codes),
-    faas_design(Dict),
-    design_update(test_db_design, faas, Dict, Code, Res).
+    db_init(test_db_design, faasshell, _Codes),
+    view_design(faasshell, Dict),
+    design_update(test_db_design, faasshell, Dict, Code, Res).
 
 test(view_rereduce_false, (L1, L2) = (3, 2)) :-
     %% asl, guest
@@ -150,11 +150,11 @@ test(view_rereduce_false, (L1, L2) = (3, 2)) :-
                _{dsl:"DSL 5", namespace:admin, name:'sample5.dsl'}, 201, _),
 
     uri_encoded(query_value, '["asl","guest"]', Q1),
-    view_read(test_db_design, faas, statemachine, ['?key=', Q1], 200, Res1),
+    view_read(test_db_design, faasshell, statemachine, ['?key=', Q1], 200, Res1),
     length(Res1.rows, L1),
 
     uri_encoded(query_value, '["dsl","guest"]', Q2),
-    view_read(test_db_design, faas, shell, ['?key=', Q2], 200, Res2),
+    view_read(test_db_design, faasshell, shell, ['?key=', Q2], 200, Res2),
     length(Res2.rows, L2).
 
 test(view_rereduce_true, Len = 50) :-
@@ -168,7 +168,7 @@ test(view_rereduce_true, Len = 50) :-
             ), L, _),
 
     uri_encoded(query_value, '["asl","guest"]', Q),
-    view_read(test_db_design, faas, statemachine, ['?key=', Q], 200, Res),
+    view_read(test_db_design, faasshell, statemachine, ['?key=', Q], 200, Res),
     length(Res.rows, Len).
 
 :- end_tests(db_design).
@@ -189,13 +189,13 @@ test(kube, (ID, PW, URL) = ("id", "pw",
     unsetenv('DB_APIHOST'),
     setenv('DB_AUTH', "id:pw"),
     setenv('COUCHDB_SERVICE_HOST', '172.21.20.197'),
-    setenv('COUCHDB_SERVICE_PORT_COUCHDB', 5984),
+    setenv('COUCHDB_SERVICE_PORT', 5984),
     db_env(Options),
     option(authorization(basic(ID, PW)), Options),
     option(db_url_base(URL), Options),
     unsetenv('DB_AUTH'),
     unsetenv('COUCHDB_SERVICE_HOST'),
-    unsetenv('COUCHDB_SERVICE_PORT_COUCHDB').
+    unsetenv('COUCHDB_SERVICE_PORT').
 
 test(private, (ID, PW, URL) = ("id", "pw",
                                ["http", "://", "test-host.local", ":", "5984"])) :-

@@ -32,14 +32,14 @@
 :- begin_tests(faas).
 
 test(normal, Code = 200) :-
-    api_host(Host), api_key(ID-PW),
+    faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/faas/', URL),
     http_get(URL, Data, [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, List),
     assertion(is_list(List)).
 
 test(auth_error, Code = 401) :-
-    api_host(Host),
+    faasshell_api_host(Host),
     string_concat(Host, '/faas/', URL),
     http_get(URL, Data, [authorization(basic(unknown, ng)), status_code(Code)]),
     term_json_dict(Data, Dict),
