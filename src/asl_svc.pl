@@ -79,6 +79,42 @@ hup(_Signal) :-
 
 %%
 %%
+:- http_handler('/executions/', executions, [methods([get]), prefix,
+                                             authentication(faasshell)]).
+
+executions(Request) :-
+    http_log('~w~n', [request(Request)]),
+    option(faasshell_auth(nil), Request)
+    -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
+    ;  memberchk(method(Method), Request),
+       catch( executions(Method, Request),
+              (Message, Code),
+              ( http_log('~w~n', [catch((Message, Code))]),
+                reply_json_dict(Message, [status(Code)])
+              )).
+
+executions(get, Request) :-
+    option(faasshell_auth(NS), Request),
+    ( memberchk(path_info(Executions), Request)
+      ->  atomic_list_concat([NS, Executions], '/', NSFile),
+          doc_read(faasshell_executions, NSFile, Code1, Res),
+          ( Code1 = 200
+            -> select_dict(_{'_id':_, '_rev':_}, Res, Reply)
+            ;  Reply = Res  % {"error":"not_found", "reason":"missing"}
+          )
+      ;  format(string(Query), '["~w",~w]', [NS, 0]),
+         uri_encoded(query_value, Query, EncodedQuery),
+         view_read(faasshell_executions, executions, executions,
+              ['?startkey=', EncodedQuery], Code, Dict),
+         ( Code = 200
+           -> Reply = Dict.rows
+           ;  Reply = Dict
+         )
+    ),
+    reply_json_dict(Reply).
+
+%%
+%%
 :- http_handler('/activity/', activity, [methods([get, post, patch]), prefix,
                                          authentication(faasshell)]).
 
@@ -515,7 +551,7 @@ background_job(Namespace, File, ExecId, Dsl, Input) :-
     Dict = _{ start: Start,
               namespace: Namespace,
               statemachine: File,
-              exection_id: ExecId,
+              execution_id: ExecId,
               hostname: Hostname
             },
     cdb_api:doc_create(faasshell_executions, NSFile, Dict, _C1, _R1),

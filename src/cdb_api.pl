@@ -283,7 +283,7 @@ view_design(executions,
  _{
    views: _{
      executions: _{
-       map: "function (doc) { emit([doc.execution_id], [doc.statemachine, doc.result])}"
+       map: "function (doc) { emit([doc.namespace, doc.start], [doc.statemachine, doc.result])}"
      }
    },
    language: "javascript"
