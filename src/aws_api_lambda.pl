@@ -17,6 +17,7 @@
 
 :- module(aws_api_lambda,
           [ list/3,
+            %faas:list/3,
             faas:invoke/4,
             delete/3
          ]).
@@ -31,15 +32,17 @@
 :- use_module(library(http/http_json)).
 
 
+:- multifile
+       %faas:list/3,
+       faas:invoke/4.
+
+%faas:list(ARN, Options, Reply) :-
 list(ARN, Options, Reply) :-
     aws_api_utils:aws_lambda(list, ARN, '', '', AwsOptions),
     merge_options(AwsOptions, Options, MergedOptions),
     option(url(URL), MergedOptions),
     http_get(URL, R1, MergedOptions),
     json_utils:term_json_dict(R1, Reply).
-
-:- multifile
-       faas:invoke/4.
 
 faas:invoke(ARN, Options, Payload, Reply) :-
     atomic_list_concat([arn, aws, lambda |_ ], ':', ARN), !,

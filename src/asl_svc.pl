@@ -40,6 +40,12 @@
 :- use_module(library(http/http_authenticate)).
 %% :- use_module(library(http/http_error)). % should be removed in puroduction
 
+/*******************************
+ *   PLUGIN FOR FaaS API       *
+ *******************************/
+%:- multifile
+%       faas:list/3.
+
 %% start
 %% :- initialization(main).
 
@@ -160,13 +166,10 @@ faas(Request) :-
               )).
 
 faas(get, Request) :-
-    wsk_api_utils:openwhisk(Options),
     ( memberchk(path_info(Action), Request)
       -> %% Fully-Qualified Action Name
-         option(faasshell_auth(NS), Request),
-         atomics_to_string(["/", NS, "/", Action], FQAN),
-         wsk_api_actions:list(FQAN, Options, Reply)
-      ;  wsk_api_actions:list(none, Options, Reply)
+         wsk_api_actions:list(Action, [], Reply)
+      ;  wsk_api_actions:list(none, [], Reply)
     ),
     reply_json_dict(Reply).
 
@@ -272,9 +275,8 @@ statemachine(post, Request) :-
          DictParams = DictRest.put(Params),
          ( Code = 200
            -> % http_log('~w~n', [dsl(Dict.Dsl)]),
-              wsk_api_utils:openwhisk(Options),
               term_string(Dsl, Dict.dsl),
-              asl_run:start(Dsl, Options, Input, O),
+              asl_run:start(Dsl, [], Input, O),
               Output = DictParams.put(_{output:O})
            ;  throw((_{error: 'database error'}, 500))
          )
@@ -415,9 +417,8 @@ shell(post, Request) :-
            -> select_dict(_{'_id':_, '_rev':_}, Dict, DictRest),
               DictParams = DictRest.put(Params),
               % http_log('~w~n', [dsl(Dsl)]),
-              wsk_api_utils:openwhisk(Options),
               term_string(Dsl, Dict.dsl),
-              asl_run:start(Dsl, Options, Input, O),
+              asl_run:start(Dsl, [], Input, O),
               Output = DictParams.put(_{output:O})
            ;  throw((Dict, Code))
          )

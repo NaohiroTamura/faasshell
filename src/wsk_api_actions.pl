@@ -17,6 +17,7 @@
 
 :- module(wsk_api_actions,
           [list/3,
+           %faas:list/3,
            create/4,
            update/4,
            faas:invoke/4,
@@ -35,6 +36,11 @@
 :- use_module(library(http/json_convert)).
 :- use_module(library(http/http_json)).
 
+
+:- multifile
+       %faas:list/4,
+       faas:invoke/4.
+
 %% wsk_url(+Method, +Action, +Options, +DefaultQuery, -URL, -ID-PW, -Timeout) :-
 wsk_url(Method, Action, Options, DefaultQuery, URL, ID-PW, Timeout) :-
     wsk_api_utils:api_action_name(Action, NS, ActionName),
@@ -47,9 +53,12 @@ wsk_url(Method, Action, Options, DefaultQuery, URL, ID-PW, Timeout) :-
     option(timeout(Timeout), Options, infinite).
 
 %%
+%faas:list(Action, Options, Reply) :-
 list(Action, Options, Reply) :-
-    wsk_url(get, Action, Options, [], URL, ID-PW, Timeout),
-    ( option(status_code(Code), Options)
+    wsk_api_utils:openwhisk(WskOptions),
+    merge_options(WskOptions, Options, MergedOptions),
+    wsk_url(get, Action, MergedOptions, [], URL, ID-PW, Timeout),
+    ( option(status_code(Code), MergedOptions)
       -> StatusCode = [status_code(Code)]
       ;  StatusCode = []
     ),
@@ -60,9 +69,11 @@ list(Action, Options, Reply) :-
     json_utils:term_json_dict(R1, Reply).
 
 create(Action, Options, Payload, Reply) :-
-    wsk_url(put, Action, Options, [], URL, ID-PW, Timeout),
+    wsk_api_utils:openwhisk(WskOptions),
+    merge_options(WskOptions, Options, MergedOptions),
+    wsk_url(put, Action, MergedOptions, [], URL, ID-PW, Timeout),
     json_utils:term_json_dict(Json, Payload),
-    ( option(status_code(Code), Options)
+    ( option(status_code(Code), MergedOptions)
       -> StatusCode = [status_code(Code)]
       ;  StatusCode = []
     ),
@@ -73,9 +84,11 @@ create(Action, Options, Payload, Reply) :-
     json_utils:term_json_dict(R1, Reply).
 
 update(Action, Options, Payload, Reply) :-
-    wsk_url(put, Action, Options, [overwrite=true], URL, ID-PW, Timeout),
+    wsk_api_utils:openwhisk(WskOptions),
+    merge_options(WskOptions, Options, MergedOptions),
+    wsk_url(put, Action, MergedOptions, [overwrite=true], URL, ID-PW, Timeout),
     json_utils:term_json_dict(Json, Payload),
-    ( option(status_code(Code), Options)
+    ( option(status_code(Code), MergedOptions)
       -> StatusCode = [status_code(Code)]
       ;  StatusCode = []
     ),
@@ -85,15 +98,15 @@ update(Action, Options, Payload, Reply) :-
                cert_verify_hook(cert_accept_any) | StatusCode]),
     json_utils:term_json_dict(R1, Reply).
 
-:- multifile
-       faas:invoke/4.
-
 faas:invoke(WRN, Options, Payload, Reply) :-
     atomic_list_concat([wsk, Action], ':', WRN), !,
+    wsk_api_utils:openwhisk(WskOptions),
+    merge_options(WskOptions, Options, MergedOptions),
     %% writeln(wsk(invoke(Action))),
-    wsk_url(post, Action, Options, [blocking=true,result=true], URL, ID-PW, Timeout),
+    wsk_url(post, Action, MergedOptions, [blocking=true,result=true],
+            URL, ID-PW, Timeout),
     json_utils:term_json_dict(Json, Payload),
-    ( option(status_code(Code), Options)
+    ( option(status_code(Code), MergedOptions)
       -> StatusCode = [status_code(Code)]
       ;  StatusCode = [status_code(_)] %% supress exception for custom error
     ),
@@ -109,8 +122,10 @@ faas:invoke(WRN, Options, Payload, Reply) :-
     ).
 
 delete(Action, Options, Reply) :-
-    wsk_url(delete, Action, Options, [], URL, ID-PW, Timeout),
-    ( option(status_code(Code), Options)
+    wsk_api_utils:openwhisk(WskOptions),
+    merge_options(WskOptions, Options, MergedOptions),
+    wsk_url(delete, Action, MergedOptions, [], URL, ID-PW, Timeout),
+    ( option(status_code(Code), MergedOptions)
       -> StatusCode = [status_code(Code)]
       ;  StatusCode = []
     ),

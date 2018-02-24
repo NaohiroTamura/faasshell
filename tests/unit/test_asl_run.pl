@@ -45,8 +45,7 @@ test(output, Output = _{a:1, parallel:[_{a:1},_{a:1}]}) :-
 :- begin_tests(pass).
 
 test(hello, O = _{message:"Hello World!", name:"wsk"}) :-
-    wsk_api_utils:openwhisk(Options),
-    start('samples/dsl/hello_world.dsl', Options, _{name:"wsk"}, O).
+    start('samples/dsl/hello_world.dsl', [], _{name:"wsk"}, O).
 
 :- end_tests(pass).
 
@@ -57,8 +56,7 @@ test(hello, O = _{message:"Hello World!", name:"wsk"}) :-
                ]).
 
 test(hello, O = _{payload:"Hello, wsk!"}) :-
-    wsk_api_utils:openwhisk(Options),
-    start('samples/dsl/hello_world_task.dsl', Options,  _{name:"wsk"}, O).
+    start('samples/dsl/hello_world_task.dsl', [],  _{name:"wsk"}, O).
 
 :- end_tests(task).
 
@@ -69,33 +67,26 @@ test(hello, O = _{payload:"Hello, wsk!"}) :-
                ]).
 
 test(case1, O = _{first_match_state:_, foo:1, next_state:_}) :-
-    wsk_api_utils:openwhisk(Options),
-    start('samples/dsl/choice_state.dsl', Options, _{foo:1}, O).
+    start('samples/dsl/choice_state.dsl', [], _{foo:1}, O).
 
 test(case2, O = _{second_match_state:_, foo:2, next_state:_}) :-
-    wsk_api_utils:openwhisk(Options),
-    start('samples/dsl/choice_state.dsl', Options, _{foo:2}, O).
+    start('samples/dsl/choice_state.dsl', [], _{foo:2}, O).
 
 test(default, O = _{cause:"No Matches!",error:"DefaultStateError"}) :-
-    wsk_api_utils:openwhisk(Options),
-    start('samples/dsl/choice_state.dsl', Options, _{foo:5}, O).
+    start('samples/dsl/choice_state.dsl', [], _{foo:5}, O).
 
 test(casex1, O = _{public_state:_, type:"Public", next_state:_}) :-
-    wsk_api_utils:openwhisk(Options),
-    start('samples/dsl/choice_statex.dsl', Options, _{type:"Public"}, O).
+    start('samples/dsl/choice_statex.dsl', [], _{type:"Public"}, O).
 
 test(casex2, O = _{value_is_zero_state:_, type:"Private", value:0, next_state:_}) :-
-    wsk_api_utils:openwhisk(Options),
-    start('samples/dsl/choice_statex.dsl', Options, _{type:"Private", value:0}, O).
+    start('samples/dsl/choice_statex.dsl', [], _{type:"Private", value:0}, O).
 
 test(casex3, O = _{value_in_twenties_state:_, type:"Private", value:25,
                    next_state:_}) :-
-    wsk_api_utils:openwhisk(Options),
-    start('samples/dsl/choice_statex.dsl', Options, _{type:"Private", value:25}, O).
+    start('samples/dsl/choice_statex.dsl', [], _{type:"Private", value:25}, O).
 
 test(defaultx, O = _{cause:"No Matches!", error:null}) :-
-    wsk_api_utils:openwhisk(Options),
-    start('samples/dsl/choice_statex.dsl', Options, _{type:"Private", value:35}, O).
+    start('samples/dsl/choice_statex.dsl', [], _{type:"Private", value:35}, O).
 
 :- end_tests(choice).
 
@@ -106,8 +97,7 @@ test(defaultx, O = _{cause:"No Matches!", error:null}) :-
                ]).
 
 test(normal, O = _{payload:"Hello, no sleep!"}) :-
-    wsk_api_utils:openwhisk(Options),
-    start('samples/dsl/wait_state.dsl', Options,
+    start('samples/dsl/wait_state.dsl', [],
           _{expirydate: "2017-09-04T01:59:00Z",
             expiryseconds:5, sleep:0, name:"no sleep"}, O).
 
@@ -116,8 +106,7 @@ test(normal, O = _{payload:"Hello, no sleep!"}) :-
 :- begin_tests(parallel).
 
 test(normal, O = [_{var:1}, _{var:1}]) :-
-    wsk_api_utils:openwhisk(Options),
-    start('samples/dsl/parallel.dsl', Options, _{var:1}, O).
+    start('samples/dsl/parallel.dsl', [], _{var:1}, O).
 
 :- end_tests(parallel).
 
@@ -129,14 +118,12 @@ test(normal, O = [_{var:1}, _{var:1}]) :-
                ]).
 
 test(succeeded, O = _{payload:"Hello, Poller!"}) :-
-    wsk_api_utils:openwhisk(Options),
-    start('samples/dsl/job_status_poller.dsl', Options,
+    start('samples/dsl/job_status_poller.dsl', [],
           _{wait_time:1, params:["DEFAULT", "SUCCEEDED"], name:"Poller"}, O).
 
 test(failed, O = _{cause:"AWS Batch Job Failed",
                    error:"DescribeJob returned FAILED"}) :-
-    wsk_api_utils:openwhisk(Options),
-    start('samples/dsl/job_status_poller.dsl', Options,
+    start('samples/dsl/job_status_poller.dsl', [],
           _{wait_time:1, params:["DEFAULT", "FAILED"], name:"Poller"}, O).
 
 :- end_tests(job_status_poller).
@@ -147,14 +134,12 @@ test(failed, O = _{cause:"AWS Batch Job Failed",
                ]).
 
 test(succeeded, Code = 200) :-
-    wsk_api_utils:openwhisk(Options),
-    start('samples/dsl/task_timer.dsl', [status_code(Code) | Options],
+    start('samples/dsl/task_timer.dsl', [status_code(Code)],
           _{timer_seconds:1, status:"Sent"}, O),
     assertion(O = _{timer_seconds:1, status: "Sent"}).
 
 test(failed, Code = 502 ) :-
-    wsk_api_utils:openwhisk(Options),
-    start('samples/dsl/task_timer.dsl', [status_code(Code) | Options],
+    start('samples/dsl/task_timer.dsl', [status_code(Code)],
           _{timer_seconds:1, status:"ERROR"}, O),
     %% OpenWhisk Invoker / Python Runtime Issue regarding exception handling
     assertion(O = _{error:"The action did not return a dictionary."}).
@@ -164,11 +149,10 @@ test(failed, Code = 502 ) :-
 :- begin_tests(activity_task, [setup(mq_utils:mq_init)]).
 
 test(activity_task_dsl_success, Status = true) :-
-    wsk_api_utils:openwhisk(Options),
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/dsl/activity_task.dsl',
-                    Options, _{name: "Activity"}, O),
+                    [], _{name: "Activity"}, O),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
@@ -189,11 +173,10 @@ test(activity_task_dsl_success, Status = true) :-
     assertion(O = _{payload:"Hello, Activity!"}).
 
 test(activity_task_dsl_failure, Status = true) :-
-    wsk_api_utils:openwhisk(Options),
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/dsl/activity_task.dsl',
-                    Options, _{comment: "failure test"}, O),
+                    [], _{comment: "failure test"}, O),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
@@ -218,17 +201,15 @@ test(activity_task_dsl_failure, Status = true) :-
     assertion(O = _{error: "existence_error", cause: "key 'name' doesn't exist"}).
 
 test(activity_task_timeout_dsl) :-
-    wsk_api_utils:openwhisk(Options),
-    start('samples/dsl/activity_task_timeout.dsl', Options,
+    start('samples/dsl/activity_task_timeout.dsl', [],
           _{name: "Activity Timeout"}, O),
     assertion(O = _{error:"States.Timeout"}).
 
 test(activity_task_heartbeat_dsl_success, Status = true) :-
-    wsk_api_utils:openwhisk(Options),
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/dsl/activity_task_heartbeat.dsl',
-                    Options, _{name: "Activity"}, O),
+                    [], _{name: "Activity"}, O),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
@@ -254,11 +235,10 @@ test(activity_task_heartbeat_dsl_success, Status = true) :-
     assertion(O = _{payload:"Hello, Activity!"}).
 
 test(activity_task_heartbeat_dsl_hearbeat_timeout, Status = true) :-
-    wsk_api_utils:openwhisk(Options),
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/dsl/activity_task_heartbeat.dsl',
-                    Options, _{name: "Activity"}, O),
+                    [], _{name: "Activity"}, O),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
@@ -277,11 +257,10 @@ test(activity_task_heartbeat_dsl_hearbeat_timeout, Status = true) :-
     assertion(O = _{error:"States.Timeout", cause:"heartbeat timeout"}).
 
 test(activity_task_timeout_heartbeat_dsl_timeout, Status = true) :-
-    wsk_api_utils:openwhisk(Options),
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/dsl/activity_task_timeout_heartbeat.dsl',
-                    Options, _{name: "Activity"}, O),
+                    [], _{name: "Activity"}, O),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),

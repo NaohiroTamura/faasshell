@@ -22,8 +22,7 @@
 %% setup utils
 
 remove_hello_action :-
-    wsk_api_utils:openwhisk(Options),
-    catch( wsk_api_actions:delete(hello, Options, _R),
+    catch( wsk_api_actions:delete(hello, [], _R),
            _Error,
            (print_message(warning,
                           format("confirmed 'hello' doesn't exist.", [])),
@@ -31,7 +30,6 @@ remove_hello_action :-
 
 %%
 create_action(Action, File, Kind, Container) :-
-    wsk_api_utils:openwhisk(Options),
     setup_call_cleanup(
             open(File, read, S),
             read_string(S, _N, Code),
@@ -46,7 +44,7 @@ create_action(Action, File, Kind, Container) :-
       -> PayloadOpt = Payload.exec.put(_{image: Image})
       ;  PayloadOpt = Payload
     ),
-    catch( wsk_api_actions:create(Action, Options, PayloadOpt, _R),
+    catch( wsk_api_actions:create(Action, [], PayloadOpt, _R),
            _Error,
            (print_message(warning,
                           format("confirmed '~w' exists.", [Action])),
