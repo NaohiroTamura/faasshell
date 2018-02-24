@@ -114,7 +114,7 @@ db_env(Options) :-
     append(AuthOpt, [
                db_url_base(Base),
                status_code(_Code),
-               timeout(10),
+               timeout(30),
                cert_verify_hook(cert_accept_any)
            ], Options).
 

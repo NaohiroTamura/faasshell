@@ -16,8 +16,7 @@
 %%
 
 :- module(aws_api_lambda,
-          [ list/3,
-            %faas:list/3,
+          [ faas:list/3,
             faas:invoke/4,
             delete/3
          ]).
@@ -33,11 +32,20 @@
 
 
 :- multifile
-       %faas:list/3,
+       faas:list/3,
        faas:invoke/4.
 
-%faas:list(ARN, Options, Reply) :-
-list(ARN, Options, Reply) :-
+faas:list([], Options, Reply) :-
+    %%writeln(aws_list),
+    aws_list('arn:aws:lambda:us-east-2:_:function:none', Options, R),
+    get_dict('Functions', R, Reply).
+faas:list(ARN, Options, Reply) :-
+    %%writeln(aws_arn(ARN)),
+    aws_list(ARN, Options, Reply).
+
+aws_list(ARN, Options, Reply) :-
+    atom(ARN), !,
+    atomic_list_concat([arn, aws, lambda |_ ], ':', ARN),
     aws_api_utils:aws_lambda(list, ARN, '', '', AwsOptions),
     merge_options(AwsOptions, Options, MergedOptions),
     option(url(URL), MergedOptions),

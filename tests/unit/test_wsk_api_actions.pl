@@ -25,7 +25,7 @@
 :- begin_tests(list).
 
 test(ns_hello, Name = "echo") :-
-    wsk_api_actions:list('/whisk.system/utils/echo', [], R),
+    wsk_api_actions:faas:list('wsk:/whisk.system/utils/echo', [], R),
     Name = R.name.
 
 :- end_tests(list).
@@ -57,7 +57,7 @@ test(scenarios) :-
     assertion((Name1, Version1) = ("hello", "0.0.1")),
 
     %% 2. list_hello
-    wsk_api_actions:list(hello, [], R2),
+    wsk_api_actionions:faas:list('wsk:hello', [], R2),
     _{name: Name2, version: Version2} :< R2,
     assertion((Name2, Version2) = ("hello", "0.0.1")),
 
@@ -67,7 +67,7 @@ test(scenarios) :-
     assertion((Name3, Version3) = ("hello", "0.0.2")),
 
     %% 4. list_updated_hello
-    wsk_api_actions:list(hello, [], R4),
+    wsk_api_actions:faas:list('wsk:hello', [], R4),
     _{name: Name4, version: Version4} :< R4,
     assertion((Name4, Version4) = ("hello", "0.0.2")),
 

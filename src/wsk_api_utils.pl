@@ -80,7 +80,7 @@ api_url(ApiHost, Gen, URL, Options) :-
     append([Protocol, "://", ApiHost, ":", Port, "/api/", Ver], Path, URLList),
     atomics_to_string(URLList, URL).
 
-api_action_name(none, default, none).
+api_action_name(none, default, none) :- !.
 api_action_name(Action, NS, ActionName) :-
     split_string(Action, "/", "", ["", NS | AN])
     -> (length(AN, 0), ActionName = none;

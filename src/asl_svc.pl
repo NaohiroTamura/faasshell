@@ -43,8 +43,8 @@
 /*******************************
  *   PLUGIN FOR FaaS API       *
  *******************************/
-%:- multifile
-%       faas:list/3.
+:- multifile
+       faas:list/3.
 
 %% start
 %% :- initialization(main).
@@ -168,8 +168,8 @@ faas(Request) :-
 faas(get, Request) :-
     ( memberchk(path_info(Action), Request)
       -> %% Fully-Qualified Action Name
-         wsk_api_actions:list(Action, [], Reply)
-      ;  wsk_api_actions:list(none, [], Reply)
+         faas:list(Action, [], Reply)
+      ;  findall(R, faas:list([], [], R), Reply)
     ),
     reply_json_dict(Reply).
 

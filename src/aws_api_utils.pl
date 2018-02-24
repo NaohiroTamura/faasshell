@@ -71,6 +71,8 @@ aws_step_functions(Action, ARN, RequestParameters, Payload, Options) :-
         request_header('Authorization'=AuthorizationHeader)].
 
 %%
+lambda(list, 'GET', none, Resource) :-
+    atomic_list_concat(['/'], Resource), !.
 lambda(list, 'GET', Function, Resource) :-
     atomic_list_concat(['/', Function], Resource).
 lambda(invoke, 'POST', Function, Resource) :-

@@ -65,7 +65,7 @@ apis(activations) --> ["/", "activations"].
 apis(packages)    --> ["/", "packages"].
 
 entity(none) --> [].
-entity(E)    --> ["/", S], { atom_string(E, S) }.
+entity(E)    --> ["/", S], { E \== none, atom_string(E, S) }.
 
 param(get, name=B)      --> ["name", "=", S], { atom_string(B,S) }.
 param(get, limit=N)     --> ["limit", "=", S], { number_string(N,S) }.

@@ -16,12 +16,11 @@
 %%
 
 :- module(wsk_api_actions,
-          [list/3,
-           %faas:list/3,
-           create/4,
-           update/4,
-           faas:invoke/4,
-           delete/3
+          [ faas:list/3,
+            create/4,
+            update/4,
+            faas:invoke/4,
+            delete/3
          ]).
 
 :- use_module(wsk_api_dcg).
@@ -38,7 +37,7 @@
 
 
 :- multifile
-       %faas:list/4,
+       faas:list/4,
        faas:invoke/4.
 
 %% wsk_url(+Method, +Action, +Options, +DefaultQuery, -URL, -ID-PW, -Timeout) :-
@@ -53,8 +52,16 @@ wsk_url(Method, Action, Options, DefaultQuery, URL, ID-PW, Timeout) :-
     option(timeout(Timeout), Options, infinite).
 
 %%
-%faas:list(Action, Options, Reply) :-
-list(Action, Options, Reply) :-
+faas:list([], Options, Reply) :-
+    %%writeln(wsk_list),
+    wsk_list('wsk:none', Options, Reply).
+faas:list(WRN, Options, Reply) :-
+    %%writeln(wsk_wrn(WRN)),
+    wsk_list(WRN, Options, Reply).
+
+wsk_list(WRN, Options, Reply) :-
+    atom(WRN), !,
+    atomic_list_concat([wsk, Action], ':', WRN),
     wsk_api_utils:openwhisk(WskOptions),
     merge_options(WskOptions, Options, MergedOptions),
     wsk_url(get, Action, MergedOptions, [], URL, ID-PW, Timeout),
