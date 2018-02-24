@@ -51,7 +51,7 @@ test(succeed, (Code1, Code2, Code3, Code4, Code5, Status)
     assertion(_{output: "ok", name: "activity_task_asl.json",
                 namespace: "demo", dsl: _, asl: _} = Dict1),
 
-    string_concat(Host, '/statemachine/activity_task_asl.json', URL2),
+    string_concat(Host, '/statemachine/activity_task_asl.json?blocking=true', URL2),
     term_json_dict(Term2, _{input: _{name: "Activity"}}),
     message_queue_create(MQueue),
     thread_create(

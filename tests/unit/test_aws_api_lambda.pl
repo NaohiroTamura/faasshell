@@ -25,8 +25,8 @@
 :- begin_tests(list).
 
 test(hello, (Code, Name) = (200, "hello")) :-
-    aws_api_lambda:list('arn:aws:lambda:us-east-2:410388484666:function:hello',
-                        [status_code(Code)], R),
+    aws_api_lambda:faas:list('arn:aws:lambda:us-east-2:410388484666:function:hello',
+                             [status_code(Code)], R),
     Name = R.'Configuration'.'FunctionName'.
 
 :- end_tests(list).

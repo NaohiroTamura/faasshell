@@ -276,8 +276,17 @@ statemachine(post, Request) :-
          ( Code = 200
            -> % http_log('~w~n', [dsl(Dict.Dsl)]),
               term_string(Dsl, Dict.dsl),
-              asl_run:start(Dsl, [], Input, O),
-              Output = DictParams.put(_{output:O})
+              http_parameters(Request, [blocking(Blocking, [default(false)])]),
+              http_log('~w~n', [blocking(Blocking)]),
+              ( Blocking = true
+                -> asl_run:start(Dsl, [], Input, O),
+                   Output = DictParams.put(_{output:O})
+               ;  uuid(ExecId),
+                  thread_create(background_job(NS, File, ExecId, Dsl, Input),
+                                ChildId),
+                  http_log('~w~n', [background_job(ChildId)]),
+                  Output = DictParams.put(_{output: _{execution_id: ExecId}})
+              )
            ;  throw((_{error: 'database error'}, 500))
          )
       ;  http_header:status_number(bad_request, S_400),
@@ -418,8 +427,17 @@ shell(post, Request) :-
               DictParams = DictRest.put(Params),
               % http_log('~w~n', [dsl(Dsl)]),
               term_string(Dsl, Dict.dsl),
-              asl_run:start(Dsl, [], Input, O),
-              Output = DictParams.put(_{output:O})
+              http_parameters(Request, [blocking(Blocking, [default(false)])]),
+              http_log('~w~n', [blocking(Blocking)]),
+              ( Blocking = true
+                -> asl_run:start(Dsl, [], Input, O),
+                   Output = DictParams.put(_{output:O})
+               ;  uuid(ExecId),
+                  thread_create(background_job(NS, File, ExecId, Dsl, Input),
+                                ChildId),
+                  http_log('~w~n', [background_job(ChildId)]),
+                  Output = DictParams.put(_{output: _{execution_id: ExecId}})
+              )
            ;  throw((Dict, Code))
          )
       ; http_header:status_number(bad_request, S_400),
@@ -488,3 +506,28 @@ http:authenticate(faasshell, Request, [faasshell_auth(Id)]) :-
          )
     ).
 
+%%
+%%
+background_job(Namespace, File, ExecId, Dsl, Input) :-
+    atomic_list_concat([Namespace, ExecId], '/', NSFile),
+    get_time(Start),
+    gethostname(Hostname),
+    Dict = _{ start: Start,
+              namespace: Namespace,
+              statemachine: File,
+              exection_id: ExecId,
+              hostname: Hostname
+            },
+    cdb_api:doc_create(faasshell_executions, NSFile, Dict, _C1, _R1),
+    asl_run:start(Dsl, [], Input, Output),
+    get_time(End),
+    UpdatedDict = Dict.put(
+           _{ result:
+              _{ input: Input,
+                 output: Output
+               },
+             end: End
+            }),
+    cdb_api:doc_update(faasshell_executions, NSFile, UpdatedDict, _C2, _R2),
+    thread_self(Self),
+    thread_detach(Self).

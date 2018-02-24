@@ -89,7 +89,7 @@ test(get_not_exit, Code = 404) :-
 test(post, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     term_json_dict(Json, _{input: _{name: "FaaS Shell"}}),
-    string_concat(Host, '/shell/hello_world_task.dsl', URL),
+    string_concat(Host, '/shell/hello_world_task.dsl?blocking=true', URL),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
@@ -98,7 +98,7 @@ test(post, Code = 200) :-
 
 test(post_empty_input, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/shell/hello_world_task.dsl', URL),
+    string_concat(Host, '/shell/hello_world_task.dsl?blocking=true', URL),
     term_json_dict(Json, _{input: _{}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -108,7 +108,7 @@ test(post_empty_input, Code = 200) :-
 
 test(post_no_input, Code = 400) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/shell/hello_world_task.dsl', URL),
+    string_concat(Host, '/shell/hello_world_task.dsl?blocking=true', URL),
     term_json_dict(Json, _{}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),

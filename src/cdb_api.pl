@@ -279,8 +279,18 @@ view_design(auths,
    language: "javascript"
  }).
 
-view_design(executions, _{}).
+view_design(executions,
+ _{
+   views: _{
+     executions: _{
+       map: "function (doc) { emit([doc.execution_id], [doc.statemachine, doc.result])}"
+     }
+   },
+   language: "javascript"
+ }).
 
+
+%%
 create_user(Name, Credential) :-
     atom(Name), atom(Credential), !,
     atomic_list_concat([Uid, Password], ':', Credential),
