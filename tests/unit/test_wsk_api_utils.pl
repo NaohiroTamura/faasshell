@@ -41,39 +41,25 @@ test(echo, (NS, ActionName) = (default, "utils/echo")) :-
 :- begin_tests(options).
 
 test(only_ip, (PROTOCOL, HOST, PORT) = (https, '12.34.56.78', 443)) :-
-    setenv('APIHOST', "12.34.56.78"),
+    setenv('WSK_APIHOST', "12.34.56.78"),
     openwhisk(Options),
     option(protocol(PROTOCOL), Options),
     option(api_host(HOST), Options),
     option(port(PORT), Options).
 
 test(http_ip, (PROTOCOL, HOST, PORT) = (http, '12.34.56.78', 80)) :-
-    setenv('APIHOST', "http://12.34.56.78"),
+    setenv('WSK_APIHOST', "http://12.34.56.78"),
     openwhisk(Options),
     option(protocol(PROTOCOL), Options),
     option(api_host(HOST), Options),
     option(port(PORT), Options).
 
 test(https_ip, (PROTOCOL, HOST, PORT) = (https, '12.34.56.78', 443)) :-
-    setenv('APIHOST', "https://12.34.56.78"),
+    setenv('WSK_APIHOST', "https://12.34.56.78"),
     openwhisk(Options),
     option(protocol(PROTOCOL), Options),
     option(api_host(HOST), Options),
     option(port(PORT), Options).
-
-test(nginx, (PROTOCOL, HOST, PORT) = (https, '168.1.145.47', 30218)) :-
-    unsetenv('APIHOST'),
-    setenv('NGINX_SERVICE_HOST', "168.1.145.47"),
-    setenv('NGINX_SERVICE_PORT_HTTPS_API', 30281),
-    openwhisk(_Options),
-    option(protocol(PROTOCOL), Options),
-    option(api_host(HOST), Options),
-    option(port(PORT), Options).
-
-test(unknown, error(unknown_api_host, _)) :-
-    unsetenv('APIHOST'),
-    unsetenv('NGINX_SERVICE_HOST'),
-    openwhisk(_Options).
 
 :- end_tests(options).
 

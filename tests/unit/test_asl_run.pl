@@ -51,7 +51,7 @@ test(hello, O = _{message:"Hello World!", name:"wsk"}) :-
 
 %%
 :- begin_tests(task,
-               [setup(create_action("hello",
+               [setup(update_action("hello",
                                     'samples/actions/hello.js', "nodejs:6", []))
                ]).
 
@@ -62,7 +62,7 @@ test(hello, O = _{payload:"Hello, wsk!"}) :-
 
 %%
 :- begin_tests(choice,
-               [setup(create_action("hello",
+               [setup(update_action("hello",
                                     'samples/actions/hello.js', "nodejs:6", []))
                ]).
 
@@ -92,7 +92,7 @@ test(defaultx, O = _{cause:"No Matches!", error:null}) :-
 
 %%
 :- begin_tests(wait,
-               [setup(create_action("hello",
+               [setup(update_action("hello",
                                     'samples/actions/hello.js', "nodejs:6", []))
                ]).
 
@@ -111,11 +111,11 @@ test(normal, O = [_{var:1}, _{var:1}]) :-
 :- end_tests(parallel).
 
 :- begin_tests(job_status_poller,
-               [setup(create_action("hello",
-                                    'samples/actions/hello.js', "nodejs:6", [])),
-                setup(create_action("job",
-                                    'samples/actions/job.py', "python:2", []))
-               ]).
+               [setup(( update_action("hello",
+                                      'samples/actions/hello.js', "nodejs:6", []),
+                        update_action("job",
+                                      'samples/actions/job.py', "python:2", [])))
+              ]).
 
 test(succeeded, O = _{payload:"Hello, Poller!"}) :-
     start('samples/dsl/job_status_poller.dsl', [],
@@ -129,7 +129,7 @@ test(failed, O = _{cause:"AWS Batch Job Failed",
 :- end_tests(job_status_poller).
 
 :- begin_tests(task_timer,
-               [setup(create_action("sns",
+               [setup(update_action("sns",
                                     'samples/actions/sns.py', "python:2", []))
                ]).
 

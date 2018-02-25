@@ -33,6 +33,7 @@
             design_update/5,
             design_delete/4,
             view_read/6,
+            db_drop/0,
             db_init/0,
             db_init/3,
             get_user/2
@@ -80,16 +81,12 @@ view             --> ["/_view/"].
 
 %%
 db_env(Options) :-
-    ( getenv('DB_IDENTITY', SubjectDB)
-      -> AuthDB = [subject_db(SubjectDB)]
-      ;  AuthDB = [subject_db(faasshell_subjects)]
-    ),
-    ( getenv('DB_AUTH', DB_AUTH),
+    ( getenv('FAASSHELL_DB_AUTH', DB_AUTH),
       split_string(DB_AUTH, ':', "", [ID, PW])
-      -> AuthOpt = [authorization(basic(ID, PW)) | AuthDB]
-      ;  AuthOpt = AuthDB
+      -> AuthOpt = [authorization(basic(ID, PW))]
+      ;  AuthOpt = []
     ),
-    ( getenv('DB_APIHOST', URL)
+    ( getenv('FAASSHELL_DB_APIHOST', URL)
       -> parse_url(URL, Attributes),
          option(protocol(Scheme), Attributes),
          option(host(DB_HOST), Attributes),
@@ -234,6 +231,12 @@ view_read(DB, Design, View, Query, Code, Res) :-
     db_url(Path, Query, Options, URL, Code),
     http_get(URL, Reply, Options),
     json_utils:term_json_dict(Reply, Res).
+
+%%
+db_drop :-
+    db_delete(faasshell, _C1, _R1),
+    db_delete(faasshell_auths, _C2, _R2),
+    db_delete(faasshell_executions, _C3, _R3).
 
 %%
 db_init :-

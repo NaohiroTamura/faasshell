@@ -64,7 +64,7 @@ main :-
              cdb_api:db_init ),
            Error,
            (print_message(error, Error), halt(1))),
-    getenv('SVC_PORT', Port) -> server(Port); server(8080).
+    getenv('FAASSHELL_SVC_PORT', Port) -> server(Port); server(8080).
 
 server(Port) :-
     http_server(http_dispatch, [port(Port)]),

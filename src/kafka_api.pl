@@ -127,7 +127,13 @@ debug_jpl :- debug(jpl > user_error).
 
 %%
 kafka_apihost(KafkaApiHost) :-
-    getenv('KAFKA_APIHOST', KafkaApiHost); KafkaApiHost = '127.0.0.1:9092'.
+    getenv('FAASSHELL_KAFKA_APIHOST', KafkaApiHost)
+    -> true
+    ; ( getenv('KAFKA_SERVICE_HOST', Host),
+        getenv('KAFKA_SERVICE_PORT', Port)
+        -> atomic_list_concat([Host, ':', Port], KafkaApiHost)
+        ;  KafkaApiHost = '127.0.0.1:9092'
+      ).
 
 %%
 kafka_producer(Producer) :-

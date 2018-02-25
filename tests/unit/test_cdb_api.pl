@@ -177,64 +177,64 @@ test(view_rereduce_true, Len = 50) :-
 
 test(local, (ID, PW, URL) = ("id", "pw",
                              ["http", "://", "127.0.0.1", ":", "5984"])) :-
-    unsetenv('DB_APIHOST'),
-    setenv('DB_AUTH', "id:pw"),
+    unsetenv('FAASSHELL_DB_APIHOST'),
+    setenv('FAASSHELL_DB_AUTH', "id:pw"),
     db_env(Options),
     option(authorization(basic(ID, PW)), Options),
     option(db_url_base(URL), Options),
-    unsetenv('DB_AUTH').
+    unsetenv('FAASSHELL_DB_AUTH').
 
 test(kube, (ID, PW, URL) = ("id", "pw",
                             ["http", "://", "172.21.20.197", ":", "5984"])) :-
-    unsetenv('DB_APIHOST'),
-    setenv('DB_AUTH', "id:pw"),
+    unsetenv('FAASSHELL_DB_APIHOST'),
+    setenv('FAASSHELL_DB_AUTH', "id:pw"),
     setenv('COUCHDB_SERVICE_HOST', '172.21.20.197'),
     setenv('COUCHDB_SERVICE_PORT', 5984),
     db_env(Options),
     option(authorization(basic(ID, PW)), Options),
     option(db_url_base(URL), Options),
-    unsetenv('DB_AUTH'),
+    unsetenv('FAASSHELL_DB_AUTH'),
     unsetenv('COUCHDB_SERVICE_HOST'),
     unsetenv('COUCHDB_SERVICE_PORT').
 
 test(private, (ID, PW, URL) = ("id", "pw",
                                ["http", "://", "test-host.local", ":", "5984"])) :-
-    setenv('DB_AUTH', "id:pw"),
-    setenv('DB_APIHOST', 'http://test-host.local'),
+    setenv('FAASSHELL_DB_AUTH', "id:pw"),
+    setenv('FAASSHELL_DB_APIHOST', 'http://test-host.local'),
     db_env(Options),
     option(authorization(basic(ID, PW)), Options),
     option(db_url_base(URL), Options),
-    unsetenv('DB_AUTH'),
-    unsetenv('DB_APIHOST').
+    unsetenv('FAASSHELL_DB_AUTH'),
+    unsetenv('FAASSHELL_DB_APIHOST').
 
 test(private, (ID, PW, URL) = ("id", "pw",
                                ["http", "://", "test-host.local", ":", "1234"])) :-
-    setenv('DB_AUTH', "id:pw"),
-    setenv('DB_APIHOST', 'http://test-host.local:1234'),
+    setenv('FAASSHELL_DB_AUTH', "id:pw"),
+    setenv('FAASSHELL_DB_APIHOST', 'http://test-host.local:1234'),
     db_env(Options),
     option(authorization(basic(ID, PW)), Options),
     option(db_url_base(URL), Options),
-    unsetenv('DB_AUTH'),
-    unsetenv('DB_APIHOST').
+    unsetenv('FAASSHELL_DB_AUTH'),
+    unsetenv('FAASSHELL_DB_APIHOST').
 
 test(cloud, (ID, PW, URL) = ("id", "pw",
                              ["https", "://", "test-host.com", ":", "443"])) :-
-    setenv('DB_AUTH', "id:pw"),
-    setenv('DB_APIHOST', 'https://test-host.com'),
+    setenv('FAASSHELL_DB_AUTH', "id:pw"),
+    setenv('FAASSHELL_DB_APIHOST', 'https://test-host.com'),
     db_env(Options),
     option(authorization(basic(ID, PW)), Options),
     option(db_url_base(URL), Options),
-    unsetenv('DB_AUTH'),
-    unsetenv('DB_APIHOST').
+    unsetenv('FAASSHELL_DB_AUTH'),
+    unsetenv('FAASSHELL_DB_APIHOST').
 
 test(cloud, (ID, PW, URL) = ("id", "pw",
                              ["https", "://", "test-host.com", ":", "1234"])) :-
-    setenv('DB_AUTH', "id:pw"),
-    setenv('DB_APIHOST', 'https://test-host.com:1234'),
+    setenv('FAASSHELL_DB_AUTH', "id:pw"),
+    setenv('FAASSHELL_DB_APIHOST', 'https://test-host.com:1234'),
     db_env(Options),
     option(authorization(basic(ID, PW)), Options),
     option(db_url_base(URL), Options),
-    unsetenv('DB_AUTH'),
-    unsetenv('DB_APIHOST').
+    unsetenv('FAASSHELL_DB_AUTH'),
+    unsetenv('FAASSHELL_DB_APIHOST').
 
 :- end_tests(db_env).

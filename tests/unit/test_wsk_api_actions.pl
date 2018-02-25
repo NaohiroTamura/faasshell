@@ -37,7 +37,7 @@ test(echo, R = _{foo:1}) :-
 
 :- end_tests(invoke).
 
-:- begin_tests(all_actions, [setup(remove_hello_action)]).
+:- begin_tests(all_actions, [setup(remove_action(hello))]).
 
 test(scenarios) :-
     setup_call_cleanup(
@@ -92,13 +92,13 @@ test(scenarios) :-
 
 %%
 :- begin_tests(custom_error,
-               [setup(create_action("error",
-                                    'samples/actions/error.js', "nodejs:6", [])),
-                setup(create_action("raise",
-                                    'samples/actions/raise.py', "python:2", [])),
-                setup(create_action("exception",
-                                    'samples/actions/exception.pl', "blackbox",
-                                    [image("nao16t/swipl7action")]))
+               [setup(( update_action("error",
+                                      'samples/actions/error.js', "nodejs:6", []),
+                        update_action("raise",
+                                      'samples/actions/raise.py', "python:2", []),
+                        update_action("exception",
+                                      'samples/actions/exception.pl', "blackbox",
+                                      [image("nao16t/swipl7action")])))
                ]).
 
 test(nodejs, Code = 502) :-

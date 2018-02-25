@@ -21,15 +21,15 @@
 
 %% setup utils
 
-remove_hello_action :-
-    catch( wsk_api_actions:delete(hello, [], _R),
+remove_action(Action) :-
+    catch( wsk_api_actions:delete(Action, [], _R),
            _Error,
            (print_message(warning,
-                          format("confirmed 'hello' doesn't exist.", [])),
+                          format("confirmed '~w' doesn't exist.", [Action])),
             true)).
 
 %%
-create_action(Action, File, Kind, Container) :-
+update_action(Action, File, Kind, Container) :-
     setup_call_cleanup(
             open(File, read, S),
             read_string(S, _N, Code),
@@ -44,13 +44,22 @@ create_action(Action, File, Kind, Container) :-
       -> PayloadOpt = Payload.exec.put(_{image: Image})
       ;  PayloadOpt = Payload
     ),
-    catch( wsk_api_actions:create(Action, [], PayloadOpt, _R),
-           _Error,
-           (print_message(warning,
-                          format("confirmed '~w' exists.", [Action])),
-            true)).
+    catch( wsk_api_actions:update(Action, [], PayloadOpt, R),
+           E,
+           ( print_message(error,
+                           format("failed update '~w' : ~w : ~w.",
+                                  [Action, E, R]))
+           )
+         ).
 
 %%
-functional_test_setup :-
-    create_action("hello", 'samples/actions/hello.js', "nodejs:6", []),
-    create_action("job", 'samples/actions/job.py', "python:2", []).
+faas_test_setup :-
+    update_action("delay", 'samples/actions/delay.js', "nodejs:6", []),
+    update_action("error", 'samples/actions/error.js', "nodejs:6", []),
+    update_action("hello", 'samples/actions/hello.js', "nodejs:6", []),
+    update_action("job", 'samples/actions/job.py', "python:2", []),
+    update_action("raise", 'samples/actions/raise.py', "python:2", []),
+    update_action("sleep", 'samples/actions/sleep.py', "python:2", []),
+    update_action("sns", 'samples/actions/sns.py', "python:2", []),
+    update_action("exception", 'samples/actions/exception.pl', "blackbox",
+                  [image("nao16t/swipl7action")]).

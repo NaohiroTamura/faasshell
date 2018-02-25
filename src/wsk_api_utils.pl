@@ -29,11 +29,11 @@ api_key(Key, ID-PW) :-
     split_string(Key, ':', "", [ID, PW]).
 
 openwhisk(Options) :-
-    ( getenv('AUTH',Key), api_key(Key, ID-PW)
+    ( getenv('WSK_AUTH',Key), api_key(Key, ID-PW)
       -> AuthOpt =  [api_key(ID-PW)]
       ;  AuthOpt =  []
     ),
-    ( getenv('APIHOST',URL)
+    ( getenv('WSK_APIHOST',URL)
       -> ( re_match("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$", URL)
            -> PROTOCOL = https,
               HOST = URL,
@@ -44,13 +44,9 @@ openwhisk(Options) :-
               default_port(PROTOCOL, DEFAULT_PORT),
               option(port(PORT), Attributes, DEFAULT_PORT)
          )
-      ; ( getenv('NGINX_SERVICE_HOST', H),
-          getenv('NGINX_SERVICE_PORT_HTTPS_API', P)
-          -> PROTOCOL = https,
-             atom_string(H, HOST),
-             atom_number(P, PORT)
-          ; throw(error(unknown_api_host, _))
-        )
+      ; HOST = '172.17.0.1',
+        PROTOCOL = https,
+        PORT = 443
     ),
     append(AuthOpt, [
                api_host(HOST),

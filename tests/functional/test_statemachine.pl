@@ -29,7 +29,13 @@
 %%
 %% Functional Tests
 %%
-:- begin_tests(hello_world_task).
+:- begin_tests(hello_world_task,
+               [setup((faasshell_api_host(Host), faasshell_api_key(ID-PW),
+                       string_concat(Host,
+                                     '/statemachine/hello_world_task_asl.json',
+                                     URL),
+                       http_delete(URL, _Data, [authorization(basic(ID, PW)),
+                                                status_code(_Code)])))]).
 
 test(auth_error, Code = 401) :-
     faasshell_api_host(Host),
