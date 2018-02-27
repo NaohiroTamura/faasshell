@@ -15,7 +15,7 @@
 %% limitations under the License.
 %%
 
-:- include('../../src/gcp_api_functions.pl').
+:- include('../../src/azure_api_functions.pl').
 
 %%
 %% Unit Tests
@@ -26,20 +26,18 @@
 :- begin_tests(invoke).
 
 test(hello_noarg, (Code, R) = (200, _{payload:"Hello, World!"})) :-
-    gcp_api_functions:faas:invoke(
-      'grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello',
+    azure_api_functions:faas:invoke(
+      'mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello',
           [status_code(Code)], _{}, R).
 
-test(hello_arg, (Code, R) = (200, _{payload:"Hello, GCP!"})) :-
-    gcp_api_functions:faas:invoke(
-      'grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello',
-          [status_code(Code)], _{name: "GCP"}, R).
+test(hello_arg, (Code, R) = (200, _{payload:"Hello, Azure!"})) :-
+    azure_api_functions:faas:invoke(
+      'mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello',
+          [status_code(Code)], _{name: "Azure"}, R).
 
-%% should not be error such as AWS, Azure
-test(hello_badarg, (Code, R) = (400, _{cause:status_code(400),
-                                    error:'Bad Request\n'})) :-
-    gcp_api_functions:faas:invoke(
-      'grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello',
+test(hello_badarg, (Code, R) = (200, _{payload:"Hello, World!"})) :-
+    azure_api_functions:faas:invoke(
+      'mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello',
           [status_code(Code)], '', R).
 
 :- end_tests(invoke).

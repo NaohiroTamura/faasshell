@@ -1,0 +1,11 @@
+{
+    "Comment": "A Hello World example of the Amazon States Language using a Task state",
+    "StartAt": "HelloWorld",
+    "States": {
+        "HelloWorld": {
+            "Type": "Task",
+            "Resource":"mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello",
+            "End": true
+        }
+    }
+}
