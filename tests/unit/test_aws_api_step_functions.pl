@@ -160,7 +160,7 @@ test(invalid_token_and_invalid_output,
         'arn:aws:states:us-east-2:410388484666:activity:test',
         [status_code(Code3)], _{fake: Output, taskToken: R1.taskToken}, R3),
     assertion(R3 = _{'__type':"com.amazon.coral.validate#ValidationException",
-                     message:"1 validation error detected: Value null at 'output' failed to satisfy constraint: Member must not be null"}),
+                     message:"1 validation error detected: Value at 'output' failed to satisfy constraint: Member must not be null"}),
 
     aws_api_step_functions:stop_execution(
         'arn:aws:states:us-east-2:410388484666:activity:test',

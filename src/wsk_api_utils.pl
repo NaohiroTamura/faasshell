@@ -22,6 +22,7 @@
          ]).
 
 :- use_module(wsk_api_dcg).
+:- use_module(proxy_utils).
 
 :- use_module(library(http/json)).
 
@@ -30,15 +31,15 @@ api_key(Key, ID-PW) :-
 
 openwhisk(Options) :-
     ( getenv('WSK_AUTH',Key), api_key(Key, ID-PW)
-      -> AuthOpt =  [api_key(ID-PW)]
-      ;  AuthOpt =  []
+      -> AuthOpt =  [authorization(basic(ID, PW))]
+      ;  throw(existence_error(getenv, 'WSK_AUTH'))
     ),
-    ( getenv('WSK_APIHOST',URL)
-      -> ( re_match("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$", URL)
+    ( getenv('WSK_APIHOST', APIHOST)
+      -> ( re_match("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$", APIHOST)
            -> PROTOCOL = https,
-              HOST = URL,
+              HOST = APIHOST,
               PORT = 443
-           ;  parse_url(URL, Attributes),
+           ;  parse_url(APIHOST, Attributes),
               option(protocol(PROTOCOL), Attributes),
               option(host(HOST), Attributes),
               default_port(PROTOCOL, DEFAULT_PORT),
@@ -48,11 +49,14 @@ openwhisk(Options) :-
         PROTOCOL = https,
         PORT = 443
     ),
-    append(AuthOpt, [
-               api_host(HOST),
-               protocol(PROTOCOL),
-               port(PORT)
-           ], Options).
+    parse_url(DistHost, [protocol(PROTOCOL), host(HOST)]),
+    proxy_utils:http_proxy(DistHost, ProxyOptions),
+    flatten([AuthOpt,
+             ProxyOptions,
+             [api_host(HOST), protocol(PROTOCOL), port(PORT),
+              cert_verify_hook(cert_accept_any),
+              status_code(_Code)]
+            ], Options).
 
 default_port(http, 80).
 default_port(https, 443).

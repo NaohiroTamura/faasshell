@@ -23,6 +23,7 @@
             aws_step_functions/5
          ]).
 
+:- use_module(proxy_utils).
 
 aws_step_functions(Action, ARN, RequestParameters, Payload, Options) :-
     getenv('AWS_ACCESS_KEY_ID', AWS_ACCESS_KEY_ID),
@@ -62,13 +63,18 @@ aws_step_functions(Action, ARN, RequestParameters, Payload, Options) :-
       -> atomics_to_string([Endpoint, Resource], URL)
       ;  atomics_to_string([Endpoint, Resource, '?', RequestParameters], URL)
     ),
+    proxy_utils:http_proxy(URL, ProxyOptions),
     Options = [
         aws_access_key_id(AWS_ACCESS_KEY_ID),
         aws_secret_access_key(AWS_SECRET_ACCESS_KEY),
         url(URL),
         request_header('X-Amz-Date'=AmzDate),
         request_header('X-Amz-Target'=AmzTarget),
-        request_header('Authorization'=AuthorizationHeader)].
+        request_header('Authorization'=AuthorizationHeader),
+        %% cert_verify_hook(cert_accept_any),
+        status_code(_Code)
+        | ProxyOptions
+    ].
 
 %%
 lambda(list, 'GET', none, Resource) :-
@@ -114,12 +120,17 @@ aws_lambda(Action, ARN, RequestParameters, Payload, Options) :-
       -> atomics_to_string([Endpoint, Resource], URL)
       ;  atomics_to_string([Endpoint, Resource, '?', RequestParameters], URL)
     ),
+    proxy_utils:http_proxy(URL, ProxyOptions),
     Options = [
         aws_access_key_id(AWS_ACCESS_KEY_ID),
         aws_secret_access_key(AWS_SECRET_ACCESS_KEY),
         url(URL),
         request_header('X-Amz-Date'=AmzDate),
-        request_header('Authorization'=AuthorizationHeader)].
+        request_header('Authorization'=AuthorizationHeader),
+        %% cert_verify_hook(cert_accept_any),
+        status_code(_Code)
+        | ProxyOptions
+    ].
 
 %% TASK 1: CREATE A CANONICAL REQUEST
 canonical_request(step_function, Method, Host, Path, Resource, RequestParameters,

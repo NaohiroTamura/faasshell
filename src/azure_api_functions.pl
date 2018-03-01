@@ -21,6 +21,7 @@
          ]).
 
 :- use_module(json_utils).
+:- use_module(proxy_utils).
 
 :- use_module(library(http/http_client)).
 :- use_module(library(http/http_ssl_plugin)).
@@ -42,13 +43,15 @@ faas:invoke(MRN, Options, Payload, Reply) :-
                        ':', MRN), !,
     ( getenv('AZURE_HOSTKEY', HostKey)
       -> true
-      ;  throws(existence_error(getenv, 'AZURE_HOSTKEY'))
+      ;  throw(existence_error(getenv, 'AZURE_HOSTKEY'))
     ),
-    AzureOptions = [status_code(Code), cert_verify_hook(cert_accept_any)],
-    merge_options(AzureOptions, Options, MergedOptions),
-    json_utils:term_json_dict(Json, Payload),
     atomic_list_concat(['https://', Project, '.', Domain, '/api/', Function,
                         '?code=', HostKey], URL),
+    proxy_utils:http_proxy(URL, ProxyOptions),
+    AzureOptions = [ status_code(Code) %%, cert_verify_hook(cert_accept_any)
+                     | ProxyOptions],
+    merge_options(AzureOptions, Options, MergedOptions),
+    json_utils:term_json_dict(Json, Payload),
     http_post(URL, json(Json), R1, MergedOptions),
     ( Code = 200
       -> json_utils:term_json_dict(R1, Reply)

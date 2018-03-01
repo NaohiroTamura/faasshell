@@ -21,6 +21,7 @@
          ]).
 
 :- use_module(json_utils).
+:- use_module(proxy_utils).
 
 :- use_module(library(http/http_client)).
 :- use_module(library(http/http_ssl_plugin)).
@@ -40,11 +41,13 @@
 faas:invoke(GRN, Options, Payload, Reply) :-
     atomic_list_concat([grn, gcp, lambda, Region, Project, Domain, Function],
                        ':', GRN), !,
-    GcpOptions = [status_code(Code), cert_verify_hook(cert_accept_any)],
-    merge_options(GcpOptions, Options, MergedOptions),
-    json_utils:term_json_dict(Json, Payload),
     atomic_list_concat(['https://', Region, '-', Project, '.', Domain,
                         '/', Function], URL),
+    proxy_utils:http_proxy(URL, ProxyOptions),
+    GcpOptions = [ status_code(Code) %% , cert_verify_hook(cert_accept_any)
+                   | ProxyOptions],
+    merge_options(GcpOptions, Options, MergedOptions),
+    json_utils:term_json_dict(Json, Payload),
     http_post(URL, json(Json), R1, MergedOptions),
     ( Code = 200
       -> json_utils:term_json_dict(R1, Reply)

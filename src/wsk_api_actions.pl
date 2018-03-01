@@ -40,16 +40,14 @@
        faas:list/4,
        faas:invoke/4.
 
-%% wsk_url(+Method, +Action, +Options, +DefaultQuery, -URL, -ID-PW, -Timeout) :-
-wsk_url(Method, Action, Options, DefaultQuery, URL, ID-PW, Timeout) :-
+%% wsk_url(+Method, +Action, +Options, +DefaultQuery, -URL) :-
+wsk_url(Method, Action, Options, DefaultQuery, URL) :-
     wsk_api_utils:api_action_name(Action, NS, ActionName),
     option(api_host(HostName), Options),
     option(query(Query), Options, DefaultQuery),
     wsk_api_utils:api_url(HostName, 
                           wsk_api_dcg:path(Method, NS, actions, ActionName, Query),
-                          URL, Options),
-    option(api_key(ID-PW), Options),
-    option(timeout(Timeout), Options, infinite).
+                          URL, Options).
 
 %%
 faas:list([], Options, Reply) :-
@@ -64,45 +62,24 @@ wsk_list(WRN, Options, Reply) :-
     atomic_list_concat([wsk, Action], ':', WRN),
     wsk_api_utils:openwhisk(WskOptions),
     merge_options(WskOptions, Options, MergedOptions),
-    wsk_url(get, Action, MergedOptions, [], URL, ID-PW, Timeout),
-    ( option(status_code(Code), MergedOptions)
-      -> StatusCode = [status_code(Code)]
-      ;  StatusCode = []
-    ),
-    http_get(URL, R1,
-             [timeout(Timeout),
-              authorization(basic(ID, PW)),
-              cert_verify_hook(cert_accept_any) | StatusCode]),
+    wsk_url(get, Action, MergedOptions, [], URL),
+    http_get(URL, R1, MergedOptions),
     json_utils:term_json_dict(R1, Reply).
 
 create(Action, Options, Payload, Reply) :-
     wsk_api_utils:openwhisk(WskOptions),
     merge_options(WskOptions, Options, MergedOptions),
-    wsk_url(put, Action, MergedOptions, [], URL, ID-PW, Timeout),
+    wsk_url(put, Action, MergedOptions, [], URL),
     json_utils:term_json_dict(Json, Payload),
-    ( option(status_code(Code), MergedOptions)
-      -> StatusCode = [status_code(Code)]
-      ;  StatusCode = []
-    ),
-    http_put(URL, json(Json), R1,
-              [timeout(Timeout),
-               authorization(basic(ID, PW)),
-               cert_verify_hook(cert_accept_any) | StatusCode]),
+    http_put(URL, json(Json), R1, MergedOptions),
     json_utils:term_json_dict(R1, Reply).
 
 update(Action, Options, Payload, Reply) :-
     wsk_api_utils:openwhisk(WskOptions),
     merge_options(WskOptions, Options, MergedOptions),
-    wsk_url(put, Action, MergedOptions, [overwrite=true], URL, ID-PW, Timeout),
+    wsk_url(put, Action, MergedOptions, [overwrite=true], URL),
     json_utils:term_json_dict(Json, Payload),
-    ( option(status_code(Code), MergedOptions)
-      -> StatusCode = [status_code(Code)]
-      ;  StatusCode = []
-    ),
-    http_put(URL, json(Json), R1,
-              [timeout(Timeout),
-               authorization(basic(ID, PW)),
-               cert_verify_hook(cert_accept_any) | StatusCode]),
+    http_put(URL, json(Json), R1, MergedOptions),
     json_utils:term_json_dict(R1, Reply).
 
 faas:invoke(WRN, Options, Payload, Reply) :-
@@ -110,17 +87,9 @@ faas:invoke(WRN, Options, Payload, Reply) :-
     wsk_api_utils:openwhisk(WskOptions),
     merge_options(WskOptions, Options, MergedOptions),
     %% writeln(wsk(invoke(Action))),
-    wsk_url(post, Action, MergedOptions, [blocking=true,result=true],
-            URL, ID-PW, Timeout),
+    wsk_url(post, Action, MergedOptions, [blocking=true,result=true], URL),
     json_utils:term_json_dict(Json, Payload),
-    ( option(status_code(Code), MergedOptions)
-      -> StatusCode = [status_code(Code)]
-      ;  StatusCode = [status_code(_)] %% supress exception for custom error
-    ),
-    http_post(URL, json(Json), R1,
-              [timeout(Timeout),
-               authorization(basic(ID, PW)),
-               cert_verify_hook(cert_accept_any) | StatusCode]),
+    http_post(URL, json(Json), R1, MergedOptions),
     json_utils:term_json_dict(R1, D1),
     ( _{error: Error} :< D1,
       split_string(Error, ":", " ", [_, ErrorType, ErrorMessage])
@@ -131,13 +100,6 @@ faas:invoke(WRN, Options, Payload, Reply) :-
 delete(Action, Options, Reply) :-
     wsk_api_utils:openwhisk(WskOptions),
     merge_options(WskOptions, Options, MergedOptions),
-    wsk_url(delete, Action, MergedOptions, [], URL, ID-PW, Timeout),
-    ( option(status_code(Code), MergedOptions)
-      -> StatusCode = [status_code(Code)]
-      ;  StatusCode = []
-    ),
-    http_delete(URL, R1,
-             [timeout(Timeout),
-              authorization(basic(ID, PW)),
-              cert_verify_hook(cert_accept_any) | StatusCode]),
+    wsk_url(delete, Action, MergedOptions, [], URL),
+    http_delete(URL, R1, MergedOptions),
     json_utils:term_json_dict(R1, Reply).

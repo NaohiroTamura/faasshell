@@ -40,6 +40,7 @@
          ]).
 
 :- use_module(json_utils).
+:- use_module(proxy_utils).
 
 :- use_module(library(http/http_client)).
 :- use_module(library(http/http_ssl_plugin)).
@@ -107,13 +108,16 @@ db_env(Options) :-
              DB_PORT = default
         )
     ),
-    db_url_base(Scheme, DB_HOST, DB_PORT, Base, [] ),
-    append(AuthOpt, [
-               db_url_base(Base),
-               status_code(_Code),
-               timeout(30),
-               cert_verify_hook(cert_accept_any)
-           ], Options).
+    db_url_base(Scheme, DB_HOST, DB_PORT, Base, []),
+    atomic_list_concat(Base, DistUrl),
+
+    proxy_utils:http_proxy(DistUrl, ProxyOptions),
+    flatten([AuthOpt,
+             ProxyOptions,
+             [db_url_base(Base), status_code(_Code),
+              %% cert_verify_hook(cert_accept_any),
+              timeout(60)]
+            ], Options).
 
 %%
 db_url(Path, Query, Options, URL, Code) :-
