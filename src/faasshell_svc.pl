@@ -20,10 +20,10 @@
 %%  FaaS Shell Microservice
 %%
 
-:- module(asl_svc, [main/0]).
+:- module(faasshell_svc, [main/0]).
 
-:- use_module(asl_gen, [gen_dsl/2]).
-:- use_module(asl_run, [start/4]).
+:- use_module(asl_compile, [gen_dsl/2]).
+:- use_module(faasshell_run, [start/4]).
 :- use_module(cdb_api).
 :- use_module(mq_utils).
 
@@ -51,10 +51,10 @@
 
 %%
 %% main
-%%   $ swipl -q -l asl_svc.pl -g main -t halt
+%%   $ swipl -q -l faasshell_svc.pl -g main -t halt
 %%
 %% start:
-%%   ?- asl_svc:main.
+%%   ?- faasshell_svc:main.
 %% stop the server:
 %%   ?- http_stop_server(8080,[]).
 %%
@@ -268,7 +268,7 @@ statemachine(put, Request) :-
     ( option(path_info(File), Request),
       option(faasshell_auth(NS), Request)
       -> atomics_to_string([NS, "/", File], NSFile),
-         asl_gen:gen_dsl(Dict, Dsl),
+         asl_compile:gen_dsl(Dict, Dsl),
          http_log('~w: ~w~n', [NSFile, dsl(Dsl)]),
          term_string(Dsl, DslStr),
          ( Dsl = asl(_)
@@ -315,7 +315,7 @@ statemachine(post, Request) :-
               http_parameters(Request, [blocking(Blocking, [default(false)])]),
               http_log('~w~n', [blocking(Blocking)]),
               ( Blocking = true
-                -> asl_run:start(Dsl, [], Input, O),
+                -> faasshell_run:start(Dsl, [], Input, O),
                    Output = DictParams.put(_{output:O})
                ;  uuid(ExecId),
                   thread_create(background_job(NS, File, ExecId, Dsl, Input),
@@ -357,7 +357,7 @@ statemachine(patch, Request) :-
        http_log('~w~n', [doc_read(Code)]),
        ( Code = 200
          -> format('Content-type: text/plain~n~n'),
-            asl_gen:gen_dot(Dict.asl)
+            asl_compile:gen_dot(Dict.asl)
          ;  throw((Dict, Code))
        )
     ; http_header:status_number(bad_request, S_400),
@@ -466,7 +466,7 @@ shell(post, Request) :-
               http_parameters(Request, [blocking(Blocking, [default(false)])]),
               http_log('~w~n', [blocking(Blocking)]),
               ( Blocking = true
-                -> asl_run:start(Dsl, [], Input, O),
+                -> faasshell_run:start(Dsl, [], Input, O),
                    Output = DictParams.put(_{output:O})
                ;  uuid(ExecId),
                   thread_create(background_job(NS, File, ExecId, Dsl, Input),
@@ -506,7 +506,7 @@ http:authenticate/3.
 
 :- use_module(library(debug)).
 
-%% $ swipl -q -l src/asl_svc.pl -g asl_svc:debug_auth -g main -t halt
+%% $ swipl -q -l src/faasshell_svc.pl -g faasshell_svc:debug_auth -g main -t halt
 debug_auth :- debug(http_authenticate > user_error).
 
 %%
@@ -555,7 +555,7 @@ background_job(Namespace, File, ExecId, Dsl, Input) :-
               hostname: Hostname
             },
     cdb_api:doc_create(faasshell_executions, NSFile, Dict, _C1, _R1),
-    asl_run:start(Dsl, [], Input, Output),
+    faasshell_run:start(Dsl, [], Input, Output),
     get_time(End),
     UpdatedDict = Dict.put(
            _{ result:

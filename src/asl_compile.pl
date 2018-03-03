@@ -19,7 +19,7 @@
 %% Amazon State Language (ALS) Parser, DSL and Graph Generator
 %%
 
-:- module(asl_gen,
+:- module(asl_compile,
           [ validate/1,
             gen_dsl/1,
             gen_dsl/2,
@@ -28,14 +28,14 @@
 
 :- use_module(library(http/json)).
 
-%% swipl -q -l asl_gen.pl -g 'validate("blueprints/hello_world.json")' -t halt
+%% swipl -q -l asl_compile.pl -g 'validate("blueprints/hello_world.json")' -t halt
 validate(File) :-
     catch(main(File, _Dsl, _Graph),
           Err,
           (print_message(error, Err), fail)),
     writeln(current_output, ok).
 
-%% swipl -q -l asl_gen.pl -g 'gen_dsl("blueprints/hello_world.json")' -t halt
+%% swipl -q -l asl_compile.pl -g 'gen_dsl("blueprints/hello_world.json")' -t halt
 gen_dsl(File) :-
     catch(main(File, Dsl, _Graph),
           Err,
@@ -47,7 +47,7 @@ gen_dsl(Asl, Dsl) :-
           Err,
           Dsl = Err).
 
-%% swipl -q -l asl_gen.pl -g 'gen_dot("blueprints/hello_world.json")' -t halt
+%% swipl -q -l asl_compile.pl -g 'gen_dot("blueprints/hello_world.json")' -t halt
 gen_dot(File) :-
     catch(main(File, _Dsl, Graph),
           Err,

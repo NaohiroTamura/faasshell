@@ -15,7 +15,7 @@
 %% limitations under the License.
 %%
 
-:- include('../../src/asl_run.pl').
+:- include('../../src/faasshell_run.pl').
 :- include('unit_test_utils.pl').
 
 %%

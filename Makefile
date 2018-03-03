@@ -34,7 +34,7 @@ unit_test:
 
 functional_test:
 	@echo "functional  test"
-	swipl -q -l src/asl_svc.pl -g main -t halt &
+	swipl -q -l src/faasshell_svc.pl -g main -t halt &
 	swipl -q -l tests/unit/unit_test_utils.pl -g faas_test_setup -t halt
 	sleep 3
 	for case in $(functional_test_files); do \
@@ -50,10 +50,10 @@ test_with_kafka:
 	kafka-server-start.sh /opt/kafka/config/server.properties > /dev/null &
 	sleep 3
 	CLASSPATH=$(CLASSPATH) _JAVA_OPTIONS=$(_JAVA_OPTIONS) \
-	swipl -q -l tests/unit/test_asl_run.pl -g kafka_api:debug_kafka -g 'run_tests(activity_task)' -t halt
+	swipl -q -l tests/unit/test_faasshell_run.pl -g kafka_api:debug_kafka -g 'run_tests(activity_task)' -t halt
 	sleep 1
 	CLASSPATH=$(CLASSPATH) _JAVA_OPTIONS=$(_JAVA_OPTIONS) \
-	swipl -q -l src/asl_svc.pl -g main -t halt &
+	swipl -q -l src/faasshell_svc.pl -g main -t halt &
 	sleep 10
 	CLASSPATH=$(CLASSPATH) _JAVA_OPTIONS=$(_JAVA_OPTIONS) \
 	swipl -q -l tests/functional/test_activity.pl -g run_tests -t halt
@@ -114,6 +114,6 @@ run:
 	fi
 
 debug:
-	@echo "run asl_svc for debugging"
-	swipl -q -l src/asl_svc.pl -g main -t halt
+	@echo "run faasshell_svc for debugging"
+	swipl -q -l src/faasshell_svc.pl -g main -t halt
 

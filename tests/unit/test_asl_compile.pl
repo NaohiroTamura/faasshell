@@ -15,7 +15,7 @@
 %% limitations under the License.
 %%
 
-:- include('../../src/asl_gen.pl').
+:- include('../../src/asl_compile.pl').
 
 %%
 %% Unit Tests

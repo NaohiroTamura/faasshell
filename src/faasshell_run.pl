@@ -19,7 +19,7 @@
 %% Amazon State Language (ASL) DSL Interpreter
 %%
 
-:- module(asl_run,
+:- module(faasshell_run,
           [ start/4
          ]).
 
@@ -384,7 +384,7 @@ branch_execute(Branch, (I, O, E), (I, O, E)) :-
 goto(state(Target), I, O, E) :-
     mydebug(goto(in), (Target, I, O)),
     States = E.asl,
-    setof(N,asl_run:lookup_state(Target,States,N),Next),
+    setof(N, faasshell_run:lookup_state(Target,States,N),Next),
     length(Next,1),
     mydebug(goto(out), (Next, I, O)),
     reduce(Next, I, O, E).
