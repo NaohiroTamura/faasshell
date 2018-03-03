@@ -63,7 +63,7 @@ Endpoint is opened at http://$(minikube ip):30954 in case of Minikube.
 ### faas interface
 
 ```sh
-ubuntu@trusty:~/faasshell[master]$ wsk action create hello samples/actions/hello.js -i
+ubuntu@trusty:~/faasshell[master]$ wsk action create hello samples/wsk/actions/hello.js -i
 ok: created action hello
 ```
 ```sh
@@ -85,7 +85,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -sLX GET http://172.17.0.1:8080/faas/ -u
 ### statemachine interface
 ```sh
 ubuntu@trusty:~/faasshell[master]$ curl -sX PUT http://172.17.0.1:8080/statemachine/hello_world_task_asl.json \
--H 'Content-Type: application/json' -d @samples/asl/hello_world_task_asl.json -u $AUTH
+-H 'Content-Type: application/json' -d @samples/wsk/asl/hello_world_task_asl.json -u $AUTH
 {
   "asl": {
     "Comment":"A Hello World example of the Amazon States Language using an AWS Lambda function",
@@ -191,7 +191,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -sX DELETE http://172.17.0.1:8080/statem
 ### shell interface
 ```sh
 ubuntu@trusty:~/faasshell[master]$ curl -sX PUT http://172.17.0.1:8080/shell/hello_world_task.dsl \
--H 'Content-Type: text/plain' -d @samples/dsl/hello_world_task.dsl -u $AUTH
+-H 'Content-Type: text/plain' -d @samples/wsk/dsl/hello_world_task.dsl -u $AUTH
 {
   "dsl":"asl([task('HelloWorld',\"wsk:hello\",[timeout_seconds(5)])]).",
   "name":"hello_world_task.dsl",

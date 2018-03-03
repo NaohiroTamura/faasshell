@@ -41,7 +41,7 @@ test(auth_error, Code = 401) :-
 test(put_create, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/shell/hello_world_task.dsl', URL),
-    http_put(URL, file('samples/dsl/hello_world_task.dsl'), Data,
+    http_put(URL, file('samples/wsk/dsl/hello_world_task.dsl'), Data,
              [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{output: "ok", name: "hello_world_task.dsl",
@@ -50,7 +50,7 @@ test(put_create, Code = 200) :-
 test(put_overwrite_true, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/shell/hello_world_task.dsl?overwrite=true', URL),
-    http_put(URL, file('samples/dsl/hello_world_task.dsl'), Data,
+    http_put(URL, file('samples/wsk/dsl/hello_world_task.dsl'), Data,
              [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{output: "ok", name: "hello_world_task.dsl",
@@ -59,7 +59,7 @@ test(put_overwrite_true, Code = 200) :-
 test(put_overwrite_false, Code = 409) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/shell/hello_world_task.dsl?overwrite=false', URL),
-    http_put(URL, file('samples/dsl/hello_world_task.dsl'), Data,
+    http_put(URL, file('samples/wsk/dsl/hello_world_task.dsl'), Data,
              [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{error:"conflict", reason:"Document update conflict."} :< Dict).
@@ -137,7 +137,7 @@ test(delete_not_exist, Code = 404) :-
 test(put_create, Code = 500) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/shell/hello_term_error.dsl', URL),
-    http_put(URL, file('samples/dsl/hello_term_error.dsl'), Data,
+    http_put(URL, file('samples/wsk/dsl/hello_term_error.dsl'), Data,
              [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{error:"syntax error", reason: _} = Dict).

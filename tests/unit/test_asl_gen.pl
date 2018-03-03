@@ -24,23 +24,23 @@
 
 :- begin_tests(blueprints).
 
-test(hello) :- main('samples/blueprints/hello_world.json', _D, _G).
+test(hello) :- main('samples/common/blueprints/hello_world.json', _D, _G).
 
-test(choice) :- main('samples/blueprints/choice_state.json', _D, _G).
+test(choice) :- main('samples/common/blueprints/choice_state.json', _D, _G).
 
-test(choicex) :- main('samples/blueprints/choice_statex.json', _D, _G).
+test(choicex) :- main('samples/common/blueprints/choice_statex.json', _D, _G).
 
-test(catch) :- main('samples/blueprints/catch_failure.json', _D, _G).
+test(catch) :- main('samples/common/blueprints/catch_failure.json', _D, _G).
 
-test(poller) :- main('samples/blueprints/job_status_poller.json', _D, _G).
+test(poller) :- main('samples/common/blueprints/job_status_poller.json', _D, _G).
 
-test(parallel) :- main('samples/blueprints/parallel.json', _D, _G).
+test(parallel) :- main('samples/common/blueprints/parallel.json', _D, _G).
 
-test(retry) :- main('samples/blueprints/retry_failure.json', _D, _G).
+test(retry) :- main('samples/common/blueprints/retry_failure.json', _D, _G).
 
-test(timer) :- main('samples/blueprints/task_timer.json', _D, _G).
+test(timer) :- main('samples/common/blueprints/task_timer.json', _D, _G).
 
-test(wait) :- main('samples/blueprints/wait_state.json', _D, _G).
+test(wait) :- main('samples/common/blueprints/wait_state.json', _D, _G).
 
 :- end_tests(blueprints).
 

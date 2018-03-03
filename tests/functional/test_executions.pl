@@ -32,7 +32,7 @@
 :- begin_tests(executions, []).
 
 test(background) :-
-    load_json('samples/asl/hello_world_task_asl.json', Term),
+    load_json('samples/wsk/asl/hello_world_task_asl.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
     string_concat(URL, '?overwrite=true', URL1),

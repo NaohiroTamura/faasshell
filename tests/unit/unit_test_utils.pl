@@ -54,12 +54,12 @@ update_action(Action, File, Kind, Container) :-
 
 %%
 faas_test_setup :-
-    update_action("delay", 'samples/actions/delay.js', "nodejs:6", []),
-    update_action("error", 'samples/actions/error.js', "nodejs:6", []),
-    update_action("hello", 'samples/actions/hello.js', "nodejs:6", []),
-    update_action("job", 'samples/actions/job.py', "python:2", []),
-    update_action("raise", 'samples/actions/raise.py', "python:2", []),
-    update_action("sleep", 'samples/actions/sleep.py', "python:2", []),
-    update_action("sns", 'samples/actions/sns.py', "python:2", []),
-    update_action("exception", 'samples/actions/exception.pl', "blackbox",
+    update_action("delay", 'samples/wsk/actions/delay.js', "nodejs:6", []),
+    update_action("error", 'samples/wsk/actions/error.js', "nodejs:6", []),
+    update_action("hello", 'samples/wsk/actions/hello.js', "nodejs:6", []),
+    update_action("job", 'samples/wsk/actions/job.py', "python:2", []),
+    update_action("raise", 'samples/wsk/actions/raise.py', "python:2", []),
+    update_action("sleep", 'samples/wsk/actions/sleep.py', "python:2", []),
+    update_action("sns", 'samples/wsk/actions/sns.py', "python:2", []),
+    update_action("exception", 'samples/wsk/actions/exception.pl', "blackbox",
                   [image("nao16t/swipl7action")]).

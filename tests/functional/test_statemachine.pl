@@ -45,7 +45,7 @@ test(auth_error, Code = 401) :-
     assertion(_{error: "Authentication Failure"} = Dict).
 
 test(put_create, Code = 200) :-
-    load_json('samples/asl/hello_world_task_asl.json', Term),
+    load_json('samples/wsk/asl/hello_world_task_asl.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
     http_put(URL, json(Term), Data,
@@ -55,7 +55,7 @@ test(put_create, Code = 200) :-
                 namespace: "demo", dsl: _, asl: _} = Dict).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/asl/hello_world_task_asl.json', Term),
+    load_json('samples/wsk/asl/hello_world_task_asl.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/hello_world_task_asl.json?overwrite=true',
                   URL),
@@ -66,7 +66,7 @@ test(put_overwrite_true, Code = 200) :-
                 namespace: "demo", dsl: _, asl: _} = Dict).
 
 test(put_overwrite_false, Code = 409) :-
-    load_json('samples/asl/hello_world_task_asl.json', Term),
+    load_json('samples/wsk/asl/hello_world_task_asl.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/hello_world_task_asl.json?overwrite=false',
                   URL),
@@ -158,7 +158,7 @@ test(scenario) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/job_status_poller_asl.json', URL),
     string_concat(URL, '?overwrite=true', URL1),
-    load_json('samples/asl/job_status_poller_asl.json', Term),
+    load_json('samples/wsk/asl/job_status_poller_asl.json', Term),
     http_put(URL1, json(Term), _Data1,
              [authorization(basic(ID, PW)), status_code(Code1)]),
     assertion(Code1 = 200),
@@ -194,7 +194,7 @@ test(scenario) :-
 :- begin_tests(has_dupes_asl).
 
 test(put_create, Code = 500) :-
-    load_json('samples/asl/has-dupes_asl.json', Term),
+    load_json('samples/wsk/asl/has-dupes_asl.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/has-dupes_asl.json', URL),
     http_put(URL, json(Term), Data,
@@ -208,7 +208,7 @@ test(put_create, Code = 500) :-
 :- begin_tests(choice_state).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/asl/choice_state_asl.json', Term),
+    load_json('samples/wsk/asl/choice_state_asl.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/choice_state_asl.json?overwrite=true',
                   URL),
@@ -254,7 +254,7 @@ test(default_state, Code = 200) :-
 :- begin_tests(choicex_state).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/asl/choicex_state_asl.json', Term),
+    load_json('samples/wsk/asl/choicex_state_asl.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/choicex_state_asl.json?overwrite=true',
                   URL),
@@ -315,7 +315,7 @@ test(default_state, Code = 200) :-
 :- begin_tests(wait_state).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/asl/wait_state_asl.json', Term),
+    load_json('samples/wsk/asl/wait_state_asl.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/wait_state_asl.json?overwrite=true',
                   URL),
@@ -347,7 +347,7 @@ test(wait_state, Code = 200) :-
 :- begin_tests(parallel).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/asl/parallel_asl.json', Term),
+    load_json('samples/wsk/asl/parallel_asl.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/parallel_asl.json?overwrite=true',
                   URL),
@@ -373,7 +373,7 @@ test(wait_state, Code = 200) :-
 :- begin_tests(pass_state).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/asl/hello_world_asl.json', Term),
+    load_json('samples/wsk/asl/hello_world_asl.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/hello_world_asl.json?overwrite=true',
                   URL),
@@ -399,7 +399,7 @@ test(hello_world, Code = 200) :-
 :- begin_tests(catch_failure).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/asl/catch_failure_asl.json', Term),
+    load_json('samples/wsk/asl/catch_failure_asl.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/catch_failure_asl.json?overwrite=true',
                   URL),
@@ -436,7 +436,7 @@ test(reserved_type, Code = 200) :-
 :- begin_tests(retry_failure).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/asl/retry_failure_asl.json', Term),
+    load_json('samples/wsk/asl/retry_failure_asl.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/retry_failure_asl.json?overwrite=true',
                   URL),
@@ -473,7 +473,7 @@ test(reserved_type, Code = 200) :-
 :- begin_tests(task_timer).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/asl/task_timer_asl.json', Term),
+    load_json('samples/wsk/asl/task_timer_asl.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/task_timer_asl.json?overwrite=true',
                   URL),

@@ -41,7 +41,7 @@ test(echo, R = _{foo:1}) :-
 
 test(scenarios) :-
     setup_call_cleanup(
-            open('samples/actions/hello.js', read, S),
+            open('samples/wsk/actions/hello.js', read, S),
             read_string(S, _N, Code),
             close(S)),
     Payload = _{ namespace: "_",
@@ -93,11 +93,11 @@ test(scenarios) :-
 %%
 :- begin_tests(custom_error,
                [setup(( update_action("error",
-                                      'samples/actions/error.js', "nodejs:6", []),
+                                      'samples/wsk/actions/error.js', "nodejs:6", []),
                         update_action("raise",
-                                      'samples/actions/raise.py', "python:2", []),
+                                      'samples/wsk/actions/raise.py', "python:2", []),
                         update_action("exception",
-                                      'samples/actions/exception.pl', "blackbox",
+                                      'samples/wsk/actions/exception.pl', "blackbox",
                                       [image("nao16t/swipl7action")])))
                ]).
 
