@@ -16,7 +16,9 @@
 #
 # $ docker build -t s2i-swipl .
 #
-FROM swipl:7.5.15
+# JPL enabled SWI Prolog 7.5.15
+# https://github.com/NaohiroTamura/docker-swipl/tree/swi-7.5.15-jpl
+FROM nao16t/swipl7jpl
 
 LABEL io.k8s.description="Platform for building and running SWI Prolog apps" \
       io.k8s.display-name="swipl" \

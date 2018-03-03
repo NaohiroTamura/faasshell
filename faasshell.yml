@@ -17,7 +17,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: faasshell
-  namespace: openwhisk
+  namespace: faasshell
   labels:
     name: faasshell
 spec:
@@ -34,7 +34,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: faasshell
-  namespace: openwhisk
+  namespace: faasshell
   labels:
     name: faasshell
 spec:
@@ -43,7 +43,6 @@ spec:
     metadata:
       labels:
         name: faasshell
-        access: db
     spec:
       restartPolicy: Always
       volumes:
@@ -57,10 +56,16 @@ spec:
         - name: http
           containerPort: 8080
         env:
-        - name: "DB_AUTH"
-          value: "whisk_admin:some_passw0rd"
-        - name: "DB_WHISK_AUTHS"
-          value: "test_subjects"
+        - name: AWS_ACCESS_KEY_ID
+          value: ${AWS_ACCESS_KEY_ID}
+        - name: AWS_SECRET_ACCESS_KEY
+          value: ${AWS_SECRET_ACCESS_KEY}
+        - name: AZURE_HOSTKEY
+          value: ${AZURE_HOSTKEY}
+        - name: WSK_AUTH
+          value: ${WSK_AUTH}
+        - name: WSK_APIHOST
+          value: ${WSK_APIHOST}
         volumeMounts:
           - name: logs
             mountPath: "/logs"

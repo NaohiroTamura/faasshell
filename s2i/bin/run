@@ -14,5 +14,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
+proj=/opt/faasshell/lib
+export CLASSPATH=${proj}/kafka-clients-0.11.0.2.jar:${proj}/slf4j-api-1.7.25.jar:${proj}/slf4j-log4j12-1.7.25.jar:${proj}/log4j-1.2.17.jar
+export _JAVA_OPTIONS="-Dconfig.location=file -Dlog4j.configuration=file://${proj}/log4j.properties"
+
 cd /opt/faasshell
 swipl -q -l asl_svc.pl -g main -t halt

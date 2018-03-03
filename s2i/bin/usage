@@ -20,5 +20,11 @@ This is the faasshell S2I image:
 $ s2i build . s2i-swipl faasshell
 
 You can then run the resulting image via:
-$ docker run -it --rm -e \$(grep AUTH ~/.wskprops) -e \$(grep APIHOST ~/.wskprops) -p 8080:8080 -v /tmp:/logs faasshell
+$ docker run -d \
+      --net=host -v /tmp:/logs \
+      -e AWS_ACCESS_KEY_ID=\${AWS_ACCESS_KEY_ID} \
+      -e AWS_SECRET_ACCESS_KEY=\${AWS_SECRET_ACCESS_KEY} \
+      -e AZURE_HOSTKEY=\${AZURE_HOSTKEY} \
+      -e WSK_AUTH=\${WSK_AUTH} -e WSK_APIHOST=\${WSK_APIHOST} \
+      faasshell
 EOF

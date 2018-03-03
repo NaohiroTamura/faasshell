@@ -16,4 +16,5 @@
 #
 echo "---> Building and installing application from source..."
 
-mv /tmp/src/*.pl /opt/faasshell
+mv /tmp/src/src/*.pl /opt/faasshell
+mv /tmp/src/lib /opt/faasshell

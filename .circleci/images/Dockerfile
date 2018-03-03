@@ -46,4 +46,5 @@ RUN curl -L https://download.docker.com/linux/static/stable/x86_64/docker-17.12.
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod 0755 kubectl && mv kubectl /usr/local/bin
 ENV LANG C.UTF-8
 ENV LD_LIBRARY_PATH /usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/lib/amd64/server:/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/lib/amd64
+COPY http_ssl_plugin.pl /swipl/lib/swipl-7.5.15/library/http/http_ssl_plugin.pl
 CMD ["swipl"]

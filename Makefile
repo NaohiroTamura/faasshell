@@ -62,12 +62,21 @@ test_with_kafka:
 
 build_image:
 	@echo "create build image"
-	docker build -t s2i-swipl .
+	if [ -z $(HTTP_PROXY) -a -z $(HTTPS_PROXY) ]; \
+	then \
+		docker build -t s2i-swipl . ; \
+	else \
+		docker build -t s2i-swipl . \
+			 --build-arg HTTP_PROXY=$(HTTP_PROXY) \
+			 --build-arg http_proxy=$(HTTP_PROXY) \
+			 --build-arg HTTPS_PROXY=$(HTTPS_PROXY) \
+			 --build-arg https_proxy=$(HTTPS_PROXY); \
+	fi
 
 # make -e docker_image_prefix=myprefix/ -e docker_image_tag=:0.1 app_image
 app_image:
 	@echo "create application image"
-	s2i build src s2i-swipl $(docker_image_prefix)faasshell$(docker_image_tag)
+	s2i build . s2i-swipl $(docker_image_prefix)faasshell$(docker_image_tag)
 
 # make -e docker_image_prefix=myprefix/ -e docker_image_tag=:0.1 deploy
 deploy:
@@ -82,12 +91,27 @@ undeploy:
 # make -e docker_image_prefix=myprefix/ -e docker_image_tag=:0.1 run
 run:
 	@echo "run app_image in docker"
-	docker run -d \
-	           -e $$(grep APIHOST ~/.wskprops) \
-	           -e DB_AUTH=whisk_admin:some_passw0rd \
-	           -e DB_APIHOST=172.17.0.1:5984 \
-	           -p 8080:8080 -v /tmp:/logs \
-	           $(docker_image_prefix)faasshell$(docker_image_tag)
+	if [ -z $(HTTP_PROXY) -a -z $(HTTPS_PROXY) ]; \
+	then \
+		docker run -d \
+	           --net=host -v /tmp:/logs \
+	           -e AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) \
+	           -e AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) \
+	           -e AZURE_HOSTKEY=$(AZURE_HOSTKEY) \
+	           -e WSK_AUTH=$(WSK_AUTH) -e WSK_APIHOST=$(WSK_APIHOST) \
+	           $(docker_image_prefix)faasshell$(docker_image_tag) ; \
+	else \
+		docker run -d \
+	           --net=host -v /tmp:/logs \
+	           -e AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) \
+	           -e AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) \
+	           -e AZURE_HOSTKEY=$(AZURE_HOSTKEY) \
+	           -e WSK_AUTH=$(WSK_AUTH) -e WSK_APIHOST=$(WSK_APIHOST) \
+		   -e HTTP_PROXY=$(HTTP_PROXY) \
+		   -e HTTPS_PROXY=$(HTTPS_PROXY) \
+		   -e NO_PROXY=$(NO_PROXY) \
+	           $(docker_image_prefix)faasshell$(docker_image_tag) ; \
+	fi
 
 debug:
 	@echo "run asl_svc for debugging"
