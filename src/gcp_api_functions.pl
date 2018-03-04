@@ -44,11 +44,12 @@ faas:invoke(GRN, Options, Payload, Reply) :-
     atomic_list_concat(['https://', Region, '-', Project, '.', Domain,
                         '/', Function], URL),
     proxy_utils:http_proxy(URL, ProxyOptions),
-    GcpOptions = [ status_code(Code) %% , cert_verify_hook(cert_accept_any)
+    GcpOptions = [ status_code(_) %% , cert_verify_hook(cert_accept_any)
                    | ProxyOptions],
-    merge_options(GcpOptions, Options, MergedOptions),
+    merge_options(Options, GcpOptions, MergedOptions),
     json_utils:term_json_dict(Json, Payload),
     http_post(URL, json(Json), R1, MergedOptions),
+    option(status_code(Code), MergedOptions),
     ( Code = 200
       -> json_utils:term_json_dict(R1, Reply)
       ;  Reply = _{error: R1, cause: status_code(Code)}

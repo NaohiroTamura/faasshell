@@ -43,7 +43,7 @@ create_statemachine(ARN, Options, Request, Reply) :-
     atom_json_dict(Payload, Req1, []),
     aws_api_utils:aws_step_functions(
                           'CreateStateMachine', ARN, '', Payload, AwsOptions),
-    merge_options(AwsOptions, Options, MergedOptions),
+    merge_options(Options, AwsOptions, MergedOptions),
     option(url(URL), MergedOptions),
     http_post(URL, atom('application/x-amz-json-1.0', Payload), R1, MergedOptions),
     atom_json_dict(R1, Reply, []).
@@ -52,7 +52,7 @@ delete_statemachine(ARN, Options, Reply) :-
     format(string(Payload), '{"stateMachineArn": "~w"}', [ARN]),
     aws_api_utils:aws_step_functions(
                           'DeleteStateMachine', ARN, '', Payload, AwsOptions),
-    merge_options(AwsOptions, Options, MergedOptions),
+    merge_options(Options, AwsOptions, MergedOptions),
     option(url(URL), MergedOptions),
     http_post(URL, atom('application/x-amz-json-1.0', Payload), R1, MergedOptions),
     atom_json_dict(R1, Reply, []).
@@ -61,7 +61,7 @@ describe_statemachine(ARN, Options, Reply) :-
     format(string(Payload), '{"stateMachineArn": "~w"}', [ARN]),
     aws_api_utils:aws_step_functions(
                           'DescribeStateMachine', ARN, '', Payload, AwsOptions),
-    merge_options(AwsOptions, Options, MergedOptions),
+    merge_options(Options, AwsOptions, MergedOptions),
     option(url(URL), MergedOptions),
     http_post(URL, atom('application/x-amz-json-1.0', Payload), R1, MergedOptions),
     atom_json_dict(R1, Reply, []).
@@ -72,7 +72,7 @@ get_activity_task(ARN, Options, Reply) :-
            '{"activityArn": "~w", "workerName": "~w"}', [ARN, Name]),
     aws_api_utils:aws_step_functions(
                           'GetActivityTask', ARN, '', Payload, AwsOptions),
-    merge_options(AwsOptions, Options, MergedOptions),
+    merge_options(Options, AwsOptions, MergedOptions),
     option(url(URL), MergedOptions),
     http_post(URL, atom('application/x-amz-json-1.0', Payload), R1, MergedOptions),
     atom_json_dict(R1, Reply, []).
@@ -81,7 +81,7 @@ send_task_heartbeat(ARN, Options, Token, Reply) :-
     format(string(Payload), '{"taskToken": "~w"}', [Token]),
     aws_api_utils:aws_step_functions(
                           'SendTaskHeartbeat', ARN, '', Payload, AwsOptions),
-    merge_options(AwsOptions, Options, MergedOptions),
+    merge_options(Options, AwsOptions, MergedOptions),
     option(url(URL), MergedOptions),
     http_post(URL, atom('application/x-amz-json-1.0', Payload), R1, MergedOptions),
     atom_json_dict(R1, Reply, []).
@@ -90,7 +90,7 @@ send_task_success(ARN, Options, Request, Reply) :-
     atom_json_dict(Payload, Request, []),
     aws_api_utils:aws_step_functions(
                           'SendTaskSuccess', ARN, '', Payload, AwsOptions),
-    merge_options(AwsOptions, Options, MergedOptions),
+    merge_options(Options, AwsOptions, MergedOptions),
     option(url(URL), MergedOptions),
     http_post(URL, atom('application/x-amz-json-1.0', Payload), R1, MergedOptions),
     atom_json_dict(R1, Reply, []).
@@ -99,7 +99,7 @@ send_task_failure(ARN, Options, Request, Reply) :-
     atom_json_dict(Payload, Request, []),
     aws_api_utils:aws_step_functions(
                           'SendTaskFailure', ARN, '', Payload, AwsOptions),
-    merge_options(AwsOptions, Options, MergedOptions),
+    merge_options(Options, AwsOptions, MergedOptions),
     option(url(URL), MergedOptions),
     http_post(URL, atom('application/x-amz-json-1.0', Payload), R1, MergedOptions),
     atom_json_dict(R1, Reply, []).
@@ -111,7 +111,7 @@ start_execution(ARN, Options, Input, Reply) :-
            [ARN, InputString]),
     aws_api_utils:aws_step_functions(
                           'StartExecution', ARN, '', Payload, AwsOptions),
-    merge_options(AwsOptions, Options, MergedOptions),
+    merge_options(Options, AwsOptions, MergedOptions),
     option(url(URL), MergedOptions),
     http_post(URL, atom('application/x-amz-json-1.0', Payload), R1, MergedOptions),
     atom_json_dict(R1, Reply, []).
@@ -120,7 +120,7 @@ stop_execution(ARN, Options, Request, Reply) :-
     atom_json_dict(Payload, Request, []),
     aws_api_utils:aws_step_functions(
                           'StopExecution', ARN, '', Payload, AwsOptions),
-    merge_options(AwsOptions, Options, MergedOptions),
+    merge_options(Options, AwsOptions, MergedOptions),
     option(url(URL), MergedOptions),
     http_post(URL, atom('application/x-amz-json-1.0', Payload), R1, MergedOptions),
     atom_json_dict(R1, Reply, []).

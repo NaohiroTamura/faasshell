@@ -61,6 +61,13 @@ test(https_ip, (PROTOCOL, HOST, PORT) = (https, '12.34.56.78', 443)) :-
     option(api_host(HOST), Options),
     option(port(PORT), Options).
 
+test(https_ip, (PROTOCOL, HOST, PORT) = (https, 'openwhisk.ng.bluemix.net', 443)) :-
+    setenv('WSK_APIHOST', "openwhisk.ng.bluemix.net"),
+    openwhisk(Options),
+    option(protocol(PROTOCOL), Options),
+    option(api_host(HOST), Options),
+    option(port(PORT), Options).
+
 :- end_tests(options).
 
 :- begin_tests(api_url).

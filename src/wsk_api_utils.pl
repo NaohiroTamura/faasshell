@@ -35,7 +35,9 @@ openwhisk(Options) :-
       ;  throw(existence_error(getenv, 'WSK_AUTH'))
     ),
     ( getenv('WSK_APIHOST', APIHOST)
-      -> ( re_match("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$", APIHOST)
+      -> ( ( APIHOST = 'openwhisk.ng.bluemix.net'
+           ; re_match("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$", APIHOST)
+           )
            -> PROTOCOL = https,
               HOST = APIHOST,
               PORT = 443

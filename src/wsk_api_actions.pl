@@ -61,14 +61,14 @@ wsk_list(WRN, Options, Reply) :-
     atom(WRN), !,
     atomic_list_concat([wsk, Action], ':', WRN),
     wsk_api_utils:openwhisk(WskOptions),
-    merge_options(WskOptions, Options, MergedOptions),
+    merge_options(Options, WskOptions, MergedOptions),
     wsk_url(get, Action, MergedOptions, [], URL),
     http_get(URL, R1, MergedOptions),
     json_utils:term_json_dict(R1, Reply).
 
 create(Action, Options, Payload, Reply) :-
     wsk_api_utils:openwhisk(WskOptions),
-    merge_options(WskOptions, Options, MergedOptions),
+    merge_options(Options, WskOptions, MergedOptions),
     wsk_url(put, Action, MergedOptions, [], URL),
     json_utils:term_json_dict(Json, Payload),
     http_put(URL, json(Json), R1, MergedOptions),
@@ -76,7 +76,7 @@ create(Action, Options, Payload, Reply) :-
 
 update(Action, Options, Payload, Reply) :-
     wsk_api_utils:openwhisk(WskOptions),
-    merge_options(WskOptions, Options, MergedOptions),
+    merge_options(Options, WskOptions, MergedOptions),
     wsk_url(put, Action, MergedOptions, [overwrite=true], URL),
     json_utils:term_json_dict(Json, Payload),
     http_put(URL, json(Json), R1, MergedOptions),
@@ -85,7 +85,7 @@ update(Action, Options, Payload, Reply) :-
 faas:invoke(WRN, Options, Payload, Reply) :-
     atomic_list_concat([wsk, Action], ':', WRN), !,
     wsk_api_utils:openwhisk(WskOptions),
-    merge_options(WskOptions, Options, MergedOptions),
+    merge_options(Options, WskOptions, MergedOptions),
     %% writeln(wsk(invoke(Action))),
     wsk_url(post, Action, MergedOptions, [blocking=true,result=true], URL),
     json_utils:term_json_dict(Json, Payload),
@@ -99,7 +99,7 @@ faas:invoke(WRN, Options, Payload, Reply) :-
 
 delete(Action, Options, Reply) :-
     wsk_api_utils:openwhisk(WskOptions),
-    merge_options(WskOptions, Options, MergedOptions),
+    merge_options(Options, WskOptions, MergedOptions),
     wsk_url(delete, Action, MergedOptions, [], URL),
     http_delete(URL, R1, MergedOptions),
     json_utils:term_json_dict(R1, Reply).

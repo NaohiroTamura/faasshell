@@ -47,7 +47,7 @@ aws_list(ARN, Options, Reply) :-
     atom(ARN), !,
     atomic_list_concat([arn, aws, lambda |_ ], ':', ARN),
     aws_api_utils:aws_lambda(list, ARN, '', '', AwsOptions),
-    merge_options(AwsOptions, Options, MergedOptions),
+    merge_options(Options, AwsOptions, MergedOptions),
     option(url(URL), MergedOptions),
     http_get(URL, R1, MergedOptions),
     json_utils:term_json_dict(R1, Reply).
@@ -57,7 +57,7 @@ faas:invoke(ARN, Options, Payload, Reply) :-
     %% writeln(aws(invoke(ARN))),
     atom_json_dict(PayloadText, Payload, []),
     aws_api_utils:aws_lambda(invoke, ARN, '', PayloadText, AwsOptions),
-    merge_options(AwsOptions, Options, MergedOptions),
+    merge_options(Options, AwsOptions, MergedOptions),
     option(url(URL), MergedOptions),
     http_post(URL, atom('application/json', PayloadText), R1, MergedOptions),
     ( atomic(R1)
@@ -77,10 +77,10 @@ custom_error(In, Out) :-
 
 delete(ARN, Options, Reply) :-
     aws_api_utils:aws_lambda(delete, ARN, '', '', AwsOptions),
-    merge_options(AwsOptions, Options, MergedOptions),
-    option(status_code(Code), MergedOptions),
+    merge_options(Options, AwsOptions, MergedOptions),
     option(url(URL), MergedOptions),
     http_delete(URL, R1, MergedOptions),
+    option(status_code(Code), MergedOptions),
     ( Code = 204
       -> Reply = _{output: ok, status: Code}
       ;  json_utils:term_json_dict(R1, Reply)

@@ -48,11 +48,12 @@ faas:invoke(MRN, Options, Payload, Reply) :-
     atomic_list_concat(['https://', Project, '.', Domain, '/api/', Function,
                         '?code=', HostKey], URL),
     proxy_utils:http_proxy(URL, ProxyOptions),
-    AzureOptions = [ status_code(Code) %%, cert_verify_hook(cert_accept_any)
+    AzureOptions = [ status_code(_) %%, cert_verify_hook(cert_accept_any)
                      | ProxyOptions],
-    merge_options(AzureOptions, Options, MergedOptions),
+    merge_options(Options, AzureOptions, MergedOptions),
     json_utils:term_json_dict(Json, Payload),
     http_post(URL, json(Json), R1, MergedOptions),
+    option(status_code(Code), MergedOptions),
     ( Code = 200
       -> json_utils:term_json_dict(R1, Reply)
       ;  Reply = _{error: R1, cause: status_code(Code)}

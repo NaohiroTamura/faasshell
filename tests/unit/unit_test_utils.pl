@@ -38,19 +38,22 @@ update_action(Action, File, Kind, Container) :-
                  name: Action,
                  exec: _{ kind: Kind,
                           code: Code
-                        }
+                        },
+                 limits: _{ timeout: 60000,
+                            memory: 128,
+                            logs: 5
+                          }
                },
     ( option(image(Image), Container)
       -> PayloadOpt = Payload.put(exec/image, Image)
       ;  PayloadOpt = Payload
     ),
-    catch( wsk_api_actions:update(Action, [], PayloadOpt, R),
-           E,
-           ( print_message(error,
-                           format("failed update '~w' : ~w : ~w.",
-                                  [Action, E, R]))
-           )
-         ).
+    wsk_api_actions:update(Action, [status_code(StatusCode)], PayloadOpt, R),
+    ( StatusCode == 200
+      -> true
+      ;  print_message(error, format("failed update '~w' : ~w : ~w.",
+                                     [Action, StatusCode, R]))
+    ).
 
 %%
 faas_test_setup :-

@@ -76,7 +76,7 @@ test(scenarios) :-
     assertion(R5 = _{payload: "Hello, World!"}),
 
     %% 6. invoke_ns_hello_with_no_param
-    wsk_api_actions:faas:invoke('wsk:/guest/hello', [], _{}, R6),
+    wsk_api_actions:faas:invoke('wsk:/_/hello', [], _{}, R6),
     assertion(R6 = _{payload: "Hello, World!"}),
 
     %% 7. invoke_hello_param,
