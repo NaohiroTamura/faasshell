@@ -41,7 +41,7 @@ update_action(Action, File, Kind, Container) :-
                         }
                },
     ( option(image(Image), Container)
-      -> PayloadOpt = Payload.exec.put(_{image: Image})
+      -> PayloadOpt = Payload.put(exec/image, Image)
       ;  PayloadOpt = Payload
     ),
     catch( wsk_api_actions:update(Action, [], PayloadOpt, R),
