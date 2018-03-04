@@ -32,7 +32,7 @@
 :- begin_tests(hello_world_task,
                [setup((faasshell_api_host(Host), faasshell_api_key(ID-PW),
                        string_concat(Host,
-                                     '/statemachine/hello_world_task_asl.json',
+                                     '/statemachine/hello_world_task.json',
                                      URL),
                        http_delete(URL, _Data, [authorization(basic(ID, PW)),
                                                 status_code(_Code)])))]).
@@ -45,30 +45,30 @@ test(auth_error, Code = 401) :-
     assertion(_{error: "Authentication Failure"} = Dict).
 
 test(put_create, Code = 200) :-
-    load_json('samples/wsk/asl/hello_world_task_asl.json', Term),
+    load_json('samples/wsk/asl/hello_world_task.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
+    string_concat(Host, '/statemachine/hello_world_task.json', URL),
     http_put(URL, json(Term), Data,
              [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{output: "ok", name: "hello_world_task_asl.json",
+    assertion(_{output: "ok", name: "hello_world_task.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/wsk/asl/hello_world_task_asl.json', Term),
+    load_json('samples/wsk/asl/hello_world_task.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/hello_world_task_asl.json?overwrite=true',
+    string_concat(Host, '/statemachine/hello_world_task.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
              [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{output: "ok", name: "hello_world_task_asl.json",
+    assertion(_{output: "ok", name: "hello_world_task.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
 
 test(put_overwrite_false, Code = 409) :-
-    load_json('samples/wsk/asl/hello_world_task_asl.json', Term),
+    load_json('samples/wsk/asl/hello_world_task.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/hello_world_task_asl.json?overwrite=false',
+    string_concat(Host, '/statemachine/hello_world_task.json?overwrite=false',
                   URL),
     http_put(URL, json(Term), Data,
              [authorization(basic(ID, PW)), status_code(Code)]),
@@ -77,10 +77,10 @@ test(put_overwrite_false, Code = 409) :-
 
 test(get, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
+    string_concat(Host, '/statemachine/hello_world_task.json', URL),
     http_get(URL, Data, [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{output: "ok", name: "hello_world_task_asl.json",
+    assertion(_{output: "ok", name: "hello_world_task.json",
                 namespace: "demo", dsl: _, asl: _} :< Dict).
 
 test(get_view, Code = 200) :-
@@ -99,7 +99,7 @@ test(get_not_exit, Code = 404) :-
 
 test(post, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/hello_world_task_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/hello_world_task.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{name: "Statemachine"}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -109,7 +109,7 @@ test(post, Code = 200) :-
 
 test(post_empty_input, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/hello_world_task_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/hello_world_task.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -119,7 +119,7 @@ test(post_empty_input, Code = 200) :-
 
 test(post_no_input, Code = 400) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/hello_world_task_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/hello_world_task.json?blocking=true', URL),
     term_json_dict(Json, _{}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -128,7 +128,7 @@ test(post_no_input, Code = 400) :-
 
 test(patch, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
+    string_concat(Host, '/statemachine/hello_world_task.json', URL),
     http_patch(URL, atom(''), Data,
                [authorization(basic(ID, PW)), status_code(Code)]),
     split_string(Data, "\n", "", [Output|_]),
@@ -136,7 +136,7 @@ test(patch, Code = 200) :-
 
 test(delete, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
+    string_concat(Host, '/statemachine/hello_world_task.json', URL),
     http_delete(URL, Data, [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{output: "ok"} :< Dict).
@@ -156,9 +156,9 @@ test(delete_not_exist, Code = 404) :-
 test(scenario) :-
     %% 1. setup
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/job_status_poller_asl.json', URL),
+    string_concat(Host, '/statemachine/job_status_poller.json', URL),
     string_concat(URL, '?overwrite=true', URL1),
-    load_json('samples/wsk/asl/job_status_poller_asl.json', Term),
+    load_json('samples/wsk/asl/job_status_poller.json', Term),
     http_put(URL1, json(Term), _Data1,
              [authorization(basic(ID, PW)), status_code(Code1)]),
     assertion(Code1 = 200),
@@ -191,36 +191,36 @@ test(scenario) :-
 
 
 %%
-:- begin_tests(has_dupes_asl).
+:- begin_tests(has_dupes).
 
 test(put_create, Code = 500) :-
-    load_json('samples/wsk/asl/has-dupes_asl.json', Term),
+    load_json('samples/wsk/asl/has-dupes.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/has-dupes_asl.json', URL),
+    string_concat(Host, '/statemachine/has-dupes.json', URL),
     http_put(URL, json(Term), Data,
              [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{error:"syntax error", reason: _} = Dict).
 
-:- end_tests(has_dupes_asl).
+:- end_tests(has_dupes).
 
 %%
 :- begin_tests(choice_state).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/wsk/asl/choice_state_asl.json', Term),
+    load_json('samples/wsk/asl/choice_state.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/choice_state_asl.json?overwrite=true',
+    string_concat(Host, '/statemachine/choice_state.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
              [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{output: "ok", name: "choice_state_asl.json",
+    assertion(_{output: "ok", name: "choice_state.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
 
 test(first_state, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/choice_state_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/choice_state.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{foo: 1}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -230,7 +230,7 @@ test(first_state, Code = 200) :-
 
 test(second_state, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/choice_state_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/choice_state.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{foo: 2}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -240,7 +240,7 @@ test(second_state, Code = 200) :-
 
 test(default_state, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/choice_state_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/choice_state.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{foo: 3}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -254,19 +254,19 @@ test(default_state, Code = 200) :-
 :- begin_tests(choicex_state).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/wsk/asl/choicex_state_asl.json', Term),
+    load_json('samples/wsk/asl/choicex_state.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/choicex_state_asl.json?overwrite=true',
+    string_concat(Host, '/statemachine/choicex_state.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
              [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{output: "ok", name: "choicex_state_asl.json",
+    assertion(_{output: "ok", name: "choicex_state.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
 
 test(public_state, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/choicex_state_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/choicex_state.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{type: "Public"}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -276,7 +276,7 @@ test(public_state, Code = 200) :-
 
 test(value_is_zero_state, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/choicex_state_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/choicex_state.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{type:"Private", value:0}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -288,7 +288,7 @@ test(value_is_zero_state, Code = 200) :-
 
 test(value_in_twenties_state, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/choicex_state_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/choicex_state.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{type:"Private", value:25}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -300,7 +300,7 @@ test(value_in_twenties_state, Code = 200) :-
 
 test(default_state, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/choicex_state_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/choicex_state.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{type:"Private", value:35}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -315,19 +315,19 @@ test(default_state, Code = 200) :-
 :- begin_tests(wait_state).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/wsk/asl/wait_state_asl.json', Term),
+    load_json('samples/wsk/asl/wait_state.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/wait_state_asl.json?overwrite=true',
+    string_concat(Host, '/statemachine/wait_state.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
              [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{output: "ok", name: "wait_state_asl.json",
+    assertion(_{output: "ok", name: "wait_state.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
 
 test(wait_state, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/wait_state_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/wait_state.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{name: "Lambda",
                                     expirydate: "2017-09-04T01:59:00Z",
                                     expiryseconds: 1}}),
@@ -347,19 +347,19 @@ test(wait_state, Code = 200) :-
 :- begin_tests(parallel).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/wsk/asl/parallel_asl.json', Term),
+    load_json('samples/wsk/asl/parallel.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/parallel_asl.json?overwrite=true',
+    string_concat(Host, '/statemachine/parallel.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
              [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{output: "ok", name: "parallel_asl.json",
+    assertion(_{output: "ok", name: "parallel.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
 
 test(wait_state, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/parallel_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/parallel.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{var:1}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -373,19 +373,19 @@ test(wait_state, Code = 200) :-
 :- begin_tests(pass_state).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/wsk/asl/hello_world_asl.json', Term),
+    load_json('samples/wsk/asl/hello_world.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/hello_world_asl.json?overwrite=true',
+    string_concat(Host, '/statemachine/hello_world.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
              [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{output: "ok", name: "hello_world_asl.json",
+    assertion(_{output: "ok", name: "hello_world.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
 
 test(hello_world, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/hello_world_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/hello_world.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -399,19 +399,19 @@ test(hello_world, Code = 200) :-
 :- begin_tests(catch_failure).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/wsk/asl/catch_failure_asl.json', Term),
+    load_json('samples/wsk/asl/catch_failure.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/catch_failure_asl.json?overwrite=true',
+    string_concat(Host, '/statemachine/catch_failure.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
              [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{output: "ok", name: "catch_failure_asl.json",
+    assertion(_{output: "ok", name: "catch_failure.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
 
 test(custom_error, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/catch_failure_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/catch_failure.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -421,7 +421,7 @@ test(custom_error, Code = 200) :-
 
 test(reserved_type, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/catch_failure_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/catch_failure.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{error: "new Error('Created dynamically!')"}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -436,19 +436,19 @@ test(reserved_type, Code = 200) :-
 :- begin_tests(retry_failure).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/wsk/asl/retry_failure_asl.json', Term),
+    load_json('samples/wsk/asl/retry_failure.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/retry_failure_asl.json?overwrite=true',
+    string_concat(Host, '/statemachine/retry_failure.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
              [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{output: "ok", name: "retry_failure_asl.json",
+    assertion(_{output: "ok", name: "retry_failure.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
 
 test(custom_error, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/retry_failure_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/retry_failure.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -458,7 +458,7 @@ test(custom_error, Code = 200) :-
 
 test(reserved_type, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/retry_failure_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/retry_failure.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{error: "new Error('Created dynamically!')"}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -473,19 +473,19 @@ test(reserved_type, Code = 200) :-
 :- begin_tests(task_timer).
 
 test(put_overwrite_true, Code = 200) :-
-    load_json('samples/wsk/asl/task_timer_asl.json', Term),
+    load_json('samples/wsk/asl/task_timer.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/task_timer_asl.json?overwrite=true',
+    string_concat(Host, '/statemachine/task_timer.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
              [authorization(basic(ID, PW)), status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{output: "ok", name: "task_timer_asl.json",
+    assertion(_{output: "ok", name: "task_timer.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
 
 test(succeeded, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/task_timer_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/task_timer.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{timer_seconds:1, status: "Sent"}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),
@@ -496,7 +496,7 @@ test(succeeded, Code = 200) :-
 
 test(failed, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/task_timer_asl.json?blocking=true', URL),
+    string_concat(Host, '/statemachine/task_timer.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{timer_seconds:1, status:"ERROR"}}),
     http_post(URL, json(Json), Data,
               [authorization(basic(ID, PW)), status_code(Code)]),

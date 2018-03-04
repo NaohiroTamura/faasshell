@@ -62,15 +62,15 @@ test_with_kafka:
 
 build_image:
 	@echo "create build image"
-	if [ -z $(HTTP_PROXY) -a -z $(HTTPS_PROXY) ]; \
+	if [ -v $(HTTP_PROXY) -a -v $(HTTPS_PROXY) ]; \
 	then \
-		docker build -t s2i-swipl . ; \
-	else \
 		docker build -t s2i-swipl . \
 			 --build-arg HTTP_PROXY=$(HTTP_PROXY) \
 			 --build-arg http_proxy=$(HTTP_PROXY) \
 			 --build-arg HTTPS_PROXY=$(HTTPS_PROXY) \
 			 --build-arg https_proxy=$(HTTPS_PROXY); \
+	else \
+		docker build -t s2i-swipl . ; \
 	fi
 
 # make -e docker_image_prefix=myprefix/ -e docker_image_tag=:0.1 app_image
@@ -82,7 +82,12 @@ app_image:
 deploy:
 	@echo "deploy app_image to kubernetes"
 	docker push  $(docker_image_prefix)faasshell$(docker_image_tag)
-	envsubst < faasshell.yml | kubectl apply -f -
+	if [ -v $(HTTP_PROXY) -a -v $(HTTPS_PROXY) ]; \
+	then \
+		envsubst < faasshell-proxy.yml | kubectl apply -f - ; \
+	esle \
+		envsubst < faasshell.yml | kubectl apply -f - ; \
+	fi
 
 undeploy:
 	@echo "undeploy app_image from kubernetes"
@@ -91,16 +96,8 @@ undeploy:
 # make -e docker_image_prefix=myprefix/ -e docker_image_tag=:0.1 run
 run:
 	@echo "run app_image in docker"
-	if [ -z $(HTTP_PROXY) -a -z $(HTTPS_PROXY) ]; \
+	if [ -v $(HTTP_PROXY) -a -v $(HTTPS_PROXY) ]; \
 	then \
-		docker run -d \
-	           --net=host -v /tmp:/logs \
-	           -e AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) \
-	           -e AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) \
-	           -e AZURE_HOSTKEY=$(AZURE_HOSTKEY) \
-	           -e WSK_AUTH=$(WSK_AUTH) -e WSK_APIHOST=$(WSK_APIHOST) \
-	           $(docker_image_prefix)faasshell$(docker_image_tag) ; \
-	else \
 		docker run -d \
 	           --net=host -v /tmp:/logs \
 	           -e AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) \
@@ -110,6 +107,14 @@ run:
 		   -e HTTP_PROXY=$(HTTP_PROXY) \
 		   -e HTTPS_PROXY=$(HTTPS_PROXY) \
 		   -e NO_PROXY=$(NO_PROXY) \
+	           $(docker_image_prefix)faasshell$(docker_image_tag) ; \
+	else \
+		docker run -d \
+	           --net=host -v /tmp:/logs \
+	           -e AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) \
+	           -e AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) \
+	           -e AZURE_HOSTKEY=$(AZURE_HOSTKEY) \
+	           -e WSK_AUTH=$(WSK_AUTH) -e WSK_APIHOST=$(WSK_APIHOST) \
 	           $(docker_image_prefix)faasshell$(docker_image_tag) ; \
 	fi
 

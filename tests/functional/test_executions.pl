@@ -32,9 +32,9 @@
 :- begin_tests(executions, []).
 
 test(background) :-
-    load_json('samples/wsk/asl/hello_world_task_asl.json', Term),
+    load_json('samples/wsk/asl/hello_world_task.json', Term),
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
-    string_concat(Host, '/statemachine/hello_world_task_asl.json', URL),
+    string_concat(Host, '/statemachine/hello_world_task.json', URL),
     string_concat(URL, '?overwrite=true', URL1),
     http_put(URL1, json(Term), _Data1,
              [authorization(basic(ID, PW)), status_code(Code1)]),
@@ -63,7 +63,7 @@ test(background) :-
                     output: _{payload: "Hello, Background!"}
                   },
          start: _,
-         statemachine: "hello_world_task_asl.json"
+         statemachine: "hello_world_task.json"
        }  :< Dict3).
 
 test(executionlist, Code = 200) :-
