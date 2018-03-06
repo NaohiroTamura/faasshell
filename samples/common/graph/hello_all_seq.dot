@@ -1,0 +1,8 @@
+digraph graph_name {
+     "Start" -> "HelloAWS" ;
+     "HelloAWS" -> "HelloGCP" ;
+     "HelloGCP" -> "HelloAzure" ;
+     "HelloAzure" -> "HelloBluemix" ;
+     "HelloBluemix" -> "End" ;
+}
+

@@ -1,0 +1,30 @@
+{
+    "Comment": "A Hello World example of the Amazon States Language using a Task state",
+    "StartAt": "HelloAWS",
+    "States": {
+        "HelloAWS": {
+            "Type": "Task",
+            "Resource":"arn:aws:lambda:us-east-2:410388484666:function:hello", 
+            "ResultPath": "$.aws",
+            "Next": "HelloGCP"
+        },
+       "HelloGCP": {
+            "Type": "Task",
+            "Resource":"grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello",
+            "ResultPath": "$.gcp",
+            "Next": "HelloAzure"
+        },
+        "HelloAzure": {
+            "Type": "Task",
+            "Resource":"mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello",
+            "ResultPath": "$.azure",
+            "Next": "HelloBluemix"
+        },
+        "HelloBluemix": {
+            "Type": "Task",
+            "Resource": "wsk:hello",
+            "ResultPath": "$.bluemix",
+            "End": true
+        }
+    }
+}

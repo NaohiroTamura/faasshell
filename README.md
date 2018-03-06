@@ -192,3 +192,8 @@ sub-directory based on the following State Machine Template.
 - Choice state
 - Job Status Poller
 - Task Timer
+
+## [Demo](samples/demo.md)
+
+This demonstrates that one state machine calls hello function of each
+FaaS provider in sequential or in parallel.

@@ -1,0 +1,56 @@
+{
+    "Comment": "A Hello World example of the Amazon States Language using a Task state",
+    "StartAt": "Parallel",
+    "States": {
+        "Parallel": {
+            "Type": "Parallel",
+            "Next": "Final State",
+            "Branches": [
+                {
+                    "StartAt": "HelloAWS",
+                    "States": {
+                        "HelloAWS": {
+                            "Type": "Task",
+                            "Resource":"arn:aws:lambda:us-east-2:410388484666:function:hello",
+                            "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "HelloGCP",
+                    "States": {
+                        "HelloGCP": {
+                            "Type": "Task",
+                            "Resource":"grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello",
+                            "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "HelloAzure",
+                    "States": {
+                        "HelloAzure": {
+                            "Type": "Task",
+                            "Resource":"mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello",
+                            "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "HelloBluemix",
+                    "States": {
+                        "HelloBluemix": {
+                            "Type": "Task",
+                            "Resource": "wsk:hello",
+                            "End": true
+                        }
+                    }
+                }
+            ]
+        },
+        "Final State": {
+            "Type": "Pass",
+            "End": true
+        }
+    }
+}
