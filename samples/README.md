@@ -101,7 +101,18 @@ ubuntu@trusty:~/faasshell[master]$ kubectl create namespace faasshell
 ubuntu@trusty:~/faasshell[master]$ kubectl -n faasshell run couchdb --image=apache/couchdb
 
 ubuntu@trusty:~/faasshell[master]$ kubectl -n faasshell expose deployment couchdb --port=5984
+```
 
+  > In case of proxy environment:
+  >
+  > ```sh
+  > ubuntu@trusty:~/faasshell[master]$ kubectl -n faasshell get service | grep couchdb | awk '{print $3}'
+  > 10.101.62.31
+  >
+  > ubuntu@trusty:~/faasshell[master]$ export NO_PROXY=$NO_PROXY,10.101.62.31
+  > ```
+
+```sh
 ubuntu@trusty:~/faasshell[master]$ make -e docker_image_prefix=my_prefix/ deploy
 
 ubuntu@trusty:~/faasshell[master]$ kubectl -n faasshell describe service faasshell | grep http | grep NodePort| awk '{print $3}' | cut -d'/' -f1

@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
+SHELL:=/bin/bash
 
 docker_image_prefix =
 docker_image_tag = :latest
@@ -64,13 +65,13 @@ build_image:
 	@echo "create build image"
 	if [ -v $(HTTP_PROXY) -a -v $(HTTPS_PROXY) ]; \
 	then \
+		docker build -t s2i-swipl . ; \
+	else \
 		docker build -t s2i-swipl . \
 			 --build-arg HTTP_PROXY=$(HTTP_PROXY) \
 			 --build-arg http_proxy=$(HTTP_PROXY) \
 			 --build-arg HTTPS_PROXY=$(HTTPS_PROXY) \
-			 --build-arg https_proxy=$(HTTPS_PROXY); \
-	else \
-		docker build -t s2i-swipl . ; \
+			 --build-arg https_proxy=$(HTTPS_PROXY) ; \
 	fi
 
 # make -e docker_image_prefix=myprefix/ -e docker_image_tag=:0.1 app_image
@@ -79,15 +80,17 @@ app_image:
 	s2i build . s2i-swipl $(docker_image_prefix)faasshell$(docker_image_tag)
 
 # make -e docker_image_prefix=myprefix/ -e docker_image_tag=:0.1 deploy
+ifdef HTTP_PROXY
+    ifdef HTTPS_PROXY
+        faasshell_deployment = faasshell-proxy.yml
+    endif
+else
+    faasshell_deployment = faasshell.yml
+endif
 deploy:
 	@echo "deploy app_image to kubernetes"
 	docker push  $(docker_image_prefix)faasshell$(docker_image_tag)
-	if [ -v $(HTTP_PROXY) -a -v $(HTTPS_PROXY) ]; \
-	then \
-		envsubst < faasshell-proxy.yml | kubectl apply -f - ; \
-	esle \
-		envsubst < faasshell.yml | kubectl apply -f - ; \
-	fi
+	envsubst < $(faasshell_deployment) | kubectl apply -f -
 
 undeploy:
 	@echo "undeploy app_image from kubernetes"
@@ -104,9 +107,6 @@ run:
 	           -e AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) \
 	           -e AZURE_HOSTKEY=$(AZURE_HOSTKEY) \
 	           -e WSK_AUTH=$(WSK_AUTH) -e WSK_APIHOST=$(WSK_APIHOST) \
-		   -e HTTP_PROXY=$(HTTP_PROXY) \
-		   -e HTTPS_PROXY=$(HTTPS_PROXY) \
-		   -e NO_PROXY=$(NO_PROXY) \
 	           $(docker_image_prefix)faasshell$(docker_image_tag) ; \
 	else \
 		docker run -d \
@@ -115,6 +115,9 @@ run:
 	           -e AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) \
 	           -e AZURE_HOSTKEY=$(AZURE_HOSTKEY) \
 	           -e WSK_AUTH=$(WSK_AUTH) -e WSK_APIHOST=$(WSK_APIHOST) \
+		   -e HTTP_PROXY=$(HTTP_PROXY) \
+		   -e HTTPS_PROXY=$(HTTPS_PROXY) \
+		   -e NO_PROXY=$(NO_PROXY) \
 	           $(docker_image_prefix)faasshell$(docker_image_tag) ; \
 	fi
 
