@@ -80,7 +80,7 @@ source file: [samples/common/asl/hello_all_par.json](/samples/common/asl/hello_a
 $ curl -sX PUT ${FAASSHELL_APIHOST}/statemachine/hello_all_par.json?overwrite=true \
   -H 'Content-Type: application/json' -d @samples/common/asl/hello_all_par.json \
   -u $DEMO | jq .dsl -
-  "asl([parallel('Parallel',branches([[task('HelloAWS',\"arn:aws:lambda:us-east-2:410388484666:function:hello\",[])],[task('HelloGCP',\"grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello\",[])],[task('HelloAzure',\"mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello\",[])],[task('HelloBluemix',\"wsk:hello\",[])]]),[]),pass('Final State',[])])"
+  "asl([parallel('Parallel',branches([[task('HelloAWS',\"arn:aws:lambda:us-east-2:410388484666:function:hello\",[result_path('$.par.aws'),output_path('$.par')])],[task('HelloGCP',\"grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello\",[result_path('$.par.gcp'),output_path('$.par')])],[task('HelloAzure',\"mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello\",[result_path('$.par.azure'),output_path('$.par')])],[task('HelloBluemix',\"wsk:hello\",[result_path('$.par.bluemix'),output_path('$.par')])]]),[]),pass('Final State',[])])"
 ```
 
 ```sh
@@ -88,17 +88,25 @@ $ curl -sX POST ${FAASSHELL_APIHOST}/statemachine/hello_all_par.json?blocking=tr
   -H 'Content-Type: application/json' -d '{"input": {"name": "Parallel FaaS Shell"}}' \
   -u $DEMO  | jq .output -
 [
-  {
-      "payload": "Hello, Parallel FaaS Shell!"
-  },
-  {
-      "payload": "Hello, Parallel FaaS Shell!"
-  },
-  {
-      "payload": "Hello, Parallel FaaS Shell!"
-  },
-  {
-      "payload": "Hello, Parallel FaaS Shell!"
-  }
+    {
+        "aws": {
+            "payload": "Hello, Parallel FaaS Shell!"
+        }
+    },
+    {
+        "gcp": {
+            "payload": "Hello, Parallel FaaS Shell!"
+        }
+    },
+    {
+        "azure": {
+            "payload": "Hello, Parallel FaaS Shell!"
+        }
+    },
+    {
+        "bluemix": {
+            "payload": "Hello, Parallel FaaS Shell!"
+        }
+    }
 ]
 ```

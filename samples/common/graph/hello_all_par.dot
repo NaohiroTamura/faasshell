@@ -1,14 +1,12 @@
 digraph graph_name {
      "Start" -> "Parallel" ;
      "Parallel" -> "HelloAWS" ;
-     "HelloAWS" -> "End" ;
+     "HelloAWS" -> "Final State" ;
      "Parallel" -> "HelloGCP" ;
-     "HelloGCP" -> "End" ;
+     "HelloGCP" -> "Final State" ;
      "Parallel" -> "HelloAzure" ;
-     "HelloAzure" -> "End" ;
+     "HelloAzure" -> "Final State" ;
      "Parallel" -> "HelloBluemix" ;
-     "HelloBluemix" -> "End" ;
-     "Parallel" -> "Final State" ;
+     "HelloBluemix" -> "Final State" ;
      "Final State" -> "End" ;
 }
-

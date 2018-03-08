@@ -1,0 +1,10 @@
+asl([parallel('Parallel',
+              branches([[task('HelloT1',"wsk:hello",
+                              [result_path('$.par.task1'),output_path('$.par')])],
+                        [task('HelloT2',"wsk:hello",
+                              [result_path('$.par.task2'),output_path('$.par')])],
+                        [task('HelloT3',"wsk:hello",
+                              [result_path('$.par.task3'),output_path('$.par')])],
+                        [task('HelloT4',"wsk:hello",
+                              [result_path('$.par.task4'),output_path('$.par')])]]),[]),
+     pass('Final State',[])]).

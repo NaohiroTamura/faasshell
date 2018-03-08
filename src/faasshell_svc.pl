@@ -38,7 +38,7 @@
 :- use_module(library(http/http_client)).
 :- use_module(library(http/html_write)).
 :- use_module(library(http/http_authenticate)).
-%% :- use_module(library(http/http_error)). % should be removed in puroduction
+:- use_module(library(http/http_error)). % should be removed in puroduction
 
 /*******************************
  *   PLUGIN FOR FaaS API       *
@@ -297,11 +297,16 @@ statemachine(put, Request) :-
 %% $ curl -sX POST localhost:8080/statemachine/{statemachine} \
 %%        -H 'Content-Type: application/json' -d '{"input":{"arg":1}}'
 statemachine(post, Request) :-
-    ( http_read_json_dict(Request, Params, []); Params = _{input:_{}} ),
+    ( http_read_json_dict(Request, Params, [])
+      -> true
+      ;  Params = _{input:_{}}
+    ),
     http_log('~w~n', [params(Params)]),
-    ( get_dict(input, Params, Input);
-      http_header:status_number(bad_request, S_400),
-      throw((_{error:'Missing input key in params'}, S_400))),
+    ( get_dict(input, Params, Input)
+      -> true
+      ;  http_header:status_number(bad_request, S_400),
+         throw((_{error:'Missing input key in params'}, S_400))
+    ),
     ( memberchk(path_info(File), Request),
       option(faasshell_auth(NS), Request)
       -> atomics_to_string([NS, "/", File], NSFile),
@@ -448,11 +453,16 @@ shell(put, Request) :-
 %% $ curl -sX POST localhost:8080/shell/{shell.dsl} \
 %%        -H 'Content-Type: application/json' -d '{"input":{"arg":1}}'
 shell(post, Request) :-
-    ( http_read_json_dict(Request, Params, []); Params = _{input:_{}} ),
+    ( http_read_json_dict(Request, Params, [])
+      -> true
+      ;  Params = _{input:_{}}
+    ),
     http_log('~w~n', [params(Params)]),
-    ( get_dict(input, Params, Input);
-      http_header:status_number(bad_request, S_400),
-      throw((_{error: 'Missing input key in params'}, S_400))),
+    ( get_dict(input, Params, Input)
+      -> true
+      ;  http_header:status_number(bad_request, S_400),
+         throw((_{error: 'Missing input key in params'}, S_400))
+    ),
     ( memberchk(path_info(File), Request),
       option(faasshell_auth(NS), Request)
       -> atomics_to_string([NS, "/", File], NSFile),

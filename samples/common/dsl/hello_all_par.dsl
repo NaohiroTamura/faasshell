@@ -1,0 +1,11 @@
+asl([parallel('Parallel',
+              branches([[task('HelloAWS',"arn:aws:lambda:us-east-2:410388484666:function:hello",
+                              [result_path('$.par.aws'),output_path('$.par')])],
+                        [task('HelloGCP',"grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello",
+                              [result_path('$.par.gcp'),output_path('$.par')])],
+                        [task('HelloAzure',"mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello",
+                              [result_path('$.par.azure'),output_path('$.par')])],
+                        [task('HelloBluemix',"wsk:hello",
+                              [result_path('$.par.bluemix'),output_path('$.par')])]]),
+              []),
+     pass('Final State',[])]).

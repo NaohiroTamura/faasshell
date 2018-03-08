@@ -105,8 +105,14 @@ test(normal, O = _{payload:"Hello, no sleep!"}) :-
 
 :- begin_tests(parallel).
 
-test(normal, O = [_{var:1}, _{var:1}]) :-
+test(pass, O = [_{var:1}, _{var:1}]) :-
     start('samples/wsk/dsl/parallel.dsl', [], _{var:1}, O).
+
+test(task, O = [_{task1:_{payload:"Hello, Parallel!"}},
+                _{task2:_{payload:"Hello, Parallel!"}},
+                _{task3:_{payload:"Hello, Parallel!"}},
+                _{task4:_{payload:"Hello, Parallel!"}}]) :-
+    start('samples/wsk/dsl/parallel_task.dsl', [], _{name:"Parallel"}, O).
 
 :- end_tests(parallel).
 

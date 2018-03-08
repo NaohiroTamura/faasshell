@@ -148,8 +148,8 @@ activity_task(Action, Optional, I, O, _E) :-
              atom_json_dict(OutputText, O, [])
             ),
             Error,
-            ( error_code(Error, O),
-              mydebug(activity_task(catch), Error),
+            ( mydebug(activity_task(catch), Error),
+              error_code(Error, O),
               ( Error = heartbeat_timeout
                 -> thread_join(HeartbeatId, HeartbeatStatus),
                    mydebug(activity_task(heartbeat_timeout_cleanup),
@@ -186,8 +186,8 @@ task_execute(Action, Optional, I, O, E) :-
                 faas:invoke(Action, ApiEnv, I, O)
            ),
            Error,
-           ( error_code(Error, O),
-             mydebug(task_execute(catch), Error)
+           ( mydebug(task_execute(catch), Error),
+             error_code(Error, O)
            )
          ),
     mydebug(task_execute(out), (I, O)).
@@ -350,14 +350,20 @@ parallel(State, branches(Branches), Optional, I, O, E) :-
 
 parallel_execute(Branches, I, O, E) :-
     mydebug(parallel_execute(in), (I, O)),
-    catch( ( 
+    catch( ( %% create logical variable for each branch.
+             %% Args has to be in the form of [(I,M1,E),(I,M2,E),(I,M3,E),...]
+             %% and M1,M2,M3... have to be non ground.
              length(Branches, BL),
-             length(Args, BL),
-             maplist(=((I,M,E)), Args),
-             mydebug(parallel(args), (M,O)),
-             concurrent_maplist(branch_execute, Branches, Args, Results),
+             length(LogVars, BL),
+             maplist([M,(I,M,E)]>>true, LogVars, Args),
+             mydebug(parallel(args), (Args, O)),
+             ( concurrent_maplist(branch_execute, Branches, Args, Results)
+               -> mydebug(parallel_execute(result), Results)
+               ;  mydebug(parallel_execute(result), failed(Results)),
+                  throw(parallel_execute(concurrent_maplist, false))
+             ),
              maplist([(_A,B,_C),B]>>true, Results, O), %% O is list
-             mydebug(parallel_execute(result), O)
+             mydebug(parallel_execute(out), O)
            ),
            Error,
            ( mydebug(parallel(catch), Error),
@@ -369,10 +375,10 @@ parallel_execute(Branches, I, O, E) :-
 branch_execute(Branch, (I, O, E), (I, O, E)) :-
     mydebug(branch_execute(in), (I,O)),
     reduce(Branch, I, O, E),
-    mydebug(branch_execute(out), (I,O)),
     ( is_dict(O), get_dict(error, O, Error)
-      -> throw(Error)
-      ;  true
+      -> mydebug(branch_execute(error), Error),
+         throw(Error)
+      ;  mydebug(branch_execute(out), (I,O))
     ).
 
 %% end of state

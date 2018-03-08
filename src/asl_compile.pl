@@ -156,13 +156,17 @@ parse(States, StateKey, [fail(StateKey, Optional)], [StateKey>'Fail'], _Path) :-
 %% Parallel State
 parse(States, StateKey, Dsl, Graph, Path) :-
     _{'Type':"Parallel",'Branches':Branches,'Next':Next} :< States.StateKey,
-    string(Next), 
-    branches(States, StateKey, Branches, D1, G1, [StateKey>NextKey | Path]),
+    string(Next),
     atom_string(NextKey, Next),
-    task_optional(States, StateKey, Optional, G2, Path),
+    branches(States, StateKey, Branches, D1, G1, [StateKey>NextKey | Path]),
+    %% rewrite X>'End' to X>NextKey
+    maplist([(X>Y),Z]>>(Y='End' -> Z=(X>NextKey); Z=(X>Y)), G1, G2),
+    task_optional(States, StateKey, Optional, G3, Path),
     parse_next(States, StateKey, NextKey,
-               parallel(StateKey, branches(D1), Optional), Dsl, G3, Path),
-    flatten([G1, G2, G3], Graph).
+               parallel(StateKey, branches(D1), Optional), Dsl, G4, Path),
+    %% filter out StateKey>NextKey
+    exclude(=((StateKey>NextKey)), G4, G5),
+    flatten([G2, G3, G5], Graph).
 
 parse(States, StateKey,  Dsl, Graph, Path) :-
     _{'Type':"Parallel",'Branches':Branches,'End':true} :< States.StateKey,
