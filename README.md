@@ -197,3 +197,11 @@ sub-directory based on the following State Machine Template.
 
 This demonstrates that one state machine calls hello function of each
 FaaS provider in sequential or in parallel.
+
+## Reference
+
+### [REST API](http://editor.swagger.io/?url=https://raw.githubusercontent.com/NaohiroTamura/faasshell/master/docs/faasshell_swagger.yaml) (WIP)
+
+### [Resource Naming](docs/resource_naming.md) (WIP)
+
+## [TODO](TODO.md)
