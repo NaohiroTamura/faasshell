@@ -1,0 +1,44 @@
+#! /usr/bin/env python
+#
+# Copyright 2017 FUJITSU LIMITED
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+
+#
+# $ cat .gitattributes
+# faasshell_version.pl filter=keyword
+#
+# $ git config filter.keyword.clean 'perl -pe "s/\\\$Id[^\\\$]*\\\$/\\\$Id\\\$/"'
+#
+# $ git config filter.keyword.smudge .gitfilter/keyword.smudge
+#
+# $ cat .git/config
+# ...
+# [filter "keyword"]
+#         clean = perl -pe \"s/\\\\\\$Id[^\\\\\\$]*\\\\\\$/\\\\\\$Id\\\\\\$/\"
+#         smudge = .gitfilter/keyword.smudge
+#
+
+from __future__ import print_function
+import sys
+import os
+
+def main():
+    source = sys.stdin.read()
+    #source = "faasshell_version('$Id$')"
+    commit_id = os.popen('git log -n 1 --date=short --format=format:"rev.%ad.%h" HEAD').read().strip("\n\r")
+    print(source.replace('$Id$', '$Id ' + commit_id + ' $'), end='')
+
+if __name__ == "__main__":
+    main()
