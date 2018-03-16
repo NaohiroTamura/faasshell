@@ -77,7 +77,9 @@ build_image:
 # make -e docker_image_prefix=myprefix/ -e docker_image_tag=:0.1 app_image
 app_image:
 	@echo "create application image"
-	s2i build . s2i-swipl $(docker_image_prefix)faasshell$(docker_image_tag)
+	rm src/faasshell_version.pl
+	git checkout src/faasshell_version.pl
+	s2i build . s2i-swipl $(docker_image_prefix)faasshell$(docker_image_tag) -c
 
 # make -e docker_image_prefix=myprefix/ -e docker_image_tag=:0.1 deploy
 ifdef HTTP_PROXY
