@@ -22,6 +22,7 @@
 
 :- module(faasshell_svc, [main/0]).
 
+:- use_module(faasshell_version, [git_commit_id/1]).
 :- use_module(asl_compile, [gen_dsl/2]).
 :- use_module(faasshell_run, [start/4]).
 :- use_module(cdb_api).
@@ -76,6 +77,17 @@ server(Port) :-
 hup(_Signal) :-
     thread_send_message(main, stop),
     halt(0).
+
+%%
+%%
+:- http_handler('/', base, [methods([get]), authentication(faasshell)]).
+
+base(Request) :-
+    http_log('~w~n', [request(Request)]),
+    option(faasshell_auth(nil), Request)
+    -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
+    ;  faasshell_version:git_commit_id(Version),
+       reply_json_dict(_{version: Version}).
 
 %%
 %%

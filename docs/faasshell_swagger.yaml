@@ -5,6 +5,7 @@ info:
   description: "FaaS Shell REST API"
 basePath: "/api/v1"
 tags:
+- name: "base"
 - name: "activity"
 - name: "executions"
 - name: "faas"
@@ -13,6 +14,26 @@ tags:
 schemes:
 - "http"
 paths:
+  /:
+    get:
+      tags:
+        - "base"
+      description: "Get Faas Shell Information"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Sccessful Operation"
+          schema:
+            $ref: "#/definitions/FaaSShell"
+        400:
+          description: "Bad Request"
+          schema:
+            $ref: "#/definitions/Error"
+        401:
+          description: "Authentication Failure"
+          schema:
+            $ref: "#/definitions/Error"
   /activity:
     get:
       tags:
@@ -531,6 +552,13 @@ definitions:
       error:
         type: "string"
       cause:
+        type: "string"
+  FaaSShell:
+    type: "object"
+    required:
+      - version
+    properties:
+      version:
         type: "string"
   Activity:
     type: "object"
