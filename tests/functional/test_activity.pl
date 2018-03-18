@@ -34,7 +34,8 @@
 test(auth_error, Code = 401) :-
     faasshell_api_host(Host),
     string_concat(Host, '/activity/', URL),
-    http_get(URL, Data, [authorization(basic(unknown, ng)), status_code(Code)]),
+    http_get(URL, Data, [authorization(basic(unknown, ng)),
+                         cert_verify_hook(cert_accept_any), status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{error: "Authentication Failure"} = Dict).
 
@@ -46,7 +47,8 @@ test(succeed, (Code1, Code2, Code3, Code4, Code5, Status)
     string_concat(Host, '/statemachine/activity_task.json?overwrite=true',
                   URL1),
     http_put(URL1, json(Term1), Data1,
-             [authorization(basic(ID, PW)), status_code(Code1)]),
+             [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+              status_code(Code1)]),
     term_json_dict(Data1, Dict1),
     assertion(_{output: "ok", name: "activity_task.json",
                 namespace: "demo", dsl: _, asl: _} = Dict1),
@@ -56,7 +58,8 @@ test(succeed, (Code1, Code2, Code3, Code4, Code5, Status)
     message_queue_create(MQueue),
     thread_create(
             ( http_post(URL2, json(Term2), Data2,
-                        [authorization(basic(ID, PW)), status_code(Code2)]),
+                        [authorization(basic(ID, PW)),
+                         cert_verify_hook(cert_accept_any), status_code(Code2)]),
               thread_send_message(MQueue, test_result(Data2))
             ),
             Id),
@@ -65,7 +68,9 @@ test(succeed, (Code1, Code2, Code3, Code4, Code5, Status)
     Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
     atomics_to_string([Host, '/activity/', Activity], ActivityURL),
 
-    http_get(ActivityURL, Data3, [authorization(basic(ID, PW)), status_code(Code3)]),
+    http_get(ActivityURL, Data3, [authorization(basic(ID, PW)),
+                                  cert_verify_hook(cert_accept_any),
+                                  status_code(Code3)]),
     term_json_dict(Data3, Dict3),
     assertion(Dict3 = _{output: "ok", taskToken: _,
                         input: _{name: "Activity"}}),
@@ -73,7 +78,8 @@ test(succeed, (Code1, Code2, Code3, Code4, Code5, Status)
 
     term_json_dict(Term4, _{taskToken: Dict3.taskToken}),
     http_patch(ActivityURL, json(Term4), Data4,
-               [authorization(basic(ID, PW)), status_code(Code4)]),
+               [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+                status_code(Code4)]),
     term_json_dict(Data4, Dict4),
     assertion(Dict4 = _{}),
     sleep(1),
@@ -81,7 +87,8 @@ test(succeed, (Code1, Code2, Code3, Code4, Code5, Status)
     atomics_to_string(["Hello, ", Dict3.input.name, "!"], Output),
     term_json_dict(Term5, _{output: _{payload: Output}, taskToken: Dict3.taskToken}),
     http_post(ActivityURL, json(Term5), Data5,
-               [authorization(basic(ID, PW)), status_code(Code5)]),
+               [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+                status_code(Code5)]),
     term_json_dict(Data5, Dict5),
     assertion(Dict5 = _{}),
 

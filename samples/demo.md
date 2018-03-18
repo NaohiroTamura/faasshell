@@ -30,7 +30,7 @@ $ docker run -d -p 5984:5984 apache/couchdb
 
 $ make -e docker_image_prefix=nao16t/ run
 
-$ FAASSHELL_APIHOST=http://127.0.0.1:8080
+$ FAASSHELL_APIHOST=https://127.0.0.1:8443
 
 $ DEMO=ec29e90c-188d-11e8-bb72-00163ec1cd01:0b82fe63b6bd450519ade02c3cb8f77ee581f25a810db28f3910e6cdd9d041bf
 ```
@@ -43,14 +43,14 @@ source file: [samples/common/asl/hello_all_seq.json](/samples/common/asl/hello_a
 
 
 ```sh
-$ curl -sX PUT ${FAASSHELL_APIHOST}/statemachine/hello_all_seq.json?overwrite=true \
+$ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_all_seq.json?overwrite=true \
   -H 'Content-Type: application/json' -d @samples/common/asl/hello_all_seq.json \
   -u $DEMO | jq .dsl -
   "asl([task('HelloAWS',\"arn:aws:lambda:us-east-2:410388484666:function:hello\",[result_path('$.aws')]),task('HelloGCP',\"grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello\",[result_path('$.gcp')]),task('HelloAzure',\"mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello\",[result_path('$.azure')]),task('HelloBluemix',\"wsk:hello\",[result_path('$.bluemix')])])"
 ```
 
 ```sh
-$ curl -sX POST ${FAASSHELL_APIHOST}/statemachine/hello_all_seq.json?blocking=true \
+$ curl -ksX POST ${FAASSHELL_APIHOST}/statemachine/hello_all_seq.json?blocking=true \
   -H 'Content-Type: application/json' -d '{"input": {"name": "FaaS Shell"}}' \
   -u $DEMO  | jq .output -
   {
@@ -77,14 +77,14 @@ source file: [samples/common/asl/hello_all_par.json](/samples/common/asl/hello_a
 ![samples/common/asl/hello_all_par.json](/samples/common/graph/hello_all_par.png)
 
 ```sh
-$ curl -sX PUT ${FAASSHELL_APIHOST}/statemachine/hello_all_par.json?overwrite=true \
+$ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_all_par.json?overwrite=true \
   -H 'Content-Type: application/json' -d @samples/common/asl/hello_all_par.json \
   -u $DEMO | jq .dsl -
   "asl([parallel('Parallel',branches([[task('HelloAWS',\"arn:aws:lambda:us-east-2:410388484666:function:hello\",[result_path('$.par.aws'),output_path('$.par')])],[task('HelloGCP',\"grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello\",[result_path('$.par.gcp'),output_path('$.par')])],[task('HelloAzure',\"mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello\",[result_path('$.par.azure'),output_path('$.par')])],[task('HelloBluemix',\"wsk:hello\",[result_path('$.par.bluemix'),output_path('$.par')])]]),[]),pass('Final State',[])])"
 ```
 
 ```sh
-$ curl -sX POST ${FAASSHELL_APIHOST}/statemachine/hello_all_par.json?blocking=true \
+$ curl -ksX POST ${FAASSHELL_APIHOST}/statemachine/hello_all_par.json?blocking=true \
   -H 'Content-Type: application/json' -d '{"input": {"name": "Parallel FaaS Shell"}}' \
   -u $DEMO  | jq .output -
 [

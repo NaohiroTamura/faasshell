@@ -1,5 +1,12 @@
 # Environment Variables
 
+## FaaS Shell
+
+| environment variable  | value        | default value             |
+| :-------------------- | :----------- | :------------------------ |
+| FAASSHELL_SVC_PORT    | number       | 8080 (http), 8433 (https) |
+
+
 ## Database
 
 Database is either [Apache CouchDB][1] or [IBM Cloudant][2].

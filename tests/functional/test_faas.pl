@@ -34,14 +34,16 @@
 test(normal, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/faas/', URL),
-    http_get(URL, Data, [authorization(basic(ID, PW)), status_code(Code)]),
+    http_get(URL, Data, [authorization(basic(ID, PW)),
+                         cert_verify_hook(cert_accept_any), status_code(Code)]),
     term_json_dict(Data, List),
     assertion(is_list(List)).
 
 test(auth_error, Code = 401) :-
     faasshell_api_host(Host),
     string_concat(Host, '/faas/', URL),
-    http_get(URL, Data, [authorization(basic(unknown, ng)), status_code(Code)]),
+    http_get(URL, Data, [authorization(basic(unknown, ng)),
+                         cert_verify_hook(cert_accept_any), status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{error: "Authentication Failure"} = Dict).
 

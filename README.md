@@ -63,7 +63,7 @@ only [AWS Lambda][1] but also functions in other FaaS Infrastructures.
     The lambda function "arn:aws:lambda:us-east-2:410388484666:function:hello"
     is defined in Nodejs 6.10 as below:
 
-    ```sh
+    ```javascript
     'use strict';
 
     console.log('Loading function');
@@ -120,13 +120,13 @@ only [AWS Lambda][1] but also functions in other FaaS Infrastructures.
       ```sh
       $ DEMO=ec29e90c-188d-11e8-bb72-00163ec1cd01:0b82fe63b6bd450519ade02c3cb8f77ee581f25a810db28f3910e6cdd9d041bf
 
-      $ FAASSHELL_APIHOST=http://127.0.0.1:8080
+      $ FAASSHELL_APIHOST=https://127.0.0.1:8443
       ```
 
     - Register "hello_world_task.json", then DSL is generated as the
       value of "dsl" key.
       ```sh
-      $ curl -sX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
+      $ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
          -H 'Content-Type: application/json' -d @hello_world_task.json -u $DEMO
        {
          "asl": {
@@ -149,7 +149,7 @@ only [AWS Lambda][1] but also functions in other FaaS Infrastructures.
 
     - Execute the DSL, the result is returned as the value of the output key.
       ```sh
-      $ curl -sX POST ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json?blocking=true \
+      $ curl -ksX POST ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json?blocking=true \
         -H 'Content-Type: application/json' -d '{"input": {"name": "Curl"}}' -u $DEMO
        {
         "asl": {

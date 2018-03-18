@@ -35,12 +35,14 @@
                                      '/statemachine/hello_world_task.json',
                                      URL),
                        http_delete(URL, _Data, [authorization(basic(ID, PW)),
+                                                cert_verify_hook(cert_accept_any),
                                                 status_code(_Code)])))]).
 
 test(auth_error, Code = 401) :-
     faasshell_api_host(Host),
     string_concat(Host, '/statemachine/', URL),
-    http_get(URL, Data, [authorization(basic(unknown, ng)), status_code(Code)]),
+    http_get(URL, Data, [authorization(basic(unknown, ng)),
+                         cert_verify_hook(cert_accept_any), status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{error: "Authentication Failure"} = Dict).
 
@@ -49,7 +51,8 @@ test(put_create, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/hello_world_task.json', URL),
     http_put(URL, json(Term), Data,
-             [authorization(basic(ID, PW)), status_code(Code)]),
+             [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+              status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{output: "ok", name: "hello_world_task.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
@@ -60,7 +63,8 @@ test(put_overwrite_true, Code = 200) :-
     string_concat(Host, '/statemachine/hello_world_task.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
-             [authorization(basic(ID, PW)), status_code(Code)]),
+             [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+              status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{output: "ok", name: "hello_world_task.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
@@ -71,14 +75,16 @@ test(put_overwrite_false, Code = 409) :-
     string_concat(Host, '/statemachine/hello_world_task.json?overwrite=false',
                   URL),
     http_put(URL, json(Term), Data,
-             [authorization(basic(ID, PW)), status_code(Code)]),
+             [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+              status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{error:"conflict", reason:"Document update conflict."} :< Dict).
 
 test(get, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/hello_world_task.json', URL),
-    http_get(URL, Data, [authorization(basic(ID, PW)), status_code(Code)]),
+    http_get(URL, Data, [authorization(basic(ID, PW)),
+                         cert_verify_hook(cert_accept_any), status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{output: "ok", name: "hello_world_task.json",
                 namespace: "demo", dsl: _, asl: _} :< Dict).
@@ -86,14 +92,16 @@ test(get, Code = 200) :-
 test(get_view, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/', URL),
-    http_get(URL, Data, [authorization(basic(ID, PW)), status_code(Code)]),
+    http_get(URL, Data, [authorization(basic(ID, PW)),
+                         cert_verify_hook(cert_accept_any), status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{output: "ok", asl: [_|_]} :< Dict).
 
 test(get_not_exit, Code = 404) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/not_exist.json', URL),
-    http_get(URL, Data, [authorization(basic(ID, PW)), status_code(Code)]),
+    http_get(URL, Data, [authorization(basic(ID, PW)),
+                         cert_verify_hook(cert_accept_any), status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{error:"not_found", reason:"missing"} :< Dict).
 
@@ -102,7 +110,8 @@ test(post, Code = 200) :-
     string_concat(Host, '/statemachine/hello_world_task.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{name: "Statemachine"}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _, input: _{name:"Statemachine"}, name: _,
                 namespace: _, output: _{payload:"Hello, Statemachine!"}} :< Dict).
@@ -112,7 +121,8 @@ test(post_empty_input, Code = 200) :-
     string_concat(Host, '/statemachine/hello_world_task.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _, input: _{}, name: _, namespace: _,
                 output: _{payload:"Hello, World!"}} :< Dict).
@@ -122,7 +132,8 @@ test(post_no_input, Code = 400) :-
     string_concat(Host, '/statemachine/hello_world_task.json?blocking=true', URL),
     term_json_dict(Json, _{}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{error: "Missing input key in params"} = Dict).
 
@@ -130,21 +141,24 @@ test(patch, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/hello_world_task.json', URL),
     http_patch(URL, atom(''), Data,
-               [authorization(basic(ID, PW)), status_code(Code)]),
+               [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+                status_code(Code)]),
     split_string(Data, "\n", "", [Output|_]),
     assertion(Output = "digraph graph_name {").
 
 test(delete, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/hello_world_task.json', URL),
-    http_delete(URL, Data, [authorization(basic(ID, PW)), status_code(Code)]),
+    http_delete(URL, Data, [authorization(basic(ID, PW)),
+                            cert_verify_hook(cert_accept_any), status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{output: "ok"} :< Dict).
 
 test(delete_not_exist, Code = 404) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/not_exist.json', URL),
-    http_delete(URL, Data, [authorization(basic(ID, PW)), status_code(Code)]),
+    http_delete(URL, Data, [authorization(basic(ID, PW)),
+                            cert_verify_hook(cert_accept_any), status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{error:"not_found", reason:"missing"} :< Dict).
 
@@ -160,7 +174,8 @@ test(scenario) :-
     string_concat(URL, '?overwrite=true', URL1),
     load_json('samples/wsk/asl/job_status_poller.json', Term),
     http_put(URL1, json(Term), _Data1,
-             [authorization(basic(ID, PW)), status_code(Code1)]),
+             [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+              status_code(Code1)]),
     assertion(Code1 = 200),
 
     %% 2. SUCCEEDED path
@@ -168,7 +183,8 @@ test(scenario) :-
                                      wait_time: 1, name: "Poller"}}),
     string_concat(URL, '?blocking=true', URL2),
     http_post(URL2, json(Json2), Data2,
-              [authorization(basic(ID, PW)), status_code(Code2)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code2)]),
     term_json_dict(Data2, Dict2),
     assertion(Code2 = 200),
     assertion(Dict2.output = _{payload:"Hello, Poller!"}),
@@ -177,14 +193,17 @@ test(scenario) :-
     term_json_dict(Json3, _{input: _{params: ['DEFAULT', 'FAILED'],
                                      wait_time: 1, name: "Poller"}}),
     http_post(URL2, json(Json3), Data3,
-              [authorization(basic(ID, PW)), status_code(Code3)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code3)]),
     term_json_dict(Data3, Dict3),
     assertion(Code3 = 200),
     assertion(Dict3.output = _{cause:"AWS Batch Job Failed",
                                error:"DescribeJob returned FAILED"}),
 
     %% 4. tear down
-    http_delete(URL, _Data4, [authorization(basic(ID, PW)), status_code(Code4)]),
+    http_delete(URL, _Data4, [authorization(basic(ID, PW)),
+                              cert_verify_hook(cert_accept_any),
+                              status_code(Code4)]),
     assertion(Code4 = 200).
 
 :- end_tests(job_status_poller).
@@ -198,7 +217,8 @@ test(put_create, Code = 500) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/has-dupes.json', URL),
     http_put(URL, json(Term), Data,
-             [authorization(basic(ID, PW)), status_code(Code)]),
+             [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+              status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{error:"syntax error", reason: _} = Dict).
 
@@ -213,7 +233,8 @@ test(put_overwrite_true, Code = 200) :-
     string_concat(Host, '/statemachine/choice_state.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
-             [authorization(basic(ID, PW)), status_code(Code)]),
+             [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+              status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{output: "ok", name: "choice_state.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
@@ -223,7 +244,8 @@ test(first_state, Code = 200) :-
     string_concat(Host, '/statemachine/choice_state.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{foo: 1}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _, input: _{foo:1}, name: _, namespace: _,
                 output: _{foo: 1, first_match_state: _, next_state: _}} :< Dict).
@@ -233,7 +255,8 @@ test(second_state, Code = 200) :-
     string_concat(Host, '/statemachine/choice_state.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{foo: 2}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _, input: _{foo:2}, name: _, namespace: _,
                 output: _{foo: 2, second_match_state: _, next_state: _}} :< Dict).
@@ -243,7 +266,8 @@ test(default_state, Code = 200) :-
     string_concat(Host, '/statemachine/choice_state.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{foo: 3}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _, input: _{foo:3}, name: _, namespace: _,
                 output: _{cause:"No Matches!",error:"DefaultStateError"}} :< Dict).
@@ -259,7 +283,8 @@ test(put_overwrite_true, Code = 200) :-
     string_concat(Host, '/statemachine/choicex_state.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
-             [authorization(basic(ID, PW)), status_code(Code)]),
+             [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+              status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{output: "ok", name: "choicex_state.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
@@ -269,7 +294,8 @@ test(public_state, Code = 200) :-
     string_concat(Host, '/statemachine/choicex_state.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{type: "Public"}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _, input: _{type: "Public"}, name: _, namespace: _,
                 output: _{type: "Public", public_state: _, next_state: _}} :< Dict).
@@ -279,7 +305,8 @@ test(value_is_zero_state, Code = 200) :-
     string_concat(Host, '/statemachine/choicex_state.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{type:"Private", value:0}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _, input: _{type:"Private", value:0},
                 name: _, namespace: _,
@@ -291,7 +318,8 @@ test(value_in_twenties_state, Code = 200) :-
     string_concat(Host, '/statemachine/choicex_state.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{type:"Private", value:25}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _, input: _{type:"Private", value:25},
                 name: _, namespace: _,
@@ -303,7 +331,8 @@ test(default_state, Code = 200) :-
     string_concat(Host, '/statemachine/choicex_state.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{type:"Private", value:35}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _, input: _{type:"Private", value:35},
                 name: _, namespace: _,
@@ -320,7 +349,8 @@ test(put_overwrite_true, Code = 200) :-
     string_concat(Host, '/statemachine/wait_state.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
-             [authorization(basic(ID, PW)), status_code(Code)]),
+             [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+              status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{output: "ok", name: "wait_state.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
@@ -332,7 +362,8 @@ test(wait_state, Code = 200) :-
                                     expirydate: "2017-09-04T01:59:00Z",
                                     expiryseconds: 1}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _,
                 input: _{name: "Lambda",
@@ -352,7 +383,8 @@ test(put_overwrite_true, Code = 200) :-
     string_concat(Host, '/statemachine/parallel.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
-             [authorization(basic(ID, PW)), status_code(Code)]),
+             [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+              status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{output: "ok", name: "parallel.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
@@ -362,7 +394,8 @@ test(wait_state, Code = 200) :-
     string_concat(Host, '/statemachine/parallel.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{var:1}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _, input: _{var:1}, name: _, namespace: _,
                 output: [_{var:1}, _{var:1}]} :< Dict).
@@ -378,7 +411,8 @@ test(put_overwrite_true, Code = 200) :-
     string_concat(Host, '/statemachine/hello_world.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
-             [authorization(basic(ID, PW)), status_code(Code)]),
+             [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+              status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{output: "ok", name: "hello_world.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
@@ -388,7 +422,8 @@ test(hello_world, Code = 200) :-
     string_concat(Host, '/statemachine/hello_world.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _, input: _{}, name: _, namespace: _,
                 output: "Hello World!"} :< Dict).
@@ -404,7 +439,8 @@ test(put_overwrite_true, Code = 200) :-
     string_concat(Host, '/statemachine/catch_failure.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
-             [authorization(basic(ID, PW)), status_code(Code)]),
+             [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+              status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{output: "ok", name: "catch_failure.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
@@ -414,7 +450,8 @@ test(custom_error, Code = 200) :-
     string_concat(Host, '/statemachine/catch_failure.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _, input: _{}, name: _, namespace: _,
                 output: "This is a fallback from a custom lambda function exception"} :< Dict).
@@ -424,7 +461,8 @@ test(reserved_type, Code = 200) :-
     string_concat(Host, '/statemachine/catch_failure.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{error: "new Error('Created dynamically!')"}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _,  name: _, namespace: _,
                 input: _{error: "new Error('Created dynamically!')"},
@@ -441,7 +479,8 @@ test(put_overwrite_true, Code = 200) :-
     string_concat(Host, '/statemachine/retry_failure.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
-             [authorization(basic(ID, PW)), status_code(Code)]),
+             [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+              status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{output: "ok", name: "retry_failure.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
@@ -451,7 +490,8 @@ test(custom_error, Code = 200) :-
     string_concat(Host, '/statemachine/retry_failure.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _, input: _{}, name: _, namespace: _,
                 output: _{error: "CustomError"}} :< Dict).
@@ -461,7 +501,8 @@ test(reserved_type, Code = 200) :-
     string_concat(Host, '/statemachine/retry_failure.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{error: "new Error('Created dynamically!')"}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _,  name: _, namespace: _,
                 input: _{error: "new Error('Created dynamically!')"},
@@ -478,7 +519,8 @@ test(put_overwrite_true, Code = 200) :-
     string_concat(Host, '/statemachine/task_timer.json?overwrite=true',
                   URL),
     http_put(URL, json(Term), Data,
-             [authorization(basic(ID, PW)), status_code(Code)]),
+             [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+              status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{output: "ok", name: "task_timer.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
@@ -488,7 +530,8 @@ test(succeeded, Code = 200) :-
     string_concat(Host, '/statemachine/task_timer.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{timer_seconds:1, status: "Sent"}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _, name: _, namespace: _,
                 input: _{timer_seconds:1, status: "Sent"},
@@ -499,7 +542,8 @@ test(failed, Code = 200) :-
     string_concat(Host, '/statemachine/task_timer.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{timer_seconds:1, status:"ERROR"}}),
     http_post(URL, json(Json), Data,
-              [authorization(basic(ID, PW)), status_code(Code)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(_{asl: _, dsl: _,  name: _, namespace: _,
                 input: _{timer_seconds:1, status:"ERROR"},

@@ -47,6 +47,20 @@
 :- multifile
        faas:list/3.
 
+%%
+%% setup top directory
+%%
+:- multifile
+       user:file_search_path/2.
+:- dynamic
+       user:file_search_path/2.
+
+:- prolog_load_context(directory, Dir),
+   atomic_concat(Dir, '/..', TopDir),
+   asserta(user:file_search_path(faasshell, TopDir)).
+
+user:file_search_path(config_https, faasshell('etc/server')).
+
 %% start
 %% :- initialization(main).
 
@@ -65,10 +79,33 @@ main :-
              cdb_api:db_init ),
            Error,
            (print_message(error, Error), halt(1))),
-    getenv('FAASSHELL_SVC_PORT', Port) -> server(Port); server(8080).
+    https_options(HttpsOptions),
+    ( getenv('FAASSHELL_SVC_PORT', Port)
+      -> PortOption = [port(Port)]
+      ;  PortOption = []
+    ),
+    merge_options(PortOption, HttpsOptions, Options),
+    server(Options).
 
-server(Port) :-
-    http_server(http_dispatch, [port(Port)]),
+https_options(Options) :-
+    https_file('server-key.pem', KeyFile),
+    https_file('server-cert.pem', CertFile), !,
+    ( https_file(password, PasswordFile)
+      ->  read_file_to_string(PasswordFile, Content, []),
+          split_string(Content, "", " \n\r", [Password]),
+          PasswdOption = [password(Password)]
+      ;   PasswdOption = []
+    ),
+    Options = [port(8443),
+               ssl([certificate_file(CertFile), key_file(KeyFile) | PasswdOption])
+              ].
+https_options([port(8080)]).
+
+https_file(Base, File) :-
+    absolute_file_name(config_https(Base), File, [access(read), file_errors(fail)]).
+
+server(Options) :-
+    http_server(http_dispatch, Options),
     thread_get_message(stop).
 
 %% signal handler

@@ -37,13 +37,15 @@ test(background) :-
     string_concat(Host, '/statemachine/hello_world_task.json', URL),
     string_concat(URL, '?overwrite=true', URL1),
     http_put(URL1, json(Term), _Data1,
-             [authorization(basic(ID, PW)), status_code(Code1)]),
+             [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+              status_code(Code1)]),
     assertion(Code1 = 200),
 
     string_concat(URL, '?blocking=false', URL2),
     term_json_dict(Json2, _{input: _{name: "Background"}}),
     http_post(URL2, json(Json2), Data2,
-              [authorization(basic(ID, PW)), status_code(Code2)]),
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code2)]),
     term_json_dict(Data2, Dict2),
     assertion(Code2 = 200),
     assertion(_{output: _{execution_id: _}} :< Dict2),
@@ -51,7 +53,8 @@ test(background) :-
     sleep(5), %% needs to wait for background job completion
 
     atomics_to_string([Host, '/executions/', Dict2.output.execution_id], URL3),
-    http_get(URL3, Data3, [authorization(basic(ID, PW)), status_code(Code3)]),
+    http_get(URL3, Data3, [authorization(basic(ID, PW)),
+                           cert_verify_hook(cert_accept_any), status_code(Code3)]),
     term_json_dict(Data3, Dict3),
     assertion(Code3 = 200),
     assertion(
@@ -69,7 +72,8 @@ test(background) :-
 test(executionlist, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     atomics_to_string([Host, '/executions/'], URL),
-    http_get(URL, Data, [authorization(basic(ID, PW)), status_code(Code)]),
+    http_get(URL, Data, [authorization(basic(ID, PW)),
+                         cert_verify_hook(cert_accept_any), status_code(Code)]),
     term_json_dict(Data, Dict),
     assertion(is_list(Dict)),
     length(Dict, Len),

@@ -88,7 +88,7 @@ ubuntu@trusty:~/faasshell[master]$ docker run -d -p 5984:5984 apache/couchdb
 
 ubuntu@trusty:~/faasshell[master]$ make -e docker_image_prefix=my_prefix/ run
 
-ubuntu@trusty:~/faasshell[master]$ FAASSHELL_APIHOST=http://127.0.0.1:8080
+ubuntu@trusty:~/faasshell[master]$ FAASSHELL_APIHOST=https://127.0.0.1:8443
 ```
 
 ### In case of Kubernetes
@@ -115,13 +115,13 @@ ubuntu@trusty:~/faasshell[master]$ kubectl -n faasshell expose deployment couchd
 ```sh
 ubuntu@trusty:~/faasshell[master]$ make -e docker_image_prefix=my_prefix/ deploy
 
-ubuntu@trusty:~/faasshell[master]$ kubectl -n faasshell describe service faasshell | grep http | grep NodePort| awk '{print $3}' | cut -d'/' -f1
+ubuntu@trusty:~/faasshell[master]$ kubectl -n faasshell describe service faasshell | grep https | grep NodePort| awk '{print $3}' | cut -d'/' -f1
 30954
 
-ubuntu@trusty:~/faasshell[master]$ FAASSHELL_APIHOST=${cluster_address}:30954
+ubuntu@trusty:~/faasshell[master]$ FAASSHELL_APIHOST=https://${cluster_address}:30954
 ```
 
-${cluster_address}  depends on clusters environment, it is opened at http://$(minikube ip):30954 in case of Minikube.
+${cluster_address}  depends on clusters environment, it is opened at https://$(minikube ip):30954 in case of Minikube.
 
 The port number is changed each service deployment, 30954 is just an example.
 
@@ -170,7 +170,7 @@ ubuntu@trusty:~/faasshell[master]$ DEMO=ec29e90c-188d-11e8-bb72-00163ec1cd01:0b8
 ### faas interface
 
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -sLX GET ${FAASSHELL_APIHOST}/faas/ -u $DEMO
+ubuntu@trusty:~/faasshell[master]$ curl -ksLX GET ${FAASSHELL_APIHOST}/faas/ -u $DEMO
 [
   {
     "annotations": [ {"key":"exec", "value":"nodejs:6"} ],
@@ -192,7 +192,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -sLX GET ${FAASSHELL_APIHOST}/faas/ -u $
   
               "Resource":"arn:aws:lambda:us-east-2:410388484666:function:hello",
               
-  ubuntu@trusty:~/faasshell[master]$ curl -sX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
+  ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
   -H 'Content-Type: application/json' -d @samples/aws/asl/hello_world_task.json -u $DEMO
   ```
 - Google Cloud Functions
@@ -203,7 +203,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -sLX GET ${FAASSHELL_APIHOST}/faas/ -u $
   
             "Resource":"grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello",
               
-  ubuntu@trusty:~/faasshell[master]$ curl -sX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
+  ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
   -H 'Content-Type: application/json' -d @samples/gcp/asl/hello_world_task.json -u $DEMO
   ```
 
@@ -215,14 +215,14 @@ ubuntu@trusty:~/faasshell[master]$ curl -sLX GET ${FAASSHELL_APIHOST}/faas/ -u $
   
             "Resource":"mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello",
   
-  ubuntu@trusty:~/faasshell[master]$ curl -sX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
+  ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
   -H 'Content-Type: application/json' -d @samples/azure/asl/hello_world_task.json -u $DEMO
   ```
 
 - IBM Cloud Functions / Apache OpenWhisk
 
   ```sh
-  ubuntu@trusty:~/faasshell[master]$ curl -sX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
+  ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
   -H 'Content-Type: application/json' -d @samples/wsk/asl/hello_world_task.json -u $DEMO
   {
     "asl": {
@@ -245,7 +245,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -sLX GET ${FAASSHELL_APIHOST}/faas/ -u $
   ```
 
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -sLX GET ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
+ubuntu@trusty:~/faasshell[master]$ curl -ksLX GET ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
 -u $DEMO
 {
   "asl": {
@@ -267,7 +267,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -sLX GET ${FAASSHELL_APIHOST}/statemachi
 }
 ```
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -sX POST ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json?blocking=true \
+ubuntu@trusty:~/faasshell[master]$ curl -ksX POST ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json?blocking=true \
 -u $DEMO
 {
   "asl": {
@@ -290,7 +290,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -sX POST ${FAASSHELL_APIHOST}/statemachi
 }
 ```
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -sX POST ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json?blocking=true \
+ubuntu@trusty:~/faasshell[master]$ curl -ksX POST ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json?blocking=true \
 -H 'Content-Type: application/json' -d '{"input": {"name": "Curl"}}' -u $DEMO
 {
   "asl": {
@@ -313,7 +313,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -sX POST ${FAASSHELL_APIHOST}/statemachi
 }
 ```
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -sX PATCH ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
+ubuntu@trusty:~/faasshell[master]$ curl -ksX PATCH ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
 -u $DEMO
 digraph graph_name {
      "Start" -> "HelloWorld" ;
@@ -321,7 +321,7 @@ digraph graph_name {
 }
 ```
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -sX DELETE ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
+ubuntu@trusty:~/faasshell[master]$ curl -ksX DELETE ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
 -u $DEMO
 {"output":"ok"}
 
@@ -337,7 +337,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -sX DELETE ${FAASSHELL_APIHOST}/statemac
   
   asl([task('HelloWorld',"arn:aws:lambda:us-east-2:410388484666:function:hello",[])]).
               
-  ubuntu@trusty:~/faasshell[master]$ curl -sX PUT ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
+  ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
   -H 'Content-Type: text/plain' -d @samples/aws/dsl/hello_world_task.dsl -u $DEMO
   ```
 
@@ -349,7 +349,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -sX DELETE ${FAASSHELL_APIHOST}/statemac
   
   asl([task('HelloWorld',"grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello",[])]).
               
-  ubuntu@trusty:~/faasshell[master]$ curl -sX PUT ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
+  ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
   -H 'Content-Type: text/plain' -d @samples/gcp/dsl/hello_world_task.dsl -u $DEMO
   ```
 
@@ -361,14 +361,14 @@ ubuntu@trusty:~/faasshell[master]$ curl -sX DELETE ${FAASSHELL_APIHOST}/statemac
   
   asl([task('HelloWorld',"mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello",[])]).
               
-  ubuntu@trusty:~/faasshell[master]$ curl -sX PUT ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
+  ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
   -H 'Content-Type: text/plain' -d @samples/azure/dsl/hello_world_task.dsl -u $DEMO
   ```
 
 - IBM Cloud Functions / Apache OpenWhisk
 
     ```sh
-    ubuntu@trusty:~/faasshell[master]$ curl -sX PUT ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
+    ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
     -H 'Content-Type: text/plain' -d @samples/wsk/dsl/hello_world_task.dsl -u $DEMO
     {
         "dsl":"asl([task('HelloWorld',\"wsk:hello\",[timeout_seconds(5)])]).",
@@ -379,7 +379,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -sX DELETE ${FAASSHELL_APIHOST}/statemac
     ```
 
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -sLX GET ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
+ubuntu@trusty:~/faasshell[master]$ curl -ksLX GET ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
 -u $DEMO
 {
   "dsl":"asl([task('HelloWorld',\"wsk:hello\",[timeout_seconds(5)])])",
@@ -389,7 +389,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -sLX GET ${FAASSHELL_APIHOST}/shell/hell
 }
 ```
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -sX POST  ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl?blocking=true \
+ubuntu@trusty:~/faasshell[master]$ curl -ksX POST  ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl?blocking=true \
 -H 'Content-Type: application/json' -d '{"input": {"name":"Shell"}}' -u $DEMO
 {
   "dsl":"asl([task('HelloWorld',\"wsk:hello\",[timeout_seconds(5),heartbeat_seconds(10)])]).",
@@ -400,7 +400,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -sX POST  ${FAASSHELL_APIHOST}/shell/hel
 }
 ```
 ```sh
-ubuntu@trusty:~/faasshell[master]$ curl -sX DELETE ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
+ubuntu@trusty:~/faasshell[master]$ curl -ksX DELETE ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
 -u $DEMO
 {"output":"ok"}
 ```

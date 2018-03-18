@@ -26,6 +26,14 @@ _JAVA_OPTIONS="-Dconfig.location=file -Dlog4j.configuration=file://$(PWD)/lib/lo
 
 all: unit_test
 
+cert:
+	@echo generate self signed certificate
+	openssl req -x509 -newkey rsa:2048 \
+		-keyout etc/server/server-key.pem \
+		-out etc/server/server-cert.pem \
+		-nodes -subj "/CN=127.0.0.1" -days 365
+	chmod 0400 etc/server/server-*.pem
+
 unit_test:
 	@echo "unit  test"
 	for case in $(unit_test_files); do \
