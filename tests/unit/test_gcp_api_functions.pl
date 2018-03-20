@@ -23,6 +23,22 @@
 :- use_module(library(plunit)).
 
 
+:- begin_tests(list).
+
+test(all, Code = 200) :-
+    gcp_api_functions:faas:list([], [status_code(Code)], R),
+    assertion(is_list(R)).
+
+test(hello, Code = 200) :-
+    gcp_api_functions:faas:list(
+      'grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello',
+      [status_code(Code)], R),
+    assertion(
+      "projects/glowing-program-196406/locations/us-central1/functions/hello"
+      = R.name).
+
+:- end_tests(list).
+
 :- begin_tests(invoke).
 
 test(hello_noarg, (Code, R) = (200, _{payload:"Hello, World!"})) :-

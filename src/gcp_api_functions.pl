@@ -16,10 +16,11 @@
 %%
 
 :- module(gcp_api_functions,
-          [ %%faas:list/3,
+          [ faas:list/3,
             faas:invoke/4
          ]).
 
+:- use_module(gcp_api_utils).
 :- use_module(json_utils).
 :- use_module(proxy_utils).
 
@@ -31,12 +32,35 @@
 
 
 :- multifile
-       %%faas:list/3,
+       faas:list/3,
        faas:invoke/4.
 
-%%faas:list([], Options, Reply) :-
+faas:list([], Options, Reply) :-
+    gcp_api_utils:gcp(GcpOptions),
+    merge_options(Options, GcpOptions, MergedOptions),
+    option(gcp_project(Project), GcpOptions),
+    atomic_list_concat(['https://cloudfunctions.googleapis.com/v1/projects/',
+                        Project,
+                        '/locations/-/functions'], URL),
+    http_get(URL, R1, MergedOptions),
+    json_utils:term_json_dict(R1, R2),
+    get_dict('functions', R2, Reply).
 
-%%faas:list(GRN, Options, Reply) :-
+faas:list(GRN, Options, Reply) :-
+    atom(GRN), !,
+    atomic_list_concat([grn, gcp, lambda, Region, Project, _Domain, Function],
+                       ':', GRN),
+    gcp_api_utils:gcp(GcpOptions),
+    merge_options(Options, GcpOptions, MergedOptions),
+    atomic_list_concat(['https://cloudfunctions.googleapis.com/v1/projects/',
+                        Project,
+                        '/locations/',
+                        Region,
+                        '/functions/',
+                       Function], URL),
+    http_get(URL, R1, MergedOptions),
+    json_utils:term_json_dict(R1, Reply).
+
 
 faas:invoke(GRN, Options, Payload, Reply) :-
     atomic_list_concat([grn, gcp, lambda, Region, Project, Domain, Function],

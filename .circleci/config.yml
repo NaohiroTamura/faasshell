@@ -6,6 +6,9 @@ jobs:
     steps:
       - checkout
       - run:
+          name: setting up
+          command: echo $GCP | base64 --decode > /root/project/gcp.json
+      - run:
           name: unit test
           command: make unit_test
       - run:
@@ -15,5 +18,5 @@ jobs:
           name: test with kafka
           command: make test_with_kafka -e FAASSHELL_MQ=kafka
       - run:
-          name: Print the Current Time
-          command: date
+          name: clean up
+          command: rm /root/project/gcp.json

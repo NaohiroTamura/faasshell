@@ -34,7 +34,9 @@ following sites.
 
 - Google Cloud Functions
 
-  No environment variable is necessary.
+  ```sh
+  $ export GOOGLE_APPLICATION_CREDENTIALS=/full/path/to_your_json_credential_file
+  ```
 
 - Microsoft Azure Functions
 
