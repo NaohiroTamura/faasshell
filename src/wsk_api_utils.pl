@@ -32,7 +32,7 @@ api_key(Key, ID-PW) :-
 openwhisk(Options) :-
     ( getenv('WSK_AUTH',Key), api_key(Key, ID-PW)
       -> AuthOpt =  [authorization(basic(ID, PW))]
-      ;  throw(existence_error(getenv, 'WSK_AUTH'))
+      ;  AuthOpt =  []
     ),
     ( getenv('WSK_APIHOST', APIHOST)
       -> ( ( APIHOST = 'openwhisk.ng.bluemix.net'

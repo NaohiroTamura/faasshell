@@ -16,10 +16,11 @@
 %%
 
 :- module(azure_api_functions,
-          [ %%faas:list/3,
+          [ faas:list/3,
             faas:invoke/4
          ]).
 
+:- use_module(azure_api_utils).
 :- use_module(json_utils).
 :- use_module(proxy_utils).
 
@@ -31,12 +32,41 @@
 
 
 :- multifile
-       %%faas:list/3,
+       faas:list/3,
        faas:invoke/4.
 
-%%faas:list([], Options, Reply) :-
+faas:list([], Options, Reply) :-
+    azure(AzureOptions),
+    atomic_list_concat(['https://management.azure.com/subscriptions/',
+                        '6b37a3e1-728f-419a-9dc9-d0a84b661d50',
+                        '/resourceGroups/',
+                        'glowing-program-196406',
+                        '/providers/Microsoft.Web/sites/',
+                        'glowing-program-196406',
+                        '/functions',
+                        '?api-version=2016-08-01'],
+                        URL),
+    merge_options(Options, AzureOptions, MergedOptions),
+    http_get(URL, R1, MergedOptions),
+    json_utils:term_json_dict(R1, R2),
+    get_dict('value', R2, Reply).
 
-%%faas:list(MRN, Options, Reply) :-
+faas:list(MRN, Options, Reply) :-
+    atom(MRN), !,
+    azure(AzureOptions),
+    atomic_list_concat(['https://management.azure.com/subscriptions/',
+                        '6b37a3e1-728f-419a-9dc9-d0a84b661d50',
+                        '/resourceGroups/',
+                        'glowing-program-196406',
+                        '/providers/Microsoft.Web/sites/',
+                        'glowing-program-196406',
+                        '/functions/',
+                        'hello',
+                        '?api-version=2016-08-01'],
+                        URL),
+    merge_options(Options, AzureOptions, MergedOptions),
+    http_get(URL, R1, MergedOptions),
+    json_utils:term_json_dict(R1, Reply).
 
 faas:invoke(MRN, Options, Payload, Reply) :-
     atomic_list_concat([mrn, azure, lambda, _Region, Project, Domain, Function],

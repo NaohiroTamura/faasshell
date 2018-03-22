@@ -23,6 +23,20 @@
 :- use_module(library(plunit)).
 
 
+:- begin_tests(list).
+
+test(all, Code = 200) :-
+    azure_api_functions:faas:list([], [status_code(Code)], R),
+    assertion(is_list(R)).
+
+test(hello, Code = 200) :-
+    azure_api_functions:faas:list(
+      'mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello',
+      [status_code(Code)], R),
+    assertion("glowing-program-196406/hello" = R.name).
+
+:- end_tests(list).
+
 :- begin_tests(invoke).
 
 test(hello_noarg, (Code, R) = (200, _{payload:"Hello, World!"})) :-

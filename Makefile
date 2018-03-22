@@ -14,8 +14,9 @@
 #
 SHELL:=/bin/bash
 
-#docker_image_prefix =
+# set default value
 docker_image_tag = :latest
+GOOGLE_APPLICATION_CREDENTIALS ?= /dev/null
 
 unit_test_files := $(wildcard tests/unit/test_*.pl)
 functional_test_files := $(wildcard tests/functional/test_*.pl)
@@ -107,6 +108,9 @@ deploy:
 		--from-literal=aws_secret_access_key=$(AWS_SECRET_ACCESS_KEY) \
 		--from-file=gcp_app_cred=$(GOOGLE_APPLICATION_CREDENTIALS) \
 		--from-literal=azure_hostkey=$(AZURE_HOSTKEY) \
+		--from-literal=azure_tenant_id=$(AZURE_TENANT_ID) \
+		--from-literal=azure_client_id=$(AZURE_CLIENT_ID) \
+		--from-literal=azure_client_secret=$(AZURE_CLIENT_SECRET) \
 		--from-literal=wsk_auth=$(WSK_AUTH) \
 		--from-literal=wsk_apihost=$(WSK_APIHOST)
 	envsubst < $(faasshell_deployment) | kubectl apply -f -
@@ -128,6 +132,9 @@ run:
 	           -e AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) \
 		   -e GCP_APP_CRED='$(shell cat $(GOOGLE_APPLICATION_CREDENTIALS))' \
 	           -e AZURE_HOSTKEY=$(AZURE_HOSTKEY) \
+		   -e AZURE_TENANT_ID=$(AZURE_TENANT_ID) \
+		   -e AZURE_CLIENT_ID=$(AZURE_CLIENT_ID) \
+		   -e AZURE_CLIENT_SECRET=$(AZURE_CLIENT_SECRET) \
 	           -e WSK_AUTH=$(WSK_AUTH) -e WSK_APIHOST=$(WSK_APIHOST) \
 	           $(docker_image_prefix)faasshell$(docker_image_tag) ; \
 	else \
@@ -139,6 +146,9 @@ run:
 	           -e AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) \
 		   -e GCP_APP_CRED='$(shell cat $(GOOGLE_APPLICATION_CREDENTIALS))' \
 	           -e AZURE_HOSTKEY=$(AZURE_HOSTKEY) \
+		   -e AZURE_TENANT_ID=$(AZURE_TENANT_ID) \
+		   -e AZURE_CLIENT_ID=$(AZURE_CLIENT_ID) \
+		   -e AZURE_CLIENT_SECRET=$(AZURE_CLIENT_SECRET) \
 	           -e WSK_AUTH=$(WSK_AUTH) -e WSK_APIHOST=$(WSK_APIHOST) \
 		   -e HTTP_PROXY=$(HTTP_PROXY) \
 		   -e HTTPS_PROXY=$(HTTPS_PROXY) \

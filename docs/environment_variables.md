@@ -54,9 +54,9 @@ Setting vendor access information into environment variables is tentative implem
 
 **This implementation will be changed later.**
 
-| vendor        | environment variable 1 | environment variable 2 |
-| :------------ | :--------------------- | :--------------------- |
-| AWS           | AWS_ACCESS_KEY_ID      | AWS_SECRET_ACCESS_KEY  |
-| GCP           | GOOGLE_APPLICATION_CREDENTIALS | -              |
-| Azure         | AZURE_HOSTKEY          | -                      |
-| IBM/OpenWhisk | WSK_AUTH               | WSK_APIHOST            |
+| vendor        | environment variable 1 | environment variable 2 | environment variable 3 | environment variable 4 |
+| :------------ | :--------------------- | :--------------------- | :--------------------- | :--------------------- |
+| AWS           | AWS_ACCESS_KEY_ID      | AWS_SECRET_ACCESS_KEY  | -                      | -                      |
+| GCP           | GOOGLE_APPLICATION_CREDENTIALS | -              | -                      | -                      |
+| Azure         | AZURE_HOSTKEY          | AZURE_TENANT_ID        | AZURE_CLIENT_ID        | AZURE_CLIENT_SECRET    |
+| IBM/OpenWhisk | WSK_AUTH               | WSK_APIHOST            | -                      | -                      |
