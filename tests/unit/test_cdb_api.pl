@@ -175,6 +175,15 @@ test(view_rereduce_true, Len = 50) :-
 
 :- begin_tests(db_env).
 
+test(zero_length, URL = ["http", "://", "127.0.0.1", ":", "5984"]) :-
+    setenv('FAASSHELL_DB_APIHOST', ''),
+    setenv('FAASSHELL_DB_AUTH', ''),
+    db_env(Options),
+    assertion(\+ option(authorization(basic(_ID, _PW)), Options)),
+    option(db_url_base(URL), Options),
+    unsetenv('FAASSHELL_DB_APIHOST'),
+    unsetenv('FAASSHELL_DB_AUTH').
+
 test(local, (ID, PW, URL) = ("id", "pw",
                              ["http", "://", "127.0.0.1", ":", "5984"])) :-
     unsetenv('FAASSHELL_DB_APIHOST'),

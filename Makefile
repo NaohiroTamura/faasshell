@@ -14,7 +14,7 @@
 #
 SHELL:=/bin/bash
 
-docker_image_prefix =
+#docker_image_prefix =
 docker_image_tag = :latest
 
 unit_test_files := $(wildcard tests/unit/test_*.pl)
@@ -100,6 +100,15 @@ endif
 deploy:
 	@echo "deploy app_image to kubernetes"
 	docker push  $(docker_image_prefix)faasshell$(docker_image_tag)
+	kubectl -n faasshell create secret generic faasshell \
+		--from-literal=faasshell_db_auth=$(FAASSHELL_DB_AUTH) \
+		--from-literal=faasshell_db_apihost=$(FAASSHELL_DB_APIHOST) \
+		--from-literal=aws_access_key_id=$(AWS_ACCESS_KEY_ID) \
+		--from-literal=aws_secret_access_key=$(AWS_SECRET_ACCESS_KEY) \
+		--from-file=gcp_app_cred=$(GOOGLE_APPLICATION_CREDENTIALS) \
+		--from-literal=azure_hostkey=$(AZURE_HOSTKEY) \
+		--from-literal=wsk_auth=$(WSK_AUTH) \
+		--from-literal=wsk_apihost=$(WSK_APIHOST)
 	envsubst < $(faasshell_deployment) | kubectl apply -f -
 
 undeploy:
@@ -113,16 +122,22 @@ run:
 	then \
 		docker run -d \
 	           --net=host -v /tmp:/logs \
+		   -e FAASSHELL_DB_AUTH=$(FAASSHELL_DB_AUTH) \
+		   -e FAASSHELL_DB_APIHOST=$(FAASSHELL_DB_APIHOST) \
 	           -e AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) \
 	           -e AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) \
+		   -e GCP_APP_CRED='$(shell cat $(GOOGLE_APPLICATION_CREDENTIALS))' \
 	           -e AZURE_HOSTKEY=$(AZURE_HOSTKEY) \
 	           -e WSK_AUTH=$(WSK_AUTH) -e WSK_APIHOST=$(WSK_APIHOST) \
 	           $(docker_image_prefix)faasshell$(docker_image_tag) ; \
 	else \
 		docker run -d \
 	           --net=host -v /tmp:/logs \
+		   -e FAASSHELL_DB_AUTH=$(FAASSHELL_DB_AUTH) \
+		   -e FAASSHELL_DB_APIHOST=$(FAASSHELL_DB_APIHOST) \
 	           -e AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) \
 	           -e AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) \
+		   -e GCP_APP_CRED='$(shell cat $(GOOGLE_APPLICATION_CREDENTIALS))' \
 	           -e AZURE_HOSTKEY=$(AZURE_HOSTKEY) \
 	           -e WSK_AUTH=$(WSK_AUTH) -e WSK_APIHOST=$(WSK_APIHOST) \
 		   -e HTTP_PROXY=$(HTTP_PROXY) \
@@ -134,4 +149,3 @@ run:
 debug:
 	@echo "run faasshell_svc for debugging"
 	swipl -q -l src/faasshell_svc.pl -g main -t halt
-

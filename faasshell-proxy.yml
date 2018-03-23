@@ -56,16 +56,46 @@ spec:
         - name: https
           containerPort: 8443
         env:
+        - name: FAASSHELL_DB_AUTH
+          valueFrom:
+            secretKeyRef:
+              name: faasshell
+              key: faasshell_db_auth
+        - name: FAASSHELL_DB_APIHOST
+          valueFrom:
+            secretKeyRef:
+              name: faasshell
+              key: faasshell_db_apihost
         - name: AWS_ACCESS_KEY_ID
-          value: ${AWS_ACCESS_KEY_ID}
+          valueFrom:
+            secretKeyRef:
+              name: faasshell
+              key: aws_access_key_id
         - name: AWS_SECRET_ACCESS_KEY
-          value: ${AWS_SECRET_ACCESS_KEY}
+          valueFrom:
+            secretKeyRef:
+              name: faasshell
+              key: aws_secret_access_key
+        - name: GCP_APP_CRED
+          valueFrom:
+            secretKeyRef:
+              name: faasshell
+              key: gcp_app_cred
         - name: AZURE_HOSTKEY
-          value: ${AZURE_HOSTKEY}
+          valueFrom:
+            secretKeyRef:
+              name: faasshell
+              key: azure_hostkey
         - name: WSK_AUTH
-          value: ${WSK_AUTH}
+          valueFrom:
+            secretKeyRef:
+              name: faasshell
+              key: wsk_auth
         - name: WSK_APIHOST
-          value: ${WSK_APIHOST}
+          valueFrom:
+            secretKeyRef:
+              name: faasshell
+              key: wsk_apihost
         - name: HTTP_PROXY
           value: ${HTTP_PROXY}
         - name: HTTPS_PROXY

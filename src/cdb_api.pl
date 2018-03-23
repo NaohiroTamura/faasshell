@@ -87,7 +87,8 @@ db_env(Options) :-
       -> AuthOpt = [authorization(basic(ID, PW))]
       ;  AuthOpt = []
     ),
-    ( getenv('FAASSHELL_DB_APIHOST', URL)
+    ( ( getenv('FAASSHELL_DB_APIHOST', URL),
+        URL \== '' )
       -> parse_url(URL, Attributes),
          option(protocol(Scheme), Attributes),
          option(host(DB_HOST), Attributes),
