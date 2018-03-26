@@ -355,7 +355,9 @@ parallel_execute(Branches, I, O, E) :-
              %% and M1,M2,M3... have to be non ground.
              length(Branches, BL),
              length(LogVars, BL),
-             maplist([M,(I,M,E)]>>true, LogVars, Args),
+             length(IE, BL),
+             maplist(=((I,E)), IE),
+             maplist([M,(I,E),(I,M,E)]>>true, LogVars, IE, Args),
              mydebug(parallel(args), (Args, O)),
              ( concurrent_maplist(branch_execute, Branches, Args, Results)
                -> mydebug(parallel_execute(result), Results)

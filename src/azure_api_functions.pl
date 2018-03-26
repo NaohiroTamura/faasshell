@@ -35,39 +35,104 @@
        faas:list/3,
        faas:invoke/4.
 
-faas:list([], Options, Reply) :-
+%%
+subscription_id(Options, Reply) :-
+    azure(AzureOptions),
+    merge_options(Options, AzureOptions, MergedOptions),
+    URL = 'https://management.azure.com/subscriptions?api-version=2016-06-01',
+    http_get(URL, R1, MergedOptions),
+    json_utils:term_json_dict(R1, R2),
+    maplist([In, Out]>>(_{state: "Enabled", subscriptionId: Out} :< In),
+            R2.value, Reply).
+
+resource_groups([], _Options, []).
+resource_groups([SubscriptionId | SubscriptionIds], Options, Reply) :-
+    azure(AzureOptions),
+    merge_options(Options, AzureOptions, MergedOptions),
+    atomic_list_concat(['https://management.azure.com/subscriptions/',
+                        SubscriptionId,
+                        '/resourcegroups?api-version=2017-05-10'],
+                        URL),
+    http_get(URL, R1, MergedOptions),
+    json_utils:term_json_dict(R1, R2),
+    length(R2.value, N),
+    length(S, N),
+    maplist(=(SubscriptionId), S),
+    maplist([SId, In, (SId, Out)]>>(_{name: Out} :< In), S, R2.value, R3),
+    resource_groups(SubscriptionIds, Options, R4),
+    append(R3, R4, Reply).
+
+sites([], _Options, []).
+sites([SubscriptionId | SubscriptionIds], Options, Reply) :-
+    azure(AzureOptions),
+    merge_options(Options, AzureOptions, MergedOptions),
+    atomic_list_concat(['https://management.azure.com/subscriptions/',
+                        SubscriptionId,
+                        '/providers/Microsoft.Web/sites?api-version=2016-08-01'],
+                        URL),
+    http_get(URL, R1, MergedOptions),
+    json_utils:term_json_dict(R1, R2),
+    length(R2.value, N),
+    length(S, N),
+    maplist(=(SubscriptionId), S),
+    maplist([SId, In, (SId, ResourceGroup, Name)]>>(
+                _{name: Name, kind: "functionapp",
+                  properties: Properties} :< In,
+                _{resourceGroup: ResourceGroup} :< Properties),
+            S, R2.value, R3),
+
+    sites(SubscriptionIds, Options, R4),
+    append(R3, R4, Reply).
+
+functions([], _Options, []).
+functions([(SubscriptionId, ResouceGroup, Site) | T], Options, Reply) :-
     azure(AzureOptions),
     atomic_list_concat(['https://management.azure.com/subscriptions/',
-                        '6b37a3e1-728f-419a-9dc9-d0a84b661d50',
+                        SubscriptionId,
                         '/resourceGroups/',
-                        'glowing-program-196406',
+                        ResouceGroup,
                         '/providers/Microsoft.Web/sites/',
-                        'glowing-program-196406',
+                        Site,
                         '/functions',
                         '?api-version=2016-08-01'],
                         URL),
     merge_options(Options, AzureOptions, MergedOptions),
     http_get(URL, R1, MergedOptions),
     json_utils:term_json_dict(R1, R2),
-    get_dict('value', R2, Reply).
+    get_dict('value', R2, R3),
+    functions(T, Options, R4),
+    append(R3, R4, Reply).
+
+%%
+faas:list([], Options, Reply) :-
+    subscription_id(Options, SubscriptionIdList),
+    sites(SubscriptionIdList, Options, Tuple),
+    functions(Tuple, Options, Reply).
 
 faas:list(MRN, Options, Reply) :-
     atom(MRN), !,
+    atomic_list_concat([mrn, azure, lambda, _Region, Site, _Domain, Function],
+                       ':', MRN),
+    subscription_id(Options, SubscriptionIdList),
+    sites(SubscriptionIdList, Options, Tuple),
+    atom_string(Site, SiteStr),
+    memberchk((SubscriptionId, ResouceGroup, SiteStr), Tuple),
     azure(AzureOptions),
     atomic_list_concat(['https://management.azure.com/subscriptions/',
-                        '6b37a3e1-728f-419a-9dc9-d0a84b661d50',
+                        SubscriptionId,
                         '/resourceGroups/',
-                        'glowing-program-196406',
+                        ResouceGroup,
                         '/providers/Microsoft.Web/sites/',
-                        'glowing-program-196406',
+                        Site,
                         '/functions/',
-                        'hello',
+                        Function,
                         '?api-version=2016-08-01'],
                         URL),
     merge_options(Options, AzureOptions, MergedOptions),
     http_get(URL, R1, MergedOptions),
     json_utils:term_json_dict(R1, Reply).
 
+%%
 faas:invoke(MRN, Options, Payload, Reply) :-
     atomic_list_concat([mrn, azure, lambda, _Region, Project, Domain, Function],
                        ':', MRN), !,
