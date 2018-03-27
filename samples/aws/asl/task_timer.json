@@ -9,7 +9,7 @@
         },
         "Send SNS Message": {
             "Type": "Task",
-            "Resource": "arn:aws:lambda:us-east-2:410388484666:function:sns",
+            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:sns",
             "Retry": [
                 {
                     "ErrorEquals": [

@@ -4,7 +4,7 @@
     "States": {
         "Submit Job": {
             "Type": "Task",
-            "Resource": "wsk:/whisk.system/utils/echo",
+            "Resource": "wrn:wsk:functions:::function:/whisk.system/utils/echo",
             "ResultPath": "$.guid",
             "Next": "Wait X Seconds"
         },
@@ -15,7 +15,7 @@
         },
         "Get Job Status": {
             "Type": "Task",
-            "Resource": "wsk:job",
+            "Resource": "wrn:wsk:functions:::function:job",
             "Next": "Job Complete?",
             "InputPath": "$.guid",
             "ResultPath": "$.guid"
@@ -43,7 +43,7 @@
         },
         "Get Final Job Status": {
             "Type": "Task",
-            "Resource": "wsk:hello",
+            "Resource": "wrn:wsk:functions:::function:hello",
             "End": true
         }
     }

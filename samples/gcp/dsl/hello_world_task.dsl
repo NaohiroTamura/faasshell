@@ -1,1 +1,1 @@
-asl([task('HelloWorld',"grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello",[])]).
+asl([task('HelloWorld',"grn:gcp:functions:${gcp_location_id}:${gcp_project_id}:function:hello",[])]).

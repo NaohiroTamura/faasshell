@@ -65,7 +65,7 @@ test(succeed, (Code1, Code2, Code3, Code4, Code5, Status)
             Id),
     sleep(1),
 
-    Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
+    Activity = "::states:::activity:test",
     atomics_to_string([Host, '/activity/', Activity], ActivityURL),
 
     http_get(ActivityURL, Data3, [authorization(basic(ID, PW)),

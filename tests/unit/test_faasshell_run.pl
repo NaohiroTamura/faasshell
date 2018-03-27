@@ -162,7 +162,7 @@ test(activity_task_dsl_success, Status = true) :-
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
-    Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
+    Activity = "::states:::activity:test",
     uuid(TaskToken),
     mq_utils:activity_start(Activity, TaskToken, InputText),
     atom_json_dict(InputText, Input, []),
@@ -186,7 +186,7 @@ test(activity_task_dsl_failure, Status = true) :-
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
-    Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
+    Activity = "::states:::activity:test",
     uuid(TaskToken),
     mq_utils:activity_start(Activity, TaskToken, InputText),
     atom_json_dict(InputText, Input, []),
@@ -219,7 +219,7 @@ test(activity_task_heartbeat_dsl_success, Status = true) :-
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
-    Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
+    Activity = "::states:::activity:test",
     uuid(TaskToken),
     mq_utils:activity_start(Activity, TaskToken, InputText),
     atom_json_dict(InputText, Input, []),
@@ -248,7 +248,7 @@ test(activity_task_heartbeat_dsl_hearbeat_timeout, Status = true) :-
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
-    Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
+    Activity = "::states:::activity:test",
     uuid(TaskToken),
     mq_utils:activity_start(Activity, TaskToken, InputText),
     atom_json_dict(InputText, Input, []),
@@ -271,7 +271,7 @@ test(activity_task_timeout_heartbeat_dsl_timeout, Status = true) :-
             ),
             Id),
     uuid(TaskToken),
-    Activity = "arn:aws:states:us-east-2:410388484666:activity:test",
+    Activity = "::states:::activity:test",
     mq_utils:activity_start(Activity, TaskToken, InputText),
     atom_json_dict(InputText, Input, []),
     assertion(Input = _{name: "Activity"}),

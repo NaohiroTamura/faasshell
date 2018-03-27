@@ -28,17 +28,17 @@ arn:aws:lambda:Region:Account:function:Function
 
 ### GCP
 ```sh
-grn:gcp:lambda:Region:Project:Domain:Function
+grn:gcp:functions:Location:Project:function:Function
 ```
 
 ### Azure
 ```sh
-mrn:azure:lambda:_:Project:Domain:Function
+mrn:azure:functions:Location:Project:function:Function
 ```
 
 ### IBM/OpenWhisk
 ```sh
-wsk:Action:_
+wrn:wsk:functions:_:_:function:Action
 ```
 
 ## Activity
@@ -47,5 +47,5 @@ FaaS Shell judges that it's activity if "Resource field" matches the
 following pattern. This is common among FaaS.
 
 ```sh
-_:_:states:_:_:activity:_
+_:_:states:_:_:activity:Activity
 ```

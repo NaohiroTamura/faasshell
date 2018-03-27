@@ -22,11 +22,17 @@
 %%
 :- use_module(library(plunit)).
 
+personal(Region, Account) :-
+    getenv('aws_region', Region),
+    getenv('aws_account_id', Account).
+
 :- begin_tests(list).
 
 test(hello, (Code, Name) = (200, "hello")) :-
-    aws_api_lambda:faas:list('arn:aws:lambda:us-east-2:410388484666:function:hello',
-                             [status_code(Code)], R),
+    personal(Region, Account),
+    atomic_list_concat([arn, aws, lambda, Region, Account, function, hello],
+                       ':', ARN),
+    aws_api_lambda:faas:list(ARN, [status_code(Code)], R),
     Name = R.'Configuration'.'FunctionName'.
 
 :- end_tests(list).
@@ -34,16 +40,22 @@ test(hello, (Code, Name) = (200, "hello")) :-
 :- begin_tests(invoke).
 
 test(hello_noarg, (Code, R) = (200, _{payload:"Hello, World!"})) :-
-    aws_api_lambda:faas:invoke('arn:aws:lambda:us-east-2:410388484666:function:hello',
-                          [status_code(Code)], _{}, R).
+    personal(Region, Account),
+    atomic_list_concat([arn, aws, lambda, Region, Account, function, hello],
+                       ':', ARN),
+    aws_api_lambda:faas:invoke(ARN, [status_code(Code)], _{}, R).
 
 test(hello_arg, (Code, R) = (200, _{payload:"Hello, lambda!"})) :-
-    aws_api_lambda:faas:invoke('arn:aws:lambda:us-east-2:410388484666:function:hello',
-                          [status_code(Code)], _{name:"lambda"}, R).
+    personal(Region, Account),
+    atomic_list_concat([arn, aws, lambda, Region, Account, function, hello],
+                       ':', ARN),
+    aws_api_lambda:faas:invoke(ARN, [status_code(Code)], _{name:"lambda"}, R).
 
 test(hello_badarg, (Code, R) = (200, _{payload:"Hello, World!"})) :-
-    aws_api_lambda:faas:invoke('arn:aws:lambda:us-east-2:410388484666:function:hello',
-                          [status_code(Code)], '', R).
+    personal(Region, Account),
+    atomic_list_concat([arn, aws, lambda, Region, Account, function, hello],
+                       ':', ARN),
+    aws_api_lambda:faas:invoke(ARN, [status_code(Code)], '', R).
 
 :- end_tests(invoke).
 
@@ -69,10 +81,11 @@ test(nodejs, Code = 200) :-
                              stackTrace: _ }}).
 
 test(nodejs_dynamic, Code = 200) :-
-    aws_api_lambda:faas:invoke(
-        'arn:aws:lambda:us-east-2:410388484666:function:error',
-        [status_code(Code)],
-        _{error: "new Error('Created dynamically!')"}, R),
+    personal(Region, Account),
+    atomic_list_concat([arn, aws, lambda, Region, Account, function, error],
+                       ':', ARN),
+    aws_api_lambda:faas:invoke(ARN, [status_code(Code)],
+                               _{error: "new Error('Created dynamically!')"}, R),
 
     assertion(R = _{error: "Error",
                     cause: _{errorMessage: "Created dynamically!",
@@ -80,9 +93,10 @@ test(nodejs_dynamic, Code = 200) :-
                              stackTrace: _ }}).
 
 test(python, Code = 200) :-
-    aws_api_lambda:faas:invoke(
-        'arn:aws:lambda:us-east-2:410388484666:function:raise',
-        [status_code(Code)], _{}, R),
+    personal(Region, Account),
+    atomic_list_concat([arn, aws, lambda, Region, Account, function, raise],
+                       ':', ARN),
+    aws_api_lambda:faas:invoke(ARN, [status_code(Code)], _{}, R),
 
     assertion(R = _{error: "CustomError",
                     cause: _{errorMessage: "This is a custom error!",
@@ -90,10 +104,11 @@ test(python, Code = 200) :-
                              stackTrace: _ }}).
 
 test(python_dynamic, Code = 200) :-
-    aws_api_lambda:faas:invoke(
-        'arn:aws:lambda:us-east-2:410388484666:function:raise',
-        [status_code(Code)],
-        _{error: "AssertionError('Created dynamically!')"}, R),
+    personal(Region, Account),
+    atomic_list_concat([arn, aws, lambda, Region, Account, function, raise],
+                       ':', ARN),
+    aws_api_lambda:faas:invoke(ARN, [status_code(Code)],
+                               _{error: "AssertionError('Created dynamically!')"}, R),
 
     assertion(R = _{error: "AssertionError",
                     cause: _{errorMessage: "Created dynamically!",

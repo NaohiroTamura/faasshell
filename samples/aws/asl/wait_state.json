@@ -4,7 +4,7 @@
     "States": {
         "FirstState": {
             "Type": "Task",
-            "Resource": "arn:aws:lambda:us-east-2:410388484666:function:hello",
+            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:hello",
             "ResultPath": "$.first",
             "Next": "wait_using_seconds"
         },
@@ -30,7 +30,7 @@
         },
         "FinalState": {
             "Type": "Task",
-            "Resource": "arn:aws:lambda:us-east-2:410388484666:function:hello",
+            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:hello",
             "End": true
         }
     }

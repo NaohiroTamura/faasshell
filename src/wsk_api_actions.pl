@@ -52,14 +52,14 @@ wsk_url(Method, Action, Options, DefaultQuery, URL) :-
 %%
 faas:list([], Options, Reply) :-
     %%writeln(wsk_list),
-    wsk_list('wsk:none', Options, Reply).
+    wsk_list('wrn:wsk:functions:::function:none', Options, Reply).
 faas:list(WRN, Options, Reply) :-
     %%writeln(wsk_wrn(WRN)),
     wsk_list(WRN, Options, Reply).
 
 wsk_list(WRN, Options, Reply) :-
     atom(WRN), !,
-    atomic_list_concat([wsk, Action], ':', WRN),
+    atomic_list_concat([wrn, wsk, functions, _, _, function, Action], ':', WRN),
     wsk_api_utils:openwhisk(WskOptions),
     merge_options(Options, WskOptions, MergedOptions),
     wsk_url(get, Action, MergedOptions, [], URL),
@@ -83,7 +83,7 @@ update(Action, Options, Payload, Reply) :-
     json_utils:term_json_dict(R1, Reply).
 
 faas:invoke(WRN, Options, Payload, Reply) :-
-    atomic_list_concat([wsk, Action], ':', WRN), !,
+    atomic_list_concat([wrn, wsk, functions, _, _, function, Action], ':', WRN), !,
     wsk_api_utils:openwhisk(WskOptions),
     merge_options(Options, WskOptions, MergedOptions),
     %% writeln(wsk(invoke(Action))),

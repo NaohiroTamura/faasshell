@@ -1,1 +1,1 @@
-asl([task('HelloWorld',"mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello",[])]).
+asl([task('HelloWorld',"mrn:azure:functions:${azure_location}:${azure_webapp_name}:function:hello",[])]).

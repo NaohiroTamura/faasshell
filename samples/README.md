@@ -192,42 +192,39 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksLX GET ${FAASSHELL_APIHOST}/faas/ -u 
 - AWS Lambda
 
   ```sh
-  ubuntu@trusty:~/faasshell[master]$ vi samples/aws/asl/hello_world_task.json
-  please update the "Resource" line to your function resource name
-  
-              "Resource":"arn:aws:lambda:us-east-2:410388484666:function:hello",
+  ubuntu@trusty:~/faasshell[master]$ export aws_region=XX-YY-Z
+  ubuntu@trusty:~/faasshell[master]$ export aws_account_id=000000000000
               
-  ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
-  -H 'Content-Type: application/json' -d @samples/aws/asl/hello_world_task.json -u $DEMO
+  ubuntu@trusty:~/faasshell[master]$ envsubst < samples/aws/asl/hello_world_task.json | \
+  curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json?overwrite=true \
+  -H 'Content-Type: application/json' -d @/dev/stdin -u $DEMO
   ```
 - Google Cloud Functions
 
   ```sh
-  ubuntu@trusty:~/faasshell[master]$ vi samples/gcp/asl/hello_world_task.json
-  please update the "Resource" line to your function resource name
-  
-            "Resource":"grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello",
+  ubuntu@trusty:~/faasshell[master]$ export gcp_location_id=XX-YYYYYYYY
+  ubuntu@trusty:~/faasshell[master]$ export gcp_project_id=ZZZZZZZ
               
-  ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
-  -H 'Content-Type: application/json' -d @samples/gcp/asl/hello_world_task.json -u $DEMO
+  ubuntu@trusty:~/faasshell[master]$ envsubst < samples/gcp/asl/hello_world_task.json | \
+  curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json?overwrite=true \
+  -H 'Content-Type: application/json' -d @/dev/stdin -u $DEMO
   ```
 
 - Microsoft Azure Functions
 
   ```sh
-  ubuntu@trusty:~/faasshell[master]$ vi samples/azure/asl/hello_world_task.json
-  please update the "Resource" line to your function resource name
-  
-            "Resource":"mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello",
-  
-  ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
-  -H 'Content-Type: application/json' -d @samples/azure/asl/hello_world_task.json -u $DEMO
+  ubuntu@trusty:~/faasshell[master]$ export azure_location=XXX-YYY
+  ubuntu@trusty:~/faasshell[master]$ export azure_webapp_name=ZZZZZZZ
+
+  ubuntu@trusty:~/faasshell[master]$ envsubst < samples/azure/asl/hello_world_task.json | \
+  curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json?overwrite=true \
+  -H 'Content-Type: application/json' -d @/dev/stdin -u $DEMO
   ```
 
 - IBM Cloud Functions / Apache OpenWhisk
 
   ```sh
-  ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json \
+  ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_world_task.json?overwrite=true \
   -H 'Content-Type: application/json' -d @samples/wsk/asl/hello_world_task.json -u $DEMO
   {
     "asl": {
@@ -236,7 +233,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksLX GET ${FAASSHELL_APIHOST}/faas/ -u 
       "States": {
         "HelloWorld": {
           "End":true,
-          "Resource":"wsk:hello",
+          "Resource":"wrn:wsk:functions:::function:hello",
           "TimeoutSeconds":5,
           "Type":"Task"
         }
@@ -259,13 +256,13 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksLX GET ${FAASSHELL_APIHOST}/statemach
     "States": {
       "HelloWorld": {
         "End":true,
-        "Resource":"wsk:hello",
+        "Resource":"wrn:wsk:functions:::function:hello",
         "TimeoutSeconds":5,
         "Type":"Task"
       }
     }
   },
-  "dsl":"asl([task('HelloWorld',\"wsk:hello\",[timeout_seconds(5)])])",
+  "dsl":"asl([task('HelloWorld',\"wrn:wsk:functions:::function:hello\",[timeout_seconds(5)])])",
   "name":"hello_world_task.json",
   "namespace":"demo",
   "output":"ok"
@@ -281,13 +278,13 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksX POST ${FAASSHELL_APIHOST}/statemach
     "States": {
       "HelloWorld": {
         "End":true,
-        "Resource":"wsk:hello",
+        "Resource":"wrn:wsk:functions:::function:hello",
         "TimeoutSeconds":5,
         "Type":"Task"
       }
     }
   },
-  "dsl":"asl([task('HelloWorld',\"wsk:hello\",[timeout_seconds(5)])])",
+  "dsl":"asl([task('HelloWorld',\"wrn:wsk:functions:::function:hello\",[timeout_seconds(5)])])",
   "input": {},
   "name":"hello_world_task.json",
   "namespace":"demo",
@@ -304,13 +301,13 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksX POST ${FAASSHELL_APIHOST}/statemach
     "States": {
       "HelloWorld": {
         "End":true,
-        "Resource":"wsk:hello",
+        "Resource":"wrn:wsk:functions:::function:hello",
         "TimeoutSeconds":5,
         "Type":"Task"
       }
     }
   },
-  "dsl":"asl([task('HelloWorld',\"wsk:hello\",[timeout_seconds(5)])])",
+  "dsl":"asl([task('HelloWorld',\"wrn:wsk:functions:::function:hello\",[timeout_seconds(5)])])",
   "input": {"name":"Curl"},
   "name":"hello_world_task.json",
   "namespace":"demo",
@@ -337,57 +334,54 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksX DELETE ${FAASSHELL_APIHOST}/statema
 - AWS Lambda
 
   ```sh
-  ubuntu@trusty:~/faasshell[master]$ vi samples/aws/dsl/hello_world_task.dsl
-  please update the "Resource" to your function resource name
-  
-  asl([task('HelloWorld',"arn:aws:lambda:us-east-2:410388484666:function:hello",[])]).
+  ubuntu@trusty:~/faasshell[master]$ export aws_region=XX-YY-Z
+  ubuntu@trusty:~/faasshell[master]$ export aws_account_id=000000000000
               
-  ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
-  -H 'Content-Type: text/plain' -d @samples/aws/dsl/hello_world_task.dsl -u $DEMO
+  ubuntu@trusty:~/faasshell[master]$ envsubst < samples/aws/dsl/hello_world_task.dsl | \
+  curl -ksX PUT ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl?overwrite=true \
+  -H 'Content-Type: text/plain' -d @/dev/stdin -u $DEMO
   ```
 
 - Google Cloud Functions
 
   ```sh
-  ubuntu@trusty:~/faasshell[master]$ vi samples/gcp/dsl/hello_world_task.dsl
-  please update the "Resource" to your function resource name
-  
-  asl([task('HelloWorld',"grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello",[])]).
+  ubuntu@trusty:~/faasshell[master]$ export gcp_location_id=XX-YYYYYYYY
+  ubuntu@trusty:~/faasshell[master]$ export gcp_project_id=ZZZZZZZ
               
-  ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
-  -H 'Content-Type: text/plain' -d @samples/gcp/dsl/hello_world_task.dsl -u $DEMO
+  ubuntu@trusty:~/faasshell[master]$ envsubst < samples/gcp/dsl/hello_world_task.dsl | \
+  curl -ksX PUT ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl?overwrite=true \
+  -H 'Content-Type: text/plain' -d @/dev/stdin -u $DEMO
   ```
 
 - Microsoft Azure Functions
 
   ```sh
-  ubuntu@trusty:~/faasshell[master]$ vi samples/azure/dsl/hello_world_task.dsl
-  please update the "Resource" to your function resource name
-  
-  asl([task('HelloWorld',"mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello",[])]).
-              
-  ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
-  -H 'Content-Type: text/plain' -d @samples/azure/dsl/hello_world_task.dsl -u $DEMO
+  ubuntu@trusty:~/faasshell[master]$ export azure_location=XXX-YYY
+  ubuntu@trusty:~/faasshell[master]$ export azure_webapp_name=ZZZZZZZ
+
+  ubuntu@trusty:~/faasshell[master]$ envsubst < samples/azure/dsl/hello_world_task.dsl | \
+  curl -ksX PUT ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl?overwrite=true \
+  -H 'Content-Type: text/plain' -d @/dev/stdin -u $DEMO
   ```
 
 - IBM Cloud Functions / Apache OpenWhisk
 
-    ```sh
-    ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
-    -H 'Content-Type: text/plain' -d @samples/wsk/dsl/hello_world_task.dsl -u $DEMO
-    {
-        "dsl":"asl([task('HelloWorld',\"wsk:hello\",[timeout_seconds(5)])]).",
-        "name":"hello_world_task.dsl",
-        "namespace":"demo",
-        "output":"ok"
-    }
-    ```
+  ```sh
+  ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl?overwrite=true \
+  -H 'Content-Type: text/plain' -d @samples/wsk/dsl/hello_world_task.dsl -u $DEMO
+  {
+      "dsl":"asl([task('HelloWorld',\"wrn:wsk:functions:::function:hello\",[timeout_seconds(5)])]).",
+      "name":"hello_world_task.dsl",
+      "namespace":"demo",
+      "output":"ok"
+  }
+  ```
 
 ```sh
 ubuntu@trusty:~/faasshell[master]$ curl -ksLX GET ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
 -u $DEMO
 {
-  "dsl":"asl([task('HelloWorld',\"wsk:hello\",[timeout_seconds(5)])])",
+  "dsl":"asl([task('HelloWorld',\"wrn:wsk:functions:::function:hello\",[timeout_seconds(5)])])",
   "name":"hello_world_task.dsl",
   "namespace":"demo",
   "output":"ok"
@@ -397,7 +391,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksLX GET ${FAASSHELL_APIHOST}/shell/hel
 ubuntu@trusty:~/faasshell[master]$ curl -ksX POST  ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl?blocking=true \
 -H 'Content-Type: application/json' -d '{"input": {"name":"Shell"}}' -u $DEMO
 {
-  "dsl":"asl([task('HelloWorld',\"wsk:hello\",[timeout_seconds(5),heartbeat_seconds(10)])]).",
+  "dsl":"asl([task('HelloWorld',\"wrn:wsk:functions:::function:hello\",[timeout_seconds(5),heartbeat_seconds(10)])]).",
   "input": {"name":"Shell"},
   "name":"hello_world_task.dsl",
   "namespace":"demo",

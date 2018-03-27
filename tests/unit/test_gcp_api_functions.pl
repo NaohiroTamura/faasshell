@@ -23,6 +23,11 @@
 :- use_module(library(plunit)).
 
 
+personal(Location, Project) :-
+    getenv('gcp_location_id', Location),
+    getenv('gcp_project_id', Project).
+
+
 :- begin_tests(list).
 
 test(all, Code = 200) :-
@@ -30,32 +35,36 @@ test(all, Code = 200) :-
     assertion(is_list(R)).
 
 test(hello, Code = 200) :-
-    gcp_api_functions:faas:list(
-      'grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello',
-      [status_code(Code)], R),
-    assertion(
-      "projects/glowing-program-196406/locations/us-central1/functions/hello"
-      = R.name).
+    personal(Location, Project),
+    atomic_list_concat([grn, gcp, functions, Location, Project, function, hello],
+                       ':', GRN),
+    gcp_api_functions:faas:list(GRN, [status_code(Code)], R),
+    atomics_to_string([projects, Project, locations, Location, functions, hello],
+                      '/', Name),
+    assertion(Name = R.name).
 
 :- end_tests(list).
 
 :- begin_tests(invoke).
 
 test(hello_noarg, (Code, R) = (200, _{payload:"Hello, World!"})) :-
-    gcp_api_functions:faas:invoke(
-      'grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello',
-          [status_code(Code)], _{}, R).
+    personal(Location, Project),
+    atomic_list_concat([grn, gcp, functions, Location, Project, function, hello],
+                       ':', GRN),
+    gcp_api_functions:faas:invoke(GRN, [status_code(Code)], _{}, R).
 
 test(hello_arg, (Code, R) = (200, _{payload:"Hello, GCP!"})) :-
-    gcp_api_functions:faas:invoke(
-      'grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello',
-          [status_code(Code)], _{name: "GCP"}, R).
+    personal(Location, Project),
+    atomic_list_concat([grn, gcp, functions, Location, Project, function, hello],
+                       ':', GRN),
+    gcp_api_functions:faas:invoke(GRN, [status_code(Code)], _{name: "GCP"}, R).
 
 %% should not be error such as AWS, Azure
 test(hello_badarg, (Code, R) = (400, _{cause:status_code(400),
                                     error:'Bad Request\n'})) :-
-    gcp_api_functions:faas:invoke(
-      'grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello',
-          [status_code(Code)], '', R).
+    personal(Location, Project),
+    atomic_list_concat([grn, gcp, functions, Location, Project, function, hello],
+                       ':', GRN),
+    gcp_api_functions:faas:invoke(GRN, [status_code(Code)], '', R).
 
 :- end_tests(invoke).

@@ -9,7 +9,7 @@
         },
         "Send SNS Message": {
             "Type": "Task",
-            "Resource": "wsk:sns",
+            "Resource": "wrn:wsk:functions:::function:sns",
             "Retry": [
                 {
                     "ErrorEquals": [

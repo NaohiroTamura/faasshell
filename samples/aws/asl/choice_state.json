@@ -4,7 +4,7 @@
     "States": {
         "FirstState": {
             "Type": "Task",
-            "Resource": "arn:aws:lambda:us-east-2:410388484666:function:echo",
+            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:echo",
             "Next": "ChoiceState"
         },
         "ChoiceState": {
@@ -26,14 +26,14 @@
 
         "FirstMatchState": {
             "Type" : "Task",
-            "Resource": "arn:aws:lambda:us-east-2:410388484666:function:hello",
+            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:hello",
             "ResultPath": "$.first_match_state",
             "Next": "NextState"
         },
 
         "SecondMatchState": {
             "Type" : "Task",
-            "Resource": "arn:aws:lambda:us-east-2:410388484666:function:hello",
+            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:hello",
             "ResultPath": "$.second_match_state",
             "Next": "NextState"
         },

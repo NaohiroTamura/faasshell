@@ -4,7 +4,7 @@
     "States": {
         "FirstState": {
             "Type": "Task",
-            "Resource": "arn:aws:lambda:us-east-2:410388484666:function:echo",
+            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:echo",
             "Next": "ChoiceStateX"
         },
         "ChoiceStateX": {
@@ -40,19 +40,19 @@
         },
         "Public": {
             "Type" : "Task",
-            "Resource": "arn:aws:lambda:us-east-2:410388484666:function:hello",
+            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:hello",
             "ResultPath": "$.public_state",
             "Next": "NextState"
         },
         "ValueIsZero": {
             "Type" : "Task",
-            "Resource": "arn:aws:lambda:us-east-2:410388484666:function:hello",
+            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:hello",
             "ResultPath": "$.value_is_zero_state",
             "Next": "NextState"
         },
         "ValueInTwenties": {
             "Type" : "Task",
-            "Resource": "arn:aws:lambda:us-east-2:410388484666:function:hello",
+            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:hello",
             "ResultPath": "$.value_in_twenties_state",
             "Next": "NextState"
         },
@@ -62,7 +62,7 @@
         },
         "NextState": {
             "Type": "Task",
-            "Resource": "arn:aws:lambda:us-east-2:410388484666:function:hello",
+            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:hello",
             "ResultPath": "$.next_state",
             "End": true
         }

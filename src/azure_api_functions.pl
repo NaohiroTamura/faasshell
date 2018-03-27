@@ -111,7 +111,7 @@ faas:list([], Options, Reply) :-
 
 faas:list(MRN, Options, Reply) :-
     atom(MRN), !,
-    atomic_list_concat([mrn, azure, lambda, _Region, Site, _Domain, Function],
+    atomic_list_concat([mrn, azure, functions, _Location, Site, function, Function],
                        ':', MRN),
     subscription_id(Options, SubscriptionIdList),
     sites(SubscriptionIdList, Options, Tuple),
@@ -134,13 +134,13 @@ faas:list(MRN, Options, Reply) :-
 
 %%
 faas:invoke(MRN, Options, Payload, Reply) :-
-    atomic_list_concat([mrn, azure, lambda, _Region, Project, Domain, Function],
+    atomic_list_concat([mrn, azure, functions, _Location, Site, function, Function],
                        ':', MRN), !,
     ( getenv('AZURE_HOSTKEY', HostKey)
       -> true
       ;  throw(existence_error(getenv, 'AZURE_HOSTKEY'))
     ),
-    atomic_list_concat(['https://', Project, '.', Domain, '/api/', Function,
+    atomic_list_concat(['https://', Site, '.azurewebsites.net/api/', Function,
                         '?code=', HostKey], URL),
     proxy_utils:http_proxy(URL, ProxyOptions),
     AzureOptions = [ status_code(_) %%, cert_verify_hook(cert_accept_any)

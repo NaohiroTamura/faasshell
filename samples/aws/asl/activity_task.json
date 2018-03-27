@@ -4,7 +4,7 @@
     "States": {
         "HelloWorld": {
             "Type": "Task",
-            "Resource":"arn:aws:states:us-east-2:410388484666:activity:test",
+            "Resource":"arn:aws:states:${aws_region}:${aws_account_id}:activity:test",
             "End": true
         }
     }

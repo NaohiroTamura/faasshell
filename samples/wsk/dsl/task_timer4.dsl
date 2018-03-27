@@ -1,5 +1,5 @@
 asl([wait('Wait for Timestamp',timestamp("2017-11-20T09:36:00Z"),[]),
-     task('Send SNS Message',"wsk:hello1",
+     task('Send SNS Message',"wrn:wsk:functions:::function:hello1",
           [retry([case('ErrorEquals'(["States.ALL"]),
                        [interval_seconds(1),max_attempts(3),backoff_rate(2.0)])]
    )])]).

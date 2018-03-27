@@ -23,6 +23,11 @@
 :- use_module(library(plunit)).
 
 
+personal(Location, WebAppName) :-
+    getenv('azure_location', Location),
+    getenv('azure_webapp_name', WebAppName).
+
+
 :- begin_tests(list).
 
 test(all, Code = 200) :-
@@ -30,28 +35,33 @@ test(all, Code = 200) :-
     assertion(is_list(R)).
 
 test(hello, Code = 200) :-
-    azure_api_functions:faas:list(
-      'mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello',
-      [status_code(Code)], R),
-    assertion("glowing-program-196406/hello" = R.name).
+    personal(Location, WebAppName),
+    atomic_list_concat([mrn, azure, functions, Location, WebAppName, function, hello],
+                       ':', MRN),
+    azure_api_functions:faas:list(MRN, [status_code(Code)], R),
+    atomics_to_string([WebAppName, hello], '/', Name),
+    assertion(Name = R.name).
 
 :- end_tests(list).
 
 :- begin_tests(invoke).
 
 test(hello_noarg, (Code, R) = (200, _{payload:"Hello, World!"})) :-
-    azure_api_functions:faas:invoke(
-      'mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello',
-          [status_code(Code)], _{}, R).
+    personal(Location, WebAppName),
+    atomic_list_concat([mrn, azure, functions, Location, WebAppName, function, hello],
+                       ':', MRN),
+    azure_api_functions:faas:invoke(MRN, [status_code(Code)], _{}, R).
 
 test(hello_arg, (Code, R) = (200, _{payload:"Hello, Azure!"})) :-
-    azure_api_functions:faas:invoke(
-      'mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello',
-          [status_code(Code)], _{name: "Azure"}, R).
+    personal(Location, WebAppName),
+    atomic_list_concat([mrn, azure, functions, Location, WebAppName, function, hello],
+                       ':', MRN),
+    azure_api_functions:faas:invoke(MRN, [status_code(Code)], _{name: "Azure"}, R).
 
 test(hello_badarg, (Code, R) = (200, _{payload:"Hello, World!"})) :-
-    azure_api_functions:faas:invoke(
-      'mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello',
-          [status_code(Code)], '', R).
+    personal(Location, WebAppName),
+    atomic_list_concat([mrn, azure, functions, Location, WebAppName, function, hello],
+                       ':', MRN),
+    azure_api_functions:faas:invoke(MRN, [status_code(Code)], '', R).
 
 :- end_tests(invoke).

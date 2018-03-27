@@ -1,1 +1,1 @@
-asl([task('HelloWorld',"wsk:hello",[timeout_seconds(5)])]).
+asl([task('HelloWorld',"wrn:wsk:functions:::function:hello",[timeout_seconds(5)])]).

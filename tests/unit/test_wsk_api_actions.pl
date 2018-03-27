@@ -25,7 +25,7 @@
 :- begin_tests(list).
 
 test(ns_hello, Name = "echo") :-
-    wsk_api_actions:faas:list('wsk:/whisk.system/utils/echo', [], R),
+    wsk_api_actions:faas:list('wrn:wsk:functions:::function:/whisk.system/utils/echo', [], R),
     Name = R.name.
 
 :- end_tests(list).
@@ -33,7 +33,7 @@ test(ns_hello, Name = "echo") :-
 :- begin_tests(invoke).
 
 test(echo, R = _{foo:1}) :-
-    wsk_api_actions:faas:invoke("wsk:/whisk.system/utils/echo", [], _{foo:1}, R).
+    wsk_api_actions:faas:invoke("wrn:wsk:functions:::function:/whisk.system/utils/echo", [], _{foo:1}, R).
 
 :- end_tests(invoke).
 
@@ -57,7 +57,7 @@ test(scenarios) :-
     assertion((Name1, Version1) = ("hello", "0.0.1")),
 
     %% 2. list_hello
-    wsk_api_actionions:faas:list('wsk:hello', [], R2),
+    wsk_api_actionions:faas:list('wrn:wsk:functions:::function:hello', [], R2),
     _{name: Name2, version: Version2} :< R2,
     assertion((Name2, Version2) = ("hello", "0.0.1")),
 
@@ -67,20 +67,20 @@ test(scenarios) :-
     assertion((Name3, Version3) = ("hello", "0.0.2")),
 
     %% 4. list_updated_hello
-    wsk_api_actions:faas:list('wsk:hello', [], R4),
+    wsk_api_actions:faas:list('wrn:wsk:functions:::function:hello', [], R4),
     _{name: Name4, version: Version4} :< R4,
     assertion((Name4, Version4) = ("hello", "0.0.2")),
 
     %% 5. invoke_default_hello_with_no_param
-    wsk_api_actions:faas:invoke('wsk:hello', [], _{}, R5),
+    wsk_api_actions:faas:invoke('wrn:wsk:functions:::function:hello', [], _{}, R5),
     assertion(R5 = _{payload: "Hello, World!"}),
 
     %% 6. invoke_ns_hello_with_no_param
-    wsk_api_actions:faas:invoke('wsk:/_/hello', [], _{}, R6),
+    wsk_api_actions:faas:invoke('wrn:wsk:functions:::function:/_/hello', [], _{}, R6),
     assertion(R6 = _{payload: "Hello, World!"}),
 
     %% 7. invoke_hello_param,
-    wsk_api_actions:faas:invoke('wsk:hello', [], _{name:"wsk"}, R7),
+    wsk_api_actions:faas:invoke('wrn:wsk:functions:::function:hello', [], _{name:"wsk"}, R7),
     assertion(R7 = _{payload:"Hello, wsk!"}),
 
     %% 8. delete_hello,
@@ -102,22 +102,22 @@ test(scenarios) :-
                ]).
 
 test(nodejs, Code = 502) :-
-    wsk_api_actions:faas:invoke('wsk:error', [status_code(Code)], _{}, R),
+    wsk_api_actions:faas:invoke('wrn:wsk:functions:::function:error', [status_code(Code)], _{}, R),
     assertion(R = _{cause:"This is a custom error!",error:"CustomError"}).
 
 test(nodejs_dynamic, Code = 502) :-
-    wsk_api_actions:faas:invoke('wsk:error', [status_code(Code)],
+    wsk_api_actions:faas:invoke('wrn:wsk:functions:::function:error', [status_code(Code)],
                                 _{error: "new Error('Created dynamically!')"}, R),
     assertion(R = _{cause:"Created dynamically!",error:"Error"}).
 
 test(python, Code = 502) :-
-    wsk_api_actions:faas:invoke('wsk:raise', [status_code(Code)], _{}, R),
+    wsk_api_actions:faas:invoke('wrn:wsk:functions:::function:raise', [status_code(Code)], _{}, R),
     %% OpenWhisk Python Runtime Issue
     %% assertion(R = _{error:"An error has occurred: CustomError: This is a custom error!"}).
     assertion(R = _{error:"The action did not return a dictionary."}).
 
 test(python_dynamic, Code = 502) :-
-    wsk_api_actions:faas:invoke('wsk:raise', [status_code(Code)],
+    wsk_api_actions:faas:invoke('wrn:wsk:functions:::function:raise', [status_code(Code)],
                                 _{error: "AssertionError('Created dynamically!')"}, R),
     %% OpenWhisk Python Runtime Issue
     %% assertion(R = _{error:"An error has occurred: AssertionError: Created dynamically!"}).
@@ -126,14 +126,14 @@ test(python_dynamic, Code = 502) :-
 /* requires openwhisk-runtime-prolog which implemented AWS Lambda compatible
    CustomError handling */
 test(prolog, Code = 200) :-
-    wsk_api_actions:faas:invoke('wsk:exception',
+    wsk_api_actions:faas:invoke('wrn:wsk:functions:::function:exception',
                                 [status_code(Code)], _{}, R),
     assertion(R = _{errorMessage: "This is a custom error!",
                     errorType: "CustomError"}).
 
 test(prolog_dynamic, Code = 200) :-
     wsk_api_actions:faas:invoke(
-        'wsk:exception', [status_code(Code)],
+        'wrn:wsk:functions:::function:exception', [status_code(Code)],
         _{error: "'MyCustomError'('This is my custom error!', 200)"}, R),
     assertion(R = _{errorMessage: "This is my custom error!",
                     errorType: "MyCustomError"}).

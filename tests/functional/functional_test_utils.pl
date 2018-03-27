@@ -21,8 +21,9 @@ faasshell_api_host('https://127.0.0.1:8443').
 faasshell_api_key('ec29e90c-188d-11e8-bb72-00163ec1cd01'-'0b82fe63b6bd450519ade02c3cb8f77ee581f25a810db28f3910e6cdd9d041bf').
 
 load_json(File, Term) :-
+    atomic_list_concat(['envsubst <', File], Command),
     setup_call_cleanup(
-            open(File, read, S),
+            open(pipe(Command), read, S),
             json_read(S, Term, []),
             close(S)).
 

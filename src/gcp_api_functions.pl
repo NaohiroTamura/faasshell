@@ -48,14 +48,14 @@ faas:list([], Options, Reply) :-
 
 faas:list(GRN, Options, Reply) :-
     atom(GRN), !,
-    atomic_list_concat([grn, gcp, lambda, Region, Project, _Domain, Function],
+    atomic_list_concat([grn, gcp, functions, Location, Project, function, Function],
                        ':', GRN),
     gcp_api_utils:gcp(GcpOptions),
     merge_options(Options, GcpOptions, MergedOptions),
     atomic_list_concat(['https://cloudfunctions.googleapis.com/v1/projects/',
                         Project,
                         '/locations/',
-                        Region,
+                        Location,
                         '/functions/',
                        Function], URL),
     http_get(URL, R1, MergedOptions),
@@ -63,10 +63,10 @@ faas:list(GRN, Options, Reply) :-
 
 
 faas:invoke(GRN, Options, Payload, Reply) :-
-    atomic_list_concat([grn, gcp, lambda, Region, Project, Domain, Function],
+    atomic_list_concat([grn, gcp, functions, Location, Project, function, Function],
                        ':', GRN), !,
-    atomic_list_concat(['https://', Region, '-', Project, '.', Domain,
-                        '/', Function], URL),
+    atomic_list_concat(['https://', Location, '-', Project, '.cloudfunctions.net/',
+                        Function], URL),
     proxy_utils:http_proxy(URL, ProxyOptions),
     GcpOptions = [ status_code(_) %% , cert_verify_hook(cert_accept_any)
                    | ProxyOptions],
