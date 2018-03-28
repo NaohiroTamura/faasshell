@@ -10,19 +10,19 @@
         },
        "HelloGCP": {
             "Type": "Task",
-            "Resource":"grn:gcp:functions:${gcp_location_id}:${gcp_project_id}:function:hello",
+            "Resource":"frn:gcp:functions:${gcp_location_id}:${gcp_project_id}:function:hello",
             "ResultPath": "$.gcp",
             "Next": "HelloAzure"
         },
         "HelloAzure": {
             "Type": "Task",
-            "Resource":"mrn:azure:functions:${azure_location}:${azure_webapp_name}:function:hello",
+            "Resource":"frn:azure:functions:${azure_location}:${azure_webapp_name}:function:hello",
             "ResultPath": "$.azure",
             "Next": "HelloBluemix"
         },
         "HelloBluemix": {
             "Type": "Task",
-            "Resource": "wrn:wsk:functions:::function:hello",
+            "Resource": "frn:wsk:functions:::function:hello",
             "ResultPath": "$.bluemix",
             "End": true
         }

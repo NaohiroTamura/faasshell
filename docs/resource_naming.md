@@ -28,17 +28,22 @@ arn:aws:lambda:Region:Account:function:Function
 
 ### GCP
 ```sh
-grn:gcp:functions:Location:Project:function:Function
+frn:gcp:functions:Location:Project:function:Function
 ```
 
 ### Azure
 ```sh
-mrn:azure:functions:Location:Project:function:Function
+frn:azure:functions:Location:Project:function:Function
 ```
 
 ### IBM/OpenWhisk
 ```sh
-wrn:wsk:functions:_:_:function:Action
+frn:wsk:functions:_:_:function:Action
+```
+
+### IFTTT
+```sh
+frn:ifttt:webhooks:_:_:function:Applet
 ```
 
 ## Activity

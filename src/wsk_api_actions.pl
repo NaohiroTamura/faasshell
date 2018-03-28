@@ -52,14 +52,14 @@ wsk_url(Method, Action, Options, DefaultQuery, URL) :-
 %%
 faas:list([], Options, Reply) :-
     %%writeln(wsk_list),
-    wsk_list('wrn:wsk:functions:::function:none', Options, Reply).
-faas:list(WRN, Options, Reply) :-
-    %%writeln(wsk_wrn(WRN)),
-    wsk_list(WRN, Options, Reply).
+    wsk_list('frn:wsk:functions:::function:none', Options, Reply).
+faas:list(FRN, Options, Reply) :-
+    %%writeln(wsk_frn(FRN)),
+    wsk_list(FRN, Options, Reply).
 
-wsk_list(WRN, Options, Reply) :-
-    atom(WRN), !,
-    atomic_list_concat([wrn, wsk, functions, _, _, function, Action], ':', WRN),
+wsk_list(FRN, Options, Reply) :-
+    atom(FRN), !,
+    atomic_list_concat([frn, wsk, functions, _, _, function, Action], ':', FRN),
     wsk_api_utils:openwhisk(WskOptions),
     merge_options(Options, WskOptions, MergedOptions),
     wsk_url(get, Action, MergedOptions, [], URL),
@@ -82,8 +82,8 @@ update(Action, Options, Payload, Reply) :-
     http_put(URL, json(Json), R1, MergedOptions),
     json_utils:term_json_dict(R1, Reply).
 
-faas:invoke(WRN, Options, Payload, Reply) :-
-    atomic_list_concat([wrn, wsk, functions, _, _, function, Action], ':', WRN), !,
+faas:invoke(FRN, Options, Payload, Reply) :-
+    atomic_list_concat([frn, wsk, functions, _, _, function, Action], ':', FRN), !,
     wsk_api_utils:openwhisk(WskOptions),
     merge_options(Options, WskOptions, MergedOptions),
     %% writeln(wsk(invoke(Action))),

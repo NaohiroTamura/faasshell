@@ -23,7 +23,7 @@
                     "States": {
                         "HelloGCP": {
                             "Type": "Task",
-                            "Resource":"grn:gcp:functions:${gcp_location_id}:${gcp_project_id}:function:hello",
+                            "Resource":"frn:gcp:functions:${gcp_location_id}:${gcp_project_id}:function:hello",
                             "ResultPath": "$.par.gcp",
                             "OutputPath": "$.par",
                             "End": true
@@ -35,7 +35,7 @@
                     "States": {
                         "HelloAzure": {
                             "Type": "Task",
-                            "Resource":"mrn:azure:functions:${azure_location}:${azure_webapp_name}:function:hello",
+                            "Resource":"frn:azure:functions:${azure_location}:${azure_webapp_name}:function:hello",
                             "ResultPath": "$.par.azure",
                             "OutputPath": "$.par",
                             "End": true
@@ -47,7 +47,7 @@
                     "States": {
                         "HelloBluemix": {
                             "Type": "Task",
-                            "Resource": "wrn:wsk:functions:::function:hello",
+                            "Resource": "frn:wsk:functions:::function:hello",
                             "ResultPath": "$.par.bluemix",
                             "OutputPath": "$.par",
                             "End": true

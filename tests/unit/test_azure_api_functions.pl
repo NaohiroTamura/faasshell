@@ -36,9 +36,9 @@ test(all, Code = 200) :-
 
 test(hello, Code = 200) :-
     personal(Location, WebAppName),
-    atomic_list_concat([mrn, azure, functions, Location, WebAppName, function, hello],
-                       ':', MRN),
-    azure_api_functions:faas:list(MRN, [status_code(Code)], R),
+    atomic_list_concat([frn, azure, functions, Location, WebAppName, function, hello],
+                       ':', FRN),
+    azure_api_functions:faas:list(FRN, [status_code(Code)], R),
     atomics_to_string([WebAppName, hello], '/', Name),
     assertion(Name = R.name).
 
@@ -48,20 +48,20 @@ test(hello, Code = 200) :-
 
 test(hello_noarg, (Code, R) = (200, _{payload:"Hello, World!"})) :-
     personal(Location, WebAppName),
-    atomic_list_concat([mrn, azure, functions, Location, WebAppName, function, hello],
-                       ':', MRN),
-    azure_api_functions:faas:invoke(MRN, [status_code(Code)], _{}, R).
+    atomic_list_concat([frn, azure, functions, Location, WebAppName, function, hello],
+                       ':', FRN),
+    azure_api_functions:faas:invoke(FRN, [status_code(Code)], _{}, R).
 
 test(hello_arg, (Code, R) = (200, _{payload:"Hello, Azure!"})) :-
     personal(Location, WebAppName),
-    atomic_list_concat([mrn, azure, functions, Location, WebAppName, function, hello],
-                       ':', MRN),
-    azure_api_functions:faas:invoke(MRN, [status_code(Code)], _{name: "Azure"}, R).
+    atomic_list_concat([frn, azure, functions, Location, WebAppName, function, hello],
+                       ':', FRN),
+    azure_api_functions:faas:invoke(FRN, [status_code(Code)], _{name: "Azure"}, R).
 
 test(hello_badarg, (Code, R) = (200, _{payload:"Hello, World!"})) :-
     personal(Location, WebAppName),
-    atomic_list_concat([mrn, azure, functions, Location, WebAppName, function, hello],
-                       ':', MRN),
-    azure_api_functions:faas:invoke(MRN, [status_code(Code)], '', R).
+    atomic_list_concat([frn, azure, functions, Location, WebAppName, function, hello],
+                       ':', FRN),
+    azure_api_functions:faas:invoke(FRN, [status_code(Code)], '', R).
 
 :- end_tests(invoke).

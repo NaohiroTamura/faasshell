@@ -4,7 +4,7 @@
     "States": {
         "HelloWorld": {
             "Type": "Task",
-            "Resource": "wrn:wsk:functions:::function:hello",
+            "Resource": "frn:wsk:functions:::function:hello",
             "TimeoutSeconds": 5,
             "End": true
         }

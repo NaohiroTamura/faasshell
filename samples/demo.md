@@ -59,7 +59,7 @@ $ envsubst < samples/common/asl/hello_all_seq.json |
   curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_all_seq.json?overwrite=true \
   -H 'Content-Type: application/json' -d @/dev/stdin \
   -u $DEMO | jq .dsl -
-  "asl([task('HelloAWS',\"arn:aws:lambda:us-east-2:410388484666:function:hello\",[result_path('$.aws')]),task('HelloGCP',\"grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello\",[result_path('$.gcp')]),task('HelloAzure',\"mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello\",[result_path('$.azure')]),task('HelloBluemix',\"wrn:wsk:functions:::function:hello\",[result_path('$.bluemix')])])"
+  "asl([task('HelloAWS',\"arn:aws:lambda:us-east-2:410388484666:function:hello\",[result_path('$.aws')]),task('HelloGCP',\"frn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello\",[result_path('$.gcp')]),task('HelloAzure',\"frn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello\",[result_path('$.azure')]),task('HelloBluemix',\"frn:wsk:functions:::function:hello\",[result_path('$.bluemix')])])"
 ```
 
 ```sh
@@ -101,7 +101,7 @@ $ envsubst < samples/common/asl/hello_all_par.json | \
   curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_all_par.json?overwrite=true \
   -H 'Content-Type: application/json' -d @/dev/stdin \
   -u $DEMO | jq .dsl -
-  "asl([parallel('Parallel',branches([[task('HelloAWS',\"arn:aws:lambda:us-east-2:410388484666:function:hello\",[result_path('$.par.aws'),output_path('$.par')])],[task('HelloGCP',\"grn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello\",[result_path('$.par.gcp'),output_path('$.par')])],[task('HelloAzure',\"mrn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello\",[result_path('$.par.azure'),output_path('$.par')])],[task('HelloBluemix',\"wrn:wsk:functions:::function:hello\",[result_path('$.par.bluemix'),output_path('$.par')])]]),[]),pass('Final State',[])])"
+  "asl([parallel('Parallel',branches([[task('HelloAWS',\"arn:aws:lambda:us-east-2:410388484666:function:hello\",[result_path('$.par.aws'),output_path('$.par')])],[task('HelloGCP',\"frn:gcp:lambda:us-central1:glowing-program-196406:cloudfunctions.net:hello\",[result_path('$.par.gcp'),output_path('$.par')])],[task('HelloAzure',\"frn:azure:lambda:japan-east:glowing-program-196406:azurewebsites.net:hello\",[result_path('$.par.azure'),output_path('$.par')])],[task('HelloBluemix',\"frn:wsk:functions:::function:hello\",[result_path('$.par.bluemix'),output_path('$.par')])]]),[]),pass('Final State',[])])"
 ```
 
 ```sh

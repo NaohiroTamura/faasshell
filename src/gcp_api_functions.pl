@@ -46,10 +46,10 @@ faas:list([], Options, Reply) :-
     json_utils:term_json_dict(R1, R2),
     get_dict('functions', R2, Reply).
 
-faas:list(GRN, Options, Reply) :-
-    atom(GRN), !,
-    atomic_list_concat([grn, gcp, functions, Location, Project, function, Function],
-                       ':', GRN),
+faas:list(FRN, Options, Reply) :-
+    atom(FRN), !,
+    atomic_list_concat([frn, gcp, functions, Location, Project, function, Function],
+                       ':', FRN),
     gcp_api_utils:gcp(GcpOptions),
     merge_options(Options, GcpOptions, MergedOptions),
     atomic_list_concat(['https://cloudfunctions.googleapis.com/v1/projects/',
@@ -62,9 +62,9 @@ faas:list(GRN, Options, Reply) :-
     json_utils:term_json_dict(R1, Reply).
 
 
-faas:invoke(GRN, Options, Payload, Reply) :-
-    atomic_list_concat([grn, gcp, functions, Location, Project, function, Function],
-                       ':', GRN), !,
+faas:invoke(FRN, Options, Payload, Reply) :-
+    atomic_list_concat([frn, gcp, functions, Location, Project, function, Function],
+                       ':', FRN), !,
     atomic_list_concat(['https://', Location, '-', Project, '.cloudfunctions.net/',
                         Function], URL),
     proxy_utils:http_proxy(URL, ProxyOptions),

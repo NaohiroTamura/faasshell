@@ -1,1 +1,1 @@
-task('HelloWorld',"wrn:wsk:functions:::function:hello",[timeout_seconds(5)]).
+task('HelloWorld',"frn:wsk:functions:::function:hello",[timeout_seconds(5)]).

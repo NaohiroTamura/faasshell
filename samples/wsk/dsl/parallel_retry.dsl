@@ -1,5 +1,5 @@
 asl([parallel('Parallel',
-              branches([[task('HelloWorld',"wrn:wsk:functions:::function:helloPython",[timeout_seconds(2)])],
+              branches([[task('HelloWorld',"frn:wsk:functions:::function:helloPython",[timeout_seconds(2)])],
                         [pass('Pass',[]),wait('Wait 10s',seconds(1),[])]]),
               [result_path(parallel),
                retry([case('ErrorEquals'(["CustomError"]),

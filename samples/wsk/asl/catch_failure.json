@@ -4,7 +4,7 @@
     "States": {
         "HelloWorld": {
             "Type": "Task",
-            "Resource": "wrn:wsk:functions:::function:error",
+            "Resource": "frn:wsk:functions:::function:error",
             "Catch": [
                 {
                     "ErrorEquals": ["CustomError"],

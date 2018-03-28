@@ -109,10 +109,10 @@ faas:list([], Options, Reply) :-
     sites(SubscriptionIdList, Options, Tuple),
     functions(Tuple, Options, Reply).
 
-faas:list(MRN, Options, Reply) :-
-    atom(MRN), !,
-    atomic_list_concat([mrn, azure, functions, _Location, Site, function, Function],
-                       ':', MRN),
+faas:list(FRN, Options, Reply) :-
+    atom(FRN), !,
+    atomic_list_concat([frn, azure, functions, _Location, Site, function, Function],
+                       ':', FRN),
     subscription_id(Options, SubscriptionIdList),
     sites(SubscriptionIdList, Options, Tuple),
     atom_string(Site, SiteStr),
@@ -133,9 +133,9 @@ faas:list(MRN, Options, Reply) :-
     json_utils:term_json_dict(R1, Reply).
 
 %%
-faas:invoke(MRN, Options, Payload, Reply) :-
-    atomic_list_concat([mrn, azure, functions, _Location, Site, function, Function],
-                       ':', MRN), !,
+faas:invoke(FRN, Options, Payload, Reply) :-
+    atomic_list_concat([frn, azure, functions, _Location, Site, function, Function],
+                       ':', FRN), !,
     ( getenv('AZURE_HOSTKEY', HostKey)
       -> true
       ;  throw(existence_error(getenv, 'AZURE_HOSTKEY'))

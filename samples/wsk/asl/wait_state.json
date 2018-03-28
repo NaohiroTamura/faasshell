@@ -4,7 +4,7 @@
     "States": {
         "FirstState": {
             "Type": "Task",
-            "Resource": "wrn:wsk:functions:::function:hello",
+            "Resource": "frn:wsk:functions:::function:hello",
             "ResultPath": "$.first_state",
             "Next": "wait_using_seconds"
         },
@@ -30,7 +30,7 @@
         },
         "FinalState": {
             "Type": "Task",
-            "Resource": "wrn:wsk:functions:::function:hello",
+            "Resource": "frn:wsk:functions:::function:hello",
             "End": true
         }
     }
