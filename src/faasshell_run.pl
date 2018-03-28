@@ -30,6 +30,7 @@
 :- use_module(aws_api_lambda, [faas:invoke/4]).
 :- use_module(gcp_api_functions, [faas:invoke/4]).
 :- use_module(azure_api_functions, [faas:invoke/4]).
+:- use_module(ifttt_api_webhooks, [faas:invoke/4]).
 
 :- use_module(library(http/json)).
 :- use_module(library(http/http_log)).
