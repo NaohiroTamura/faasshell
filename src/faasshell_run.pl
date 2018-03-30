@@ -93,10 +93,12 @@ reduce(A, I, O, E) :-
 %% pass state
 pass(State, Optional, I, O, _E) :- 
     mydebug(pass(in), (State, Optional, I, O)),
+    process_input(I, I1, Optional),
     ( option(result(Result), Optional)
-      -> process_output(I, Result, O, Optional)
-      ;  O = I
+      -> M1 = Result
+      ;  M1 = I1
     ),
+    process_output(I, M1, O, Optional),
     mydebug(pass(out), (State, I, O)).
 
 %% task state
@@ -563,22 +565,35 @@ lookup_state(_Target, [], _) :- fail.
 process_input(OriginalInput, Input, Optional) :-
     mydebug(process_input3(in), (OriginalInput, Input, Optional)),
     var(Input),
-    ( option(input_path(InputPath), Optional)
-      -> ( InputPath = null
-           -> Input = _{}
-           ;  json_utils:json_path_value(InputPath, OriginalInput, _K, _R, Input)
-         )
-      ;  Input = OriginalInput
-    ),
+    catch( ( option(input_path(InputPath), Optional)
+             -> ( InputPath = null
+                  -> Input = _{}
+                  ;  json_utils:json_path_value(InputPath, OriginalInput,
+                                                _K, _R, Input)
+                )
+             ;  Input = OriginalInput
+           ),
+           Error,
+           ( mydebug(process_input(catch), Error),
+             error_code(Error, Input),
+             throw((Input, 500))
+           )
+         ),
     mydebug(process_input3(out), Input).
 
 process_output(Input, Output, Optional) :-
     mydebug(process_output3(in), (Input, Output, Optional)),
     var(Output),
-    ( option(output_path(OutputPath), Optional)
-      -> json_utils:json_path_value(OutputPath, Input, _K, _R, Output)
-      ;  Output = Input
-    ),
+    catch( ( option(output_path(OutputPath), Optional)
+             -> json_utils:json_path_value(OutputPath, Input, _K, _R, Output)
+             ;  Output = Input
+           ),
+           Error,
+           ( mydebug(process_output3(catch), Error),
+             error_code(Error, Output),
+             throw((Output, 500))
+           )
+         ),
     mydebug(process_output3(out), Output).
 
 process_output(OriginalInput, Result, Output, Optional) :-
@@ -587,22 +602,23 @@ process_output(OriginalInput, Result, Output, Optional) :-
     catch( ( ( option(result_path(ResultPath), Optional)
                -> % AWS Lambda function can return not only dict, but also value.
                   % However OpenWhisk action can retrun only dict.
-                  json_utils:json_path_merge(ResultPath, OriginalInput,
-                                             Result, _K1, I)
+                   json_utils:json_path_merge(ResultPath, OriginalInput,
+                                              Result, _K1, I)
                ;  % ResultPath has the default value of $
                   % The type of Result from Parallel state is List.
                   I = Result
              ),
-             mydebug(process_output(result_path), (I, ResultPath, Result, Output)),
+             mydebug(process_output4(result_path), (I, ResultPath, Result, Output)),
              ( option(output_path(OutputPath), Optional)
                -> json_utils:json_path_value(OutputPath, I, _K2, _R, Output)
                ;  Output = I
              ),
-             mydebug(process_output(output_path), (Output, OutputPath))
+             mydebug(process_output4(output_path), (Output, OutputPath))
            ),
            Error,
-           ( mydebug(process_output(catch), Error),
-             error_code(Error, Output)
+           ( mydebug(process_output4(catch), Error),
+             error_code(Error, Output),
+             throw((Output, 500))
            )
          ),
     mydebug(process_output4(out), Output).
@@ -621,24 +637,27 @@ error_code(heartbeat_timeout, _{error: "States.Timeout",
     mydebug(error_code, heartbeat_timeout), !.
 
 error_code(Error, O) :-
-    Error = error(permission_error(_, _), context(_, Status)), !,
+    Error = error(permission_error(Type, Term), context(_, Status)), !,
     mydebug(error_code(permission(in)), (Status, O)),
     print_message(error, Error),
-    O = _{error: "States.Permissions"},
+    term_to_atom(type_error(Type, Term), Atom),
+    O = _{error: "States.Permissions", cause: Atom},
     mydebug(error_code(permission(out)), (Status, O)).
 
 error_code(Error, O) :-
-    Error = error(existence_error(_, _), context(_, Status)), !,
+    Error = error(existence_error(Type, Term), context(_, Status)), !,
     mydebug(error_code(existence_error(in)), (Status, O)),
     print_message(error, Error),
-    O = _{error: "States.TaskFailed"},
+    term_to_atom(type_error(Type, Term), Atom),
+    O = _{error: "States.TaskFailed", cause: Atom},
     mydebug(error_code(existence_error(out)), (Status, O)).
 
 error_code(Error, O) :-
-    Error = error(type_error(_, _), context(_, Status)), !,
+    Error = error(type_error(Type, Term), context(_, Status)), !,
     mydebug(error_code(type_error(in)), (Status, O)),
     print_message(error, Error),
-    O = _{error: "States.TaskFailed"},
+    term_to_atom(type_error(Type, Term), Atom),
+    O = _{error: "States.Runtime", cause: Atom},
     mydebug(error_code(type_error(out)), (Status, O)).
 
 error_code(heartbeat_kill, _) :-

@@ -55,7 +55,7 @@ $ export gcp_project_id=glowing-program-196406
 $ export azure_location=japan-east
 $ export azure_webapp_name=glowing-program-196406
 
-$ envsubst < samples/common/asl/hello_all_seq.json |
+$ envsubst < samples/common/asl/hello_all_seq.json | \
   curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/hello_all_seq.json?overwrite=true \
   -H 'Content-Type: application/json' -d @/dev/stdin \
   -u $DEMO | jq .dsl -

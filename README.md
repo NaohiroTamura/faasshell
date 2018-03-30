@@ -23,9 +23,10 @@ step, and five FaaS infrastructures.
   * [Google Cloud Functions][3]
   * [Microsoft Azure Functions][4]
   * [IBM Cloud Functions][5] / [Apache OpenWhisk][6]
+  * [IFTTT][7]
 
 You can run your [Amazon State Language][1] workflow code created in
-[AWS Step Functions][7] in anywhere, and your workflow can call not
+[AWS Step Functions][8] in anywhere, and your workflow can call not
 only [AWS Lambda][1] but also functions in other FaaS Infrastructures.
 
 [1]: https://states-language.net/spec.html "Amazon State Language"
@@ -34,7 +35,8 @@ only [AWS Lambda][1] but also functions in other FaaS Infrastructures.
 [4]: https://azure.microsoft.com/en-us/services/functions/ "Microsoft Azure Functions"
 [5]: https://www.ibm.com/cloud/functions "IBM Cloud Functions"
 [6]: https://openwhisk.apache.org/ "Apache OpenWhisk"
-[7]: https://aws.amazon.com/step-functions/ "AWS Step Functions"
+[7]: https://ifttt.com/ "IFTTT"
+[8]: https://aws.amazon.com/step-functions/ "AWS Step Functions"
 
 ## Quick Start
 
@@ -193,10 +195,23 @@ sub-directory based on the following State Machine Template.
 - Job Status Poller
 - Task Timer
 
-## [Demo](samples/demo.md)
+## Demo
 
-This demonstrates that one state machine calls hello function of each
-FaaS provider in sequential or in parallel.
+* [Hello Multiple Clouds](samples/demo_hello_multiple_clouds.md)
+
+  This demonstrates that one state machine calls hello function of each
+  FaaS provider in sequential or in parallel.
+
+* [IFTTT as FaaS](samples/demo_ifttt_as_faas.md)
+
+  This demonstrates that the statemachine invokes IFTTT Applet as a task and saves the result into Google sheets.
+
+## Devloper's Guide (work in progress)
+
+* Build
+* Deploy
+* Test
+* Debug
 
 ## Reference (work in progress)
 

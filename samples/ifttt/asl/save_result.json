@@ -1,0 +1,23 @@
+{
+    "Comment": "A Hello World example of the Amazon States Language using a Task state",
+    "StartAt": "HelloWorld",
+    "States": {
+        "HelloWorld": {
+            "Type": "Task",
+            "Resource":"frn:wsk:functions:::function:hello",
+            "Next": "UpdateArg"
+        },
+        "UpdateArg": {
+            "Type": "Pass",
+            "InputPath": "$.payload",
+            "ResultPath": "$.ifttt.value1",
+            "OutputPath": "$.ifttt",
+            "Next": "SaveResult"
+        },
+        "SaveResult": {
+            "Type": "Task",
+            "Resource":"frn:ifttt:webhooks:::function:save_result",
+            "End": true
+        }
+    }
+}

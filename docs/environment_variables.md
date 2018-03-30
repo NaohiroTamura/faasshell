@@ -52,11 +52,27 @@ replication of FaaS Shell pod is more than two.
 
 Setting vendor access information into environment variables is tentative implementation for PoC.
 
-**This implementation will be changed later.**
+**Later, all credentials will be managed as fassshell user's property in DB or CLI parameter.**
 
-| vendor        | environment variable 1 | environment variable 2 | environment variable 3 | environment variable 4 |
-| :------------ | :--------------------- | :--------------------- | :--------------------- | :--------------------- |
-| AWS           | AWS_ACCESS_KEY_ID      | AWS_SECRET_ACCESS_KEY  | -                      | -                      |
-| GCP           | GOOGLE_APPLICATION_CREDENTIALS | -              | -                      | -                      |
-| Azure         | AZURE_HOSTKEY          | AZURE_TENANT_ID        | AZURE_CLIENT_ID        | AZURE_CLIENT_SECRET    |
-| IBM/OpenWhisk | WSK_AUTH               | WSK_APIHOST            | -                      | -                      |
+| vendor        | environment variable           | descripton                                  |
+| :------------ | :----------------------------- | :------------------------------------------ |
+| AWS ([\*1][5])| AWS_ACCESS_KEY_ID              | aws_access_key_id     in ~/.aws/credentials |
+|               | AWS_SECRET_ACCESS_KEY          | aws_secret_access_key in ~/.aws/credentials |
+| GCP ([\*2][6],[\*3][7]) | GOOGLE_APPLICATION_CREDENTIALS | full path to JSON credential file |
+| Azure         | AZURE_HOSTKEY                  | Host keys ([\*4][8])                        |
+|               | AZURE_TENANT_ID                | tenant ID ([\*5][9])                        |
+|               | AZURE_CLIENT_ID                | client_id is the Application ID ([\*6][10]) |
+|               | AZURE_CLIENT_SECRET            | client_secret  ([\*6][10])                  |
+| IBM/OpenWhisk ([\*7][11]) | WSK_AUTH           | AUTH    in ~/.wskprops                      |
+|               | WSK_APIHOST                    | APIHOST in ~/.wskprops                      |
+| IFTTT         | IFTTT_KEY                      | click "Document" button ([\*8][12])         |
+
+
+[5]: https://docs.aws.amazon.com/general/latest/gr/managing-aws-access-keys.html "Managing Access Keys for Your AWS Account"
+[6]: https://cloud.google.com/docs/authentication/getting-started "Getting Started with Authentication"
+[7]: https://cloud.google.com/docs/authentication/production "Setting Up Authentication for Server to Server Production Applications"
+[8]: https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-http-webhook#trigger---usage "Azure Functions HTTP and webhook bindings"
+[9]: https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-create-service-principal-portal#get-tenant-id "Create identity for Azure app in portal"
+[10]: https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-protocols-oauth-service-to-service "Azure AD Service to Service Auth using OAuth2.0"
+[11]: https://console.bluemix.net/docs/openwhisk/openwhisk_cli.html#stand-alone-cli "Stand-alone CLI"
+[12]: https://ifttt.com/maker_webhooks "Do more with Webhooks - IFTTT"
