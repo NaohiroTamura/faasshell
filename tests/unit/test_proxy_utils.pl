@@ -98,4 +98,18 @@ test(https_noproxy_space) :-
     http_proxy('https://172.17.0.1:8080', Options),
     assertion(Options = []).
 
+test(http_empty_proxy) :-
+    setenv('HTTP_PROXY', ''),
+    setenv('HTTPS_PROXY', ''),
+    setenv('NO_PROXY', '127.0,0,1,localhost,172.17.0.1'),
+    http_proxy('http://www.google.com', Options),
+    assertion(Options = []).
+
+test(https_empty_proxy) :-
+    setenv('HTTP_PROXY', ''),
+    setenv('HTTPS_PROXY', ''),
+    setenv('NO_PROXY', '127.0,0,1,localhost,172.17.0.1'),
+    http_proxy('https://www.google.com', Options),
+    assertion(Options = []).
+
 :- end_tests(http_proxy).

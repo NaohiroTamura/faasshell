@@ -1,17 +1,23 @@
 # Environment Variables
 
-## FaaS Shell
+The upper case environment variables are used by faasshell services.
 
-| environment variable  | value        | default value             |
-| :-------------------- | :----------- | :------------------------ |
-| FAASSHELL_SVC_PORT    | number       | 8080 (http), 8433 (https) |
+The lower case environment variables are used by only tests, unit tests and functional tests.
+
+## FaaS Shell Service
+
+### FaaS Shell
+
+| environment variable  | literal value | default value             |
+| :-------------------- | :------------ | :------------------------ |
+| FAASSHELL_SVC_PORT    | number        | 8080 (http), 8433 (https) |
 
 
-## Database
+### Database
 
 Database is either [Apache CouchDB][1] or [IBM Cloudant][2].
 
-| environment variable  | value            | default value         |
+| environment variable  | literal value    | default value         |
 | :-------------------- | :--------------- | :-------------------- |
 | FAASSHELL_DB_AUTH     | ID:PW            |                       |
 | FAASSHELL_DB_APIHOST  | URL              | http://127.0.0.1:5984 |
@@ -24,13 +30,13 @@ if "**FAASSHELL_DB_APIHOST**" is not set.
 [2]: https://www.ibm.com/cloud/cloudant "IBM Cloudant"
 
 
-## Message Queue
+### Message Queue
 
 Message Queue is either [SWI Prolog][3] built_in or [Apache Kafka][4].
 
 | environment variable  | literal value           | default value  |
 | :-------------------- | :---------------------- | :------------- |
-| FAASSHELL_MQ          | "built_in" or "kafka"   | "built_in"     |
+| FAASSHELL_MQ          | built_in \| kafka       | built_in       |
 
 In Kubernetes or OpenShift, [Apache Kafka][4] is necessary if the number of
 replication of FaaS Shell pod is more than two.
@@ -39,7 +45,7 @@ replication of FaaS Shell pod is more than two.
 [4]: https://kafka.apache.org/ "Apache Kafka"
 
 
-## Proxy
+### Proxy
 
 | environment variable  | format                                   |
 | :-------------------- | :--------------------------------------- |
@@ -48,19 +54,19 @@ replication of FaaS Shell pod is more than two.
 | NO_PROXY              | host_or_ip,host_or_ip,...                |
 
 
-## FaaS
+### FaaS
 
 Setting vendor access information into environment variables is tentative implementation for PoC.
 
 **Later, all credentials will be managed as fassshell user's property in DB or CLI parameter.**
 
-| vendor        | environment variable           | descripton                                  |
+| vendor        | environment variable           | description                                 |
 | :------------ | :----------------------------- | :------------------------------------------ |
 | AWS ([\*1][5])| AWS_ACCESS_KEY_ID              | aws_access_key_id     in ~/.aws/credentials |
 |               | AWS_SECRET_ACCESS_KEY          | aws_secret_access_key in ~/.aws/credentials |
 | GCP ([\*2][6],[\*3][7]) | GOOGLE_APPLICATION_CREDENTIALS | full path to JSON credential file |
 | Azure         | AZURE_HOSTKEY                  | Host keys ([\*4][8])                        |
-|               | AZURE_TENANT_ID                | tenant ID ([\*5][9])                        |
+|               | AZURE_TENANT_ID                | tenant ID is the Directory ID ([\*5][9])    |
 |               | AZURE_CLIENT_ID                | client_id is the Application ID ([\*6][10]) |
 |               | AZURE_CLIENT_SECRET            | client_secret  ([\*6][10])                  |
 | IBM/OpenWhisk ([\*7][11]) | WSK_AUTH           | AUTH    in ~/.wskprops                      |
@@ -76,3 +82,13 @@ Setting vendor access information into environment variables is tentative implem
 [10]: https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-protocols-oauth-service-to-service "Azure AD Service to Service Auth using OAuth2.0"
 [11]: https://console.bluemix.net/docs/openwhisk/openwhisk_cli.html#stand-alone-cli "Stand-alone CLI"
 [12]: https://ifttt.com/maker_webhooks "Do more with Webhooks - IFTTT"
+
+## Unit Test and Functional Test
+
+| vendor | environment variable | description                                                      |
+| :----- | :---------------- | :------------------------------------------------------------------ |
+| AWS    | aws_region        | arn:aws:lambda:{aws_region}:{aws_account_id}:function:hello         |
+|        | aws_account_id    | ditto                                                               |
+| Azure  | azure_webapp_name | https://{azure_webapp_name}.azurewebsites.net/                      |
+| GCP    | gcp_location_id   | https://{gcp_location_id}-{gcp_project_id}.cloudfunctions.net/hello |
+|        | gcp_project_id    | ditto                                                               |

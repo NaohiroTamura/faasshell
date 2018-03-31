@@ -15,15 +15,15 @@
 SHELL:=/bin/bash
 
 # set default value
-docker_image_tag = :latest
+docker_image_tag ?= latest
 GOOGLE_APPLICATION_CREDENTIALS ?= /dev/null
 
 unit_test_files := $(wildcard tests/unit/test_*.pl)
 functional_test_files := $(wildcard tests/functional/test_*.pl)
 
 JAR = /opt/kafka/libs
-CLASSPATH=$(JAR)/kafka-clients-0.11.0.2.jar:$(JAR)/slf4j-api-1.7.25.jar:$(JAR)/slf4j-log4j12-1.7.25.jar:$(JAR)/log4j-1.2.17.jar
-_JAVA_OPTIONS="-Dconfig.location=file -Dlog4j.configuration=file://$(PWD)/lib/log4j.properties"
+CLASSPATH ?= $(JAR)/kafka-clients-0.11.0.2.jar:$(JAR)/slf4j-api-1.7.25.jar:$(JAR)/slf4j-log4j12-1.7.25.jar:$(JAR)/log4j-1.2.17.jar
+_JAVA_OPTIONS ?= "-Dconfig.location=file -Dlog4j.configuration=file://$(PWD)/lib/log4j.properties"
 
 all: unit_test
 
@@ -83,14 +83,14 @@ build_image:
 			 --build-arg https_proxy=$(HTTPS_PROXY) ; \
 	fi
 
-# make -e docker_image_prefix=myprefix/ -e docker_image_tag=:0.1 app_image
+# make -e docker_image_prefix=myprefix -e docker_image_tag=0.1 app_image
 app_image:
 	@echo "create application image"
 	rm src/faasshell_version.pl
 	git checkout src/faasshell_version.pl
-	s2i build . s2i-swipl $(docker_image_prefix)faasshell$(docker_image_tag) -c
+	s2i build . s2i-swipl $(docker_image_prefix)/faasshell:$(docker_image_tag) -c
 
-# make -e docker_image_prefix=myprefix/ -e docker_image_tag=:0.1 deploy
+# make -e docker_image_prefix=myprefix -e docker_image_tag=0.1 deploy
 ifdef HTTP_PROXY
     ifdef HTTPS_PROXY
         faasshell_deployment = faasshell-proxy.yml
@@ -100,7 +100,7 @@ else
 endif
 deploy:
 	@echo "deploy app_image to kubernetes"
-	docker push  $(docker_image_prefix)faasshell$(docker_image_tag)
+	docker push  $(docker_image_prefix)/faasshell:$(docker_image_tag)
 	kubectl -n faasshell create secret generic faasshell \
 		--from-literal=faasshell_db_auth=$(FAASSHELL_DB_AUTH) \
 		--from-literal=faasshell_db_apihost=$(FAASSHELL_DB_APIHOST) \
@@ -119,7 +119,7 @@ undeploy:
 	@echo "undeploy app_image from kubernetes"
 	kubectl delete -f faasshell.yml
 
-# make -e docker_image_prefix=myprefix/ -e docker_image_tag=:0.1 run
+# make -e docker_image_prefix=myprefix -e docker_image_tag=0.1 run
 run:
 	@echo "run app_image in docker"
 	if [ -v $(HTTP_PROXY) -a -v $(HTTPS_PROXY) ]; \
@@ -136,7 +136,8 @@ run:
 		   -e AZURE_CLIENT_ID=$(AZURE_CLIENT_ID) \
 		   -e AZURE_CLIENT_SECRET=$(AZURE_CLIENT_SECRET) \
 	           -e WSK_AUTH=$(WSK_AUTH) -e WSK_APIHOST=$(WSK_APIHOST) \
-	           $(docker_image_prefix)faasshell$(docker_image_tag) ; \
+		   -e IFTTT_KEY=$(IFTTT_KEY) \
+	           $(docker_image_prefix)/faasshell:$(docker_image_tag) ; \
 	else \
 		docker run -d \
 	           --net=host -v /tmp:/logs \
@@ -150,10 +151,11 @@ run:
 		   -e AZURE_CLIENT_ID=$(AZURE_CLIENT_ID) \
 		   -e AZURE_CLIENT_SECRET=$(AZURE_CLIENT_SECRET) \
 	           -e WSK_AUTH=$(WSK_AUTH) -e WSK_APIHOST=$(WSK_APIHOST) \
+		   -e IFTTT_KEY=$(IFTTT_KEY) \
 		   -e HTTP_PROXY=$(HTTP_PROXY) \
 		   -e HTTPS_PROXY=$(HTTPS_PROXY) \
 		   -e NO_PROXY=$(NO_PROXY) \
-	           $(docker_image_prefix)faasshell$(docker_image_tag) ; \
+	           $(docker_image_prefix)/faasshell:$(docker_image_tag) ; \
 	fi
 
 debug:

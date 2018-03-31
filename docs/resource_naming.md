@@ -33,7 +33,7 @@ frn:gcp:functions:Location:Project:function:Function
 
 ### Azure
 ```sh
-frn:azure:functions:Location:Project:function:Function
+frn:azure:functions:_:WebappName:function:Function
 ```
 
 ### IBM/OpenWhisk

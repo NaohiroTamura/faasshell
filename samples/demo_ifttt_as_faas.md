@@ -34,7 +34,7 @@ $ export NO_PROXY="localhost,127.0.0.1,0.0.0.0,172.17.0.1"
 ```sh
 $ docker run -d -p 5984:5984 apache/couchdb
 
-$ make -e docker_image_prefix=nao16t/ run
+$ make -e docker_image_prefix=nao16t run
 
 $ FAASSHELL_APIHOST=https://127.0.0.1:8443
 

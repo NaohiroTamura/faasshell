@@ -168,6 +168,7 @@ test(activity_task_dsl_success, Status = true) :-
     atom_json_dict(InputText, Input, []),
     assertion(Input = _{name: "Activity"}),
 
+    sleep(1),
     mq_utils:activity_heartbeat(Activity, TaskToken),
 
     atomics_to_string(["Hello, ", Input.name, "!"], Output),

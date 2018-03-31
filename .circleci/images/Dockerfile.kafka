@@ -26,5 +26,3 @@ RUN echo '\n\
 \n\
 auto.create.topics.enable=true' >> /opt/kafka/config/server.properties
 ENV PATH="/opt/kafka/bin:${PATH}"
-
-RUN apt-get update && apt-get install -y iputils-ping iproute2 traceroute dnsutils tcpdump kafkacat socat net-tools vim-tiny gettext-base

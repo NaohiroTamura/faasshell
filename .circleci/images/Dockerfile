@@ -47,4 +47,5 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s
 ENV LANG C.UTF-8
 ENV LD_LIBRARY_PATH /usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/lib/amd64/server:/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/lib/amd64
 COPY http_ssl_plugin.pl /swipl/lib/swipl-7.5.15/library/http/http_ssl_plugin.pl
+RUN apt-get update && apt-get install -y iputils-ping iproute2 traceroute dnsutils tcpdump kafkacat socat net-tools vim-tiny gettext-base
 CMD ["swipl"]

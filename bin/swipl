@@ -1,0 +1,27 @@
+#!/bin/bash
+docker run -it --rm -v /home:/home -u $(id -u):$(id -g) -w $PWD \
+    --net=host -v /tmp:/logs \
+    -e FAASSHELL_DB_APIHOST=${FAASSHELL_DB_APIHOST} \
+    -e FAASSHELL_DB_AUTH=${FAASSHELL_DB_AUTH} \
+    -e aws_region=${aws_region} \
+    -e aws_account_id=${aws_account_id} \
+    -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
+    -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
+    -e azure_webapp_name=${azure_webapp_name} \
+    -e AZURE_HOSTKEY=${AZURE_HOSTKEY} \
+    -e AZURE_TENANT_ID=${AZURE_TENANT_ID} \
+    -e AZURE_CLIENT_ID=${AZURE_CLIENT_ID} \
+    -e AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET} \
+    -e gcp_location_id=${gcp_location_id} \
+    -e gcp_project_id=${gcp_project_id} \
+    -e GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS} \
+    -e WSK_AUTH=${WSK_AUTH} \
+    -e WSK_APIHOST=${WSK_APIHOST} \
+    -e IFTTT_KEY=${IFTTT_KEY} \
+    -e HTTP_PROXY=${HTTP_PROXY} \
+    -e HTTPS_PROXY=${HTTPS_PROXY} \
+    -e NO_PROXY=${NO_PROXY} \
+    -e FAASSHELL_MQ=${FAASSHELL_MQ} \
+    -e CLASSPATH="${CLASSPATH}" \
+    -e _JAVA_OPTIONS="${_JAVA_OPTIONS}" \
+${docker_image_prefix}/swipl7jpl swipl $@

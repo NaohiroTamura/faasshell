@@ -23,8 +23,7 @@
 :- use_module(library(plunit)).
 
 
-personal(Location, WebAppName) :-
-    getenv('azure_location', Location),
+personal(WebAppName) :-
     getenv('azure_webapp_name', WebAppName).
 
 
@@ -35,8 +34,8 @@ test(all, Code = 200) :-
     assertion(is_list(R)).
 
 test(hello, Code = 200) :-
-    personal(Location, WebAppName),
-    atomic_list_concat([frn, azure, functions, Location, WebAppName, function, hello],
+    personal(WebAppName),
+    atomic_list_concat([frn, azure, functions, '', WebAppName, function, hello],
                        ':', FRN),
     azure_api_functions:faas:list(FRN, [status_code(Code)], R),
     atomics_to_string([WebAppName, hello], '/', Name),
@@ -47,20 +46,20 @@ test(hello, Code = 200) :-
 :- begin_tests(invoke).
 
 test(hello_noarg, (Code, R) = (200, _{payload:"Hello, World!"})) :-
-    personal(Location, WebAppName),
-    atomic_list_concat([frn, azure, functions, Location, WebAppName, function, hello],
+    personal(WebAppName),
+    atomic_list_concat([frn, azure, functions, '', WebAppName, function, hello],
                        ':', FRN),
     azure_api_functions:faas:invoke(FRN, [status_code(Code)], _{}, R).
 
 test(hello_arg, (Code, R) = (200, _{payload:"Hello, Azure!"})) :-
-    personal(Location, WebAppName),
-    atomic_list_concat([frn, azure, functions, Location, WebAppName, function, hello],
+    personal(WebAppName),
+    atomic_list_concat([frn, azure, functions, '', WebAppName, function, hello],
                        ':', FRN),
     azure_api_functions:faas:invoke(FRN, [status_code(Code)], _{name: "Azure"}, R).
 
 test(hello_badarg, (Code, R) = (200, _{payload:"Hello, World!"})) :-
-    personal(Location, WebAppName),
-    atomic_list_concat([frn, azure, functions, Location, WebAppName, function, hello],
+    personal(WebAppName),
+    atomic_list_concat([frn, azure, functions, '', WebAppName, function, hello],
                        ':', FRN),
     azure_api_functions:faas:invoke(FRN, [status_code(Code)], '', R).
 

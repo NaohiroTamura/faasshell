@@ -35,7 +35,7 @@
                     "States": {
                         "HelloAzure": {
                             "Type": "Task",
-                            "Resource":"frn:azure:functions:${azure_location}:${azure_webapp_name}:function:hello",
+                            "Resource":"frn:azure:functions::${azure_webapp_name}:function:hello",
                             "ResultPath": "$.par.azure",
                             "OutputPath": "$.par",
                             "End": true

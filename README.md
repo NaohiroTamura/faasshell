@@ -208,10 +208,11 @@ sub-directory based on the following State Machine Template.
 
 ## Devloper's Guide (work in progress)
 
-* Build
-* Deploy
-* Test
-* Debug
+* [Development Environment](docs/development_environment.md)
+* [Build](docs/build.md)
+* [Deployment](docs/deployment.md)
+* [Test](docs/test.md)
+* [Debug](docs/debug.md)
 
 ## Reference (work in progress)
 

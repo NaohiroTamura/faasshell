@@ -82,7 +82,7 @@ following sites.
   ```
 - Build application image
   ```sh
-  ubuntu@trusty:~/faasshell[master]$ make -e docker_image_prefix=my_prefix/ app_image
+  ubuntu@trusty:~/faasshell[master]$ make -e docker_image_prefix=YOUR_PREFIX app_image
   ```
 
 ## Deploy Image
@@ -91,7 +91,7 @@ following sites.
 ```sh
 ubuntu@trusty:~/faasshell[master]$ docker run -d -p 5984:5984 apache/couchdb
 
-ubuntu@trusty:~/faasshell[master]$ make -e docker_image_prefix=my_prefix/ run
+ubuntu@trusty:~/faasshell[master]$ make -e docker_image_prefix=YOUR_PREFIX run
 
 ubuntu@trusty:~/faasshell[master]$ FAASSHELL_APIHOST=https://127.0.0.1:8443
 ```
@@ -118,7 +118,7 @@ ubuntu@trusty:~/faasshell[master]$ kubectl -n faasshell expose deployment couchd
   > ```
 
 ```sh
-ubuntu@trusty:~/faasshell[master]$ make -e docker_image_prefix=my_prefix/ deploy
+ubuntu@trusty:~/faasshell[master]$ make -e docker_image_prefix=YOUR_PREFIX deploy
 
 ubuntu@trusty:~/faasshell[master]$ kubectl -n faasshell describe service faasshell | grep https | grep NodePort| awk '{print $3}' | cut -d'/' -f1
 30954
@@ -213,7 +213,6 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksLX GET ${FAASSHELL_APIHOST}/faas/ -u 
 - Microsoft Azure Functions
 
   ```sh
-  ubuntu@trusty:~/faasshell[master]$ export azure_location=XXX-YYY
   ubuntu@trusty:~/faasshell[master]$ export azure_webapp_name=ZZZZZZZ
 
   ubuntu@trusty:~/faasshell[master]$ envsubst < samples/azure/asl/hello_world_task.json | \
@@ -356,7 +355,6 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksX DELETE ${FAASSHELL_APIHOST}/statema
 - Microsoft Azure Functions
 
   ```sh
-  ubuntu@trusty:~/faasshell[master]$ export azure_location=XXX-YYY
   ubuntu@trusty:~/faasshell[master]$ export azure_webapp_name=ZZZZZZZ
 
   ubuntu@trusty:~/faasshell[master]$ envsubst < samples/azure/dsl/hello_world_task.dsl | \
