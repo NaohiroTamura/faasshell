@@ -15,7 +15,7 @@
 SHELL:=/bin/bash
 
 # set default value
-docker_image_tag ?= latest
+export docker_image_tag ?= latest
 GOOGLE_APPLICATION_CREDENTIALS ?= /dev/null
 
 unit_test_files := $(wildcard tests/unit/test_*.pl)
@@ -112,7 +112,8 @@ deploy:
 		--from-literal=azure_client_id=$(AZURE_CLIENT_ID) \
 		--from-literal=azure_client_secret=$(AZURE_CLIENT_SECRET) \
 		--from-literal=wsk_auth=$(WSK_AUTH) \
-		--from-literal=wsk_apihost=$(WSK_APIHOST)
+		--from-literal=wsk_apihost=$(WSK_APIHOST) \
+		--from-literal=ifttt_key=$(IFTTT_KEY)
 	envsubst < $(faasshell_deployment) | kubectl apply -f -
 
 undeploy:

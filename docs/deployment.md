@@ -1,5 +1,23 @@
 # Deployment
 
+## Server certificate
+
+The faasshell service runs in https if there are "etc/server/server-cert.pem" and "etc/server/server-key.pem". Otherwise it runs in http.
+
+Self signed certificate is checked in the git repository".
+You can print the contents as following.
+
+```sh
+$ openssl x509 -text -noout -in etc/server/server-cert.pem
+```
+In order to regenerate the self signed certificate, type the following command.
+
+```sh
+$ make cert
+```
+
+Otherwise follow the steps described in [Generating Self Signed Certificate](../etc).
+
 ## Docker
 
 ```sh
