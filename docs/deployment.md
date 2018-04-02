@@ -41,6 +41,10 @@ $ kubectl create namespace faasshell
 $ kubectl -n faasshell run couchdb --image=apache/couchdb
 
 $ kubectl -n faasshell expose deployment couchdb --port=5984
+
+$ kubectl -n faasshell get pod
+NAME                       READY     STATUS    RESTARTS   AGE
+couchdb-69dbdcbb48-jzjz5   1/1       Running   0          1m
 ```
 
   > In case of proxy environment:
@@ -54,6 +58,11 @@ $ kubectl -n faasshell expose deployment couchdb --port=5984
 
 ```sh
 $ make -e docker_image_prefix=YOUR_PREFIX deploy
+
+$ kubectl -n faasshell get pod
+NAME                        READY     STATUS    RESTARTS   AGE
+couchdb-69dbdcbb48-jzjz5    1/1       Running   0          15m
+faasshell-cb657b84b-sct6x   1/1       Running   0          52s
 
 $ kubectl -n faasshell describe service faasshell | grep https | grep NodePort| awk '{print $3}' | cut -d'/' -f1
 30954

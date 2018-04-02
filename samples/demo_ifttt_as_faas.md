@@ -85,7 +85,7 @@ $ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/save_result.json?overwrite=tru
 
 ```sh
 $ curl -ksX POST ${FAASSHELL_APIHOST}/statemachine/save_result.json?blocking=true \
-  -H 'Content-Type: application/json' -d '{"inut": {"name": "IFTTT"}}' \
+  -H 'Content-Type: application/json' -d '{"input": {"name": "IFTTT"}}' \
   -u $DEMO | jq .output -
   "Congratulations! You've fired the save_result event"
 ```

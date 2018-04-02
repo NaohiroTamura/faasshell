@@ -54,7 +54,7 @@ spec:
       containers:
       - name: faasshell
         imagePullPolicy: Always
-        image: "${docker_image_prefix}/faasshell$:{docker_image_tag}"
+        image: "${docker_image_prefix}/faasshell:${docker_image_tag}"
         ports:
         - name: http
           containerPort: 8080

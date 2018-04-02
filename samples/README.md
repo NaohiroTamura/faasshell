@@ -94,6 +94,9 @@ ubuntu@trusty:~/faasshell[master]$ docker run -d -p 5984:5984 apache/couchdb
 ubuntu@trusty:~/faasshell[master]$ make -e docker_image_prefix=YOUR_PREFIX run
 
 ubuntu@trusty:~/faasshell[master]$ FAASSHELL_APIHOST=https://127.0.0.1:8443
+
+ubuntu@trusty:~/faasshell[master]$ curl -ksLX GET ${FAASSHELL_APIHOST}/ -u $DEMO
+{"version":"$Id rev.YYYY-MM-DD.COMMITID $"}
 ```
 
 ### In case of Kubernetes
@@ -106,6 +109,10 @@ ubuntu@trusty:~/faasshell[master]$ kubectl create namespace faasshell
 ubuntu@trusty:~/faasshell[master]$ kubectl -n faasshell run couchdb --image=apache/couchdb
 
 ubuntu@trusty:~/faasshell[master]$ kubectl -n faasshell expose deployment couchdb --port=5984
+
+ubuntu@trusty:~/faasshell[master]$ kubectl -n faasshell get pod
+NAME                       READY     STATUS    RESTARTS   AGE
+couchdb-69dbdcbb48-jzjz5   1/1       Running   0          1m
 ```
 
   > In case of proxy environment:
@@ -120,10 +127,18 @@ ubuntu@trusty:~/faasshell[master]$ kubectl -n faasshell expose deployment couchd
 ```sh
 ubuntu@trusty:~/faasshell[master]$ make -e docker_image_prefix=YOUR_PREFIX deploy
 
+ubuntu@trusty:~/faasshell[master]$ kubectl -n faasshell get pod
+NAME                        READY     STATUS    RESTARTS   AGE
+couchdb-69dbdcbb48-jzjz5    1/1       Running   0          15m
+faasshell-cb657b84b-sct6x   1/1       Running   0          52s
+
 ubuntu@trusty:~/faasshell[master]$ kubectl -n faasshell describe service faasshell | grep https | grep NodePort| awk '{print $3}' | cut -d'/' -f1
 30954
 
 ubuntu@trusty:~/faasshell[master]$ FAASSHELL_APIHOST=https://${cluster_address}:30954
+
+ubuntu@trusty:~/faasshell[master]$ curl -ksLX GET ${FAASSHELL_APIHOST}/ -u $DEMO
+{"version":"$Id rev.YYYY-MM-DD.COMMITID $"}
 ```
 
 ${cluster_address}  depends on clusters environment, it is opened at https://$(minikube ip):30954 in case of Minikube.
