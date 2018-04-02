@@ -206,6 +206,10 @@ sub-directory based on the following State Machine Template.
 
   This demonstrates that the statemachine invokes IFTTT Applet as a task and saves the result into Google sheets.
 
+* [Activity Task](samples/demo_activity_task.md)
+
+  This demonstrates that the long running activity task hosted outside of FaaS.
+
 ## Devloper's Guide (work in progress)
 
 * [Development Environment](docs/development_environment.md)

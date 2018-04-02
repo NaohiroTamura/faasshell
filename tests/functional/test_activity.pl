@@ -65,7 +65,7 @@ test(succeed, (Code1, Code2, Code3, Code4, Code5, Status)
             Id),
     sleep(1),
 
-    Activity = "::states:::activity:test",
+    Activity = "frn:wsk:states:::activity:test",
     atomics_to_string([Host, '/activity/', Activity], ActivityURL),
 
     http_get(ActivityURL, Data3, [authorization(basic(ID, PW)),

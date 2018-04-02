@@ -71,9 +71,10 @@ test(unknown, (Code, Message) = (404, 'Function not found')) :-
 :- begin_tests(custom_error).
 
 test(nodejs, Code = 200) :-
-    aws_api_lambda:faas:invoke(
-        'arn:aws:lambda:us-east-2:410388484666:function:error',
-        [status_code(Code)], _{}, R),
+    personal(Region, Account),
+    atomic_list_concat([arn, aws, lambda, Region, Account, function, error],
+                       ':', ARN),
+    aws_api_lambda:faas:invoke(ARN, [status_code(Code)], _{}, R),
 
     assertion(R = _{error: "CustomError",
                     cause: _{errorMessage: "This is a custom error!",

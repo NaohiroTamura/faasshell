@@ -1,5 +1,5 @@
 asl([parallel('Parallel',
-              branches([[task('HelloAWS',"arn:aws:lambda:us-east-2:410388484666:function:hello",
+              branches([[task('HelloAWS',"arn:aws:lambda:${aws_region}:${aws_account_id}:function:hello",
                               [result_path('$.par.aws'),output_path('$.par')])],
                         [task('HelloGCP',"frn:gcp:functions:${gcp_location_id}:${gcp_project_id}:function:hello",
                               [result_path('$.par.gcp'),output_path('$.par')])],
