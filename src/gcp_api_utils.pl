@@ -56,27 +56,24 @@ gcp(Options) :-
 gcp_renew(Options) :-
     proxy_utils:http_proxy('https://www.googleapis.com', ProxyOptions),
     debug(gcp, '~w~n', [proxy_options(ProxyOptions)]),
-    ( getenv('GCP_APP_CRED', CredStr),
+    ( getenv('GCP_APP_CRED', CredStr), CredStr \== '',
       atom_json_dict(CredStr, CredDict, [])
-    ; getenv('GOOGLE_APPLICATION_CREDENTIALS', File),
+    ; getenv('GOOGLE_APPLICATION_CREDENTIALS', File), File \== '',
       setup_call_cleanup(
               open(File, read, S, []),
               json_read_dict(S, CredDict, []),
               close(S))
     ), !,
-    ( nonvar(CredDict)
-      ->
-          jwt(CredDict, JWT),
-          access_token_request(JWT, Reply),
-          debug(gcp, '~w~n', [token_type(Reply)]),
-          atomics_to_string([Reply.token_type, Reply.access_token], ' ',
-                            AuthorizationHeader),
-          debug(gcp, '~w~n', [authorization_header(AuthorizationHeader)]),
-          Options = [ request_header('Authorization'=AuthorizationHeader),
-                      gcp_project(CredDict.project_id)
-                    | ProxyOptions ]
-      ;  Options = ProxyOptions
-    ).
+    nonvar(CredDict),
+    jwt(CredDict, JWT),
+    access_token_request(JWT, Reply),
+    debug(gcp, '~w~n', [token_type(Reply)]),
+    atomics_to_string([Reply.token_type, Reply.access_token], ' ',
+                      AuthorizationHeader),
+    debug(gcp, '~w~n', [authorization_header(AuthorizationHeader)]),
+    Options = [ request_header('Authorization'=AuthorizationHeader),
+                gcp_project(CredDict.project_id)
+              | ProxyOptions ].
 
 jwt(Cred, JWT) :-
     base64url('{"alg":"RS256","typ":"JWT"}', HeaderEnc),

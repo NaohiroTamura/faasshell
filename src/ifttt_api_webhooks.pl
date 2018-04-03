@@ -36,9 +36,7 @@
 faas:invoke(URI, Options, Payload, Reply) :-
     atomic_list_concat([frn, ifttt, webhooks, _, _, function, Applet],
                        ':', URI), !,
-    ( getenv('IFTTT_KEY', IFTTT_KEY)
-    ; IFTTT_KEY = ''
-    ), !,
+    getenv('IFTTT_KEY', IFTTT_KEY), IFTTT_KEY \== '',
     atomic_list_concat(['https://maker.ifttt.com/trigger/',
                         Applet,
                         '/with/key/',

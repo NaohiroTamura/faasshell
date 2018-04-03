@@ -56,17 +56,15 @@ azure_renew(Options) :-
     Resource = 'https://management.azure.com/',
     proxy_utils:http_proxy(Resource, ProxyOptions),
 
-    ( getenv('AZURE_TENANT_ID', TenantId),
-      getenv('AZURE_CLIENT_ID', ClientId),
-      getenv('AZURE_CLIENT_SECRET', ClientSecret)
-    )
-    -> access_token_request(TenantId, ClientId, ClientSecret, Resource, Reply),
-       atomics_to_string([Reply.token_type, Reply.access_token], ' ',
-                         AuthorizationHeader),
-       Options = [ request_header('Authorization'=AuthorizationHeader)
-                 | ProxyOptions ]
-    ;  debug(supress, '~w~n', [supress_compiler_warning(ProxyOptions)]),
-       Options = ProxyOptions.
+    getenv('AZURE_TENANT_ID', TenantId), TenantId \== '',
+    getenv('AZURE_CLIENT_ID', ClientId), ClientId \== '',
+    getenv('AZURE_CLIENT_SECRET', ClientSecret), ClientSecret \== '',
+
+    access_token_request(TenantId, ClientId, ClientSecret, Resource, Reply),
+    atomics_to_string([Reply.token_type, Reply.access_token], ' ',
+                      AuthorizationHeader),
+    Options = [ request_header('Authorization'=AuthorizationHeader)
+                              | ProxyOptions ].
 
 access_token_request(TenantId, ClientId, ClientSecret, Resource, Reply) :-
     proxy_utils:http_proxy(Resource, ProxyOptions),

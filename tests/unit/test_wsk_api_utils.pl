@@ -40,8 +40,17 @@ test(echo, (NS, ActionName) = (default, "utils/echo")) :-
 
 :- begin_tests(options).
 
-test(auth_zero_length, (PROTOCOL, HOST, PORT) = (https, '172.17.0.1', 443)) :-
+test(no_apihost, fail) :-
     unsetenv('WSK_APIHOST'),
+    openwhisk(_Options).
+
+test(apihost_zero_length, fail) :-
+    setenv('WSK_APIHOST', ''),
+    openwhisk(_Options).
+
+test(auth_zero_length,
+     (PROTOCOL, HOST, PORT) = (https, 'openwhisk.apache.org', 443)) :-
+    setenv('WSK_APIHOST', 'https://openwhisk.apache.org'),
     setenv('WSK_AUTH', ''),
     openwhisk(Options),
     assertion(\+ option(authorization(basic(_ID, _PW)), Options)),

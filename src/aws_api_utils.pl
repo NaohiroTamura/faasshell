@@ -27,7 +27,9 @@
 
 aws_step_functions(Action, ARN, RequestParameters, Payload, Options) :-
     getenv('AWS_ACCESS_KEY_ID', AWS_ACCESS_KEY_ID),
+    AWS_ACCESS_KEY_ID \== '',
     getenv('AWS_SECRET_ACCESS_KEY', AWS_SECRET_ACCESS_KEY),
+    AWS_SECRET_ACCESS_KEY \== '',
     atomic_list_concat([arn, aws, Service, Region |_ ], ':', ARN),
     Method = 'POST',
     Scheme = 'https',
@@ -88,7 +90,9 @@ lambda(delete, 'DELETE', Function, Resource) :-
 
 aws_lambda(Action, ARN, RequestParameters, Payload, Options) :-
     getenv('AWS_ACCESS_KEY_ID', AWS_ACCESS_KEY_ID),
+    AWS_ACCESS_KEY_ID \== '',
     getenv('AWS_SECRET_ACCESS_KEY', AWS_SECRET_ACCESS_KEY),
+    AWS_SECRET_ACCESS_KEY \== '',
     atomic_list_concat([arn, aws, lambda, Region, _, function, Function], ':', ARN),
     lambda(Action, Method, Function, Resource),
     %% Region = 'us-east-2',

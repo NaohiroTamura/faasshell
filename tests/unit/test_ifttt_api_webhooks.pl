@@ -38,12 +38,12 @@ test(wrong_key, Code = 401) :-
     assertion(R = _{errors:[_{message:"You sent an invalid key."}]}),
     setenv('IFTTT_KEY', BACKUP).
 
-test(empty_key, Code = 404) :-
+test(empty_key) :-
     getenv('IFTTT_KEY', BACKUP),
     unsetenv('IFTTT_KEY'),
-    ifttt_api_webhooks:faas:invoke('frn:ifttt:webhooks:::function:save_result',
-                                   [status_code(Code)], _{value1: "hello"}, R),
-    assertion(R = "Cannot POST /trigger/save_result/with/key/\n"),
+    assertion(\+ ifttt_api_webhooks:faas:invoke(
+                     'frn:ifttt:webhooks:::function:save_result',
+                     [status_code(_Code)], _{value1: "hello"}, _R)),
     setenv('IFTTT_KEY', BACKUP).
 
 :- end_tests(webhook).

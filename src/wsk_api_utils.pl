@@ -30,28 +30,24 @@ api_key(Key, ID-PW) :-
     split_string(Key, ':', "", [ID, PW]).
 
 openwhisk(Options) :-
+    getenv('WSK_APIHOST', APIHOST), APIHOST \== '',
+    ( ( APIHOST = 'openwhisk.ng.bluemix.net'
+      ; re_match("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$", APIHOST)
+      )
+      -> PROTOCOL = https,
+         HOST = APIHOST,
+         PORT = 443
+      ;  parse_url(APIHOST, Attributes),
+         option(protocol(PROTOCOL), Attributes),
+         option(host(HOST), Attributes),
+         default_port(PROTOCOL, DEFAULT_PORT),
+         option(port(PORT), Attributes, DEFAULT_PORT)
+    ),
+    parse_url(DistHost, [protocol(PROTOCOL), host(HOST)]),
     ( getenv('WSK_AUTH',Key), api_key(Key, ID-PW)
       -> AuthOpt =  [authorization(basic(ID, PW))]
       ;  AuthOpt =  []
     ),
-    ( getenv('WSK_APIHOST', APIHOST)
-      -> ( ( APIHOST = 'openwhisk.ng.bluemix.net'
-           ; re_match("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$", APIHOST)
-           )
-           -> PROTOCOL = https,
-              HOST = APIHOST,
-              PORT = 443
-           ;  parse_url(APIHOST, Attributes),
-              option(protocol(PROTOCOL), Attributes),
-              option(host(HOST), Attributes),
-              default_port(PROTOCOL, DEFAULT_PORT),
-              option(port(PORT), Attributes, DEFAULT_PORT)
-         )
-      ; HOST = '172.17.0.1',
-        PROTOCOL = https,
-        PORT = 443
-    ),
-    parse_url(DistHost, [protocol(PROTOCOL), host(HOST)]),
     proxy_utils:http_proxy(DistHost, ProxyOptions),
     flatten([AuthOpt,
              ProxyOptions,
