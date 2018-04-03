@@ -185,15 +185,15 @@ how to use REST API, and etc.
 Samples directory contains some examples in each provider's
 sub-directory based on the following State Machine Template.
 
-- Hello world (pass state)
-- Hello world (task state)
-- Wait state
-- Retry failure
-- Parallel
-- Catch failure
-- Choice state
-- Job Status Poller
-- Task Timer
+- [Hello world (pass state)](samples/common/blueprints/hello_world.json)
+- [Hello world (task state)](samples/common/blueprints/hello_world_task.json)
+- [Wait state](samples/common/blueprints/wait_state.json)
+- [Retry failure](samples/common/blueprints/retry_failure.json)
+- [Parallel](samples/common/blueprints/parallel.json)
+- [Catch failure](samples/common/blueprints/catch_failure.json)
+- [Choice state](samples/common/blueprints/choice_state.json)
+- [Job Status Poller](samples/common/blueprints/job_status_poller.json)
+- [Task Timer](samples/common/blueprints/task_timer.json)
 
 ## Demo
 
