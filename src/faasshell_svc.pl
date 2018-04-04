@@ -369,8 +369,11 @@ statemachine(post, Request) :-
               http_parameters(Request, [blocking(Blocking, [default(false)])]),
               http_log('~w~n', [blocking(Blocking)]),
               ( Blocking = true
-                -> faasshell_run:start(Dsl, [], Input, O),
-                   Output = DictParams.put(_{output:O})
+                -> ( faasshell_run:start(Dsl, [], Input, O)
+                     -> Output = DictParams.put(_{output:O})
+                     ;  throw((_{error: 'failed to start',
+                                 cause: 'FaaS credential is missing'}, 500))
+                   )
                ;  uuid(ExecId),
                   thread_create(background_job(NS, File, ExecId, Dsl, Input),
                                 ChildId),
@@ -525,8 +528,11 @@ shell(post, Request) :-
               http_parameters(Request, [blocking(Blocking, [default(false)])]),
               http_log('~w~n', [blocking(Blocking)]),
               ( Blocking = true
-                -> faasshell_run:start(Dsl, [], Input, O),
-                   Output = DictParams.put(_{output:O})
+                -> ( faasshell_run:start(Dsl, [], Input, O)
+                     -> Output = DictParams.put(_{output:O})
+                     ;  throw((_{error: 'failed to start',
+                                 cause: 'FaaS credential is missing'}, 500))
+                   )
                ;  uuid(ExecId),
                   thread_create(background_job(NS, File, ExecId, Dsl, Input),
                                 ChildId),
@@ -614,7 +620,11 @@ background_job(Namespace, File, ExecId, Dsl, Input) :-
               hostname: Hostname
             },
     cdb_api:doc_create(faasshell_executions, NSFile, Dict, _C1, _R1),
-    faasshell_run:start(Dsl, [], Input, Output),
+    ( faasshell_run:start(Dsl, [], Input, O)
+      -> Output = O
+      ;  Output = _{error: 'failed to start',
+                    cause: 'FaaS credential is missing'}
+    ),
     get_time(End),
     UpdatedDict = Dict.put(
            _{ result:
