@@ -18,6 +18,8 @@ docker run -it --rm -v /home:/home -u $(id -u):$(id -g) -w $PWD \
     -e WSK_AUTH=${WSK_AUTH} \
     -e WSK_APIHOST=${WSK_APIHOST} \
     -e IFTTT_KEY=${IFTTT_KEY} \
+    -e K5_AUTH=${K5_AUTH} \
+    -e K5_APIHOST=${K5_APIHOST} \
     -e HTTP_PROXY=${HTTP_PROXY} \
     -e HTTPS_PROXY=${HTTPS_PROXY} \
     -e NO_PROXY=${NO_PROXY} \
