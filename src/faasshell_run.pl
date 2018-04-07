@@ -81,8 +81,7 @@ reduce([A|B], I, O, E) :-
     mydebug(reduce(bin(out)), (M, O)).
 reduce(A, I, O, E) :-
     mydebug(reduce(op(in)), (I, O)),
-    A =.. L, append(L, [I, O, E], L1),
-    Q =.. L1, Q,
+    call(A, I, O, E),
     mydebug(reduce(op(out)), (I, O)).
 %% end of interpreter
 %%
@@ -218,8 +217,7 @@ retry(PartialFunc, [case(Cond, Params)|Cases], I, O, E) :-
            ( CurrentAttempt < MaxAttempts
              -> NewAttempt is CurrentAttempt + 1,
                 merge_options([current_attempt(NewAttempt)], Params, NewParams),
-                PartialFunc =.. CL1, append(CL1, [M1, E], CL2),
-                RetryCommand =.. CL2, RetryCommand,
+                call(PartialFunc, M1, E),
                 ( _{error: Err} :< M1 
                   -> mydebug(task(retry(again)), new_optional(NewParams)),
                      retry(PartialFunc, [case(Cond, NewParams)|Cases], Err, O, E)
