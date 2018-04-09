@@ -1,8 +1,8 @@
 asl([task('CreateAccount',"frn:wsk:functions:::function:helloPython",
           [timeout_seconds(2),
-           fallback([case('ErrorEquals'(["CustomError"]),
+           fallback([case(error_equals(["CustomError"]),
                           [pass('CustomErrorFallback',[result("A")])]),
-                     case('ErrorEquals'(["States.TaskFailed"]),
+                     case(error_equals(["States.TaskFailed"]),
                           [pass('ReservedTypeFallback',[result("B")])]),
-                     case('ErrorEquals'(["States.ALL"]),
+                     case(error_equals(["States.ALL"]),
                           [pass('CatchAllFallback',[result("C")])])])])]).

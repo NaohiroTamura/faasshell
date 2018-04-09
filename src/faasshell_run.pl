@@ -415,149 +415,149 @@ lookup_state(_Target, [], _) :- fail.
 %%
 %% retry and fallback conditions
 %%
-'ErrorEquals'(["States.ALL"], I, true, _E) :- !,
-    mydebug('ErrorEquals'("States.ALL"), (I, true)).
-'ErrorEquals'(["States.TaskFailed"], I, O, _E) :- !,
-    mydebug('ErrorEquals'(in), ("States.TaskFailed", I, O)),
+error_equals(["States.ALL"], I, true, _E) :- !,
+    mydebug(error_equals("States.ALL"), (I, true)).
+error_equals(["States.TaskFailed"], I, O, _E) :- !,
+    mydebug(error_equals(in), ("States.TaskFailed", I, O)),
     (re_match("Error"/i, I) -> O = true; O = false),
-    mydebug('ErrorEquals'(out), ("States.TaskFailed", I, O)).
-'ErrorEquals'(ErrorNames, I, O, _E) :-
-    mydebug('ErrorEquals'(in), (ErrorNames, I, O)),
+    mydebug(error_equals(out), ("States.TaskFailed", I, O)).
+error_equals(ErrorNames, I, O, _E) :-
+    mydebug(error_equals(in), (ErrorNames, I, O)),
     (memberchk(I, ErrorNames) -> O = true; O = false),
-    mydebug('ErrorEquals'(out), (ErrorNames, I, O)).
+    mydebug(error_equals(out), (ErrorNames, I, O)).
 
 %%
 %% choice conditions
 %%
-'Not'(Cond, I, O, E) :-
-    mydebug('Not'(in), (Cond, I, O)),
+not(Cond, I, O, E) :-
+    mydebug(not(in), (Cond, I, O)),
     reduce(Cond, I, M, E),
     not(M, O),
-    mydebug('Not'(out), (Cond, I, O)).
+    mydebug(not(out), (Cond, I, O)).
 
-'And'([], _I, true, _E) :-
-    mydebug('And'(done), true).
-'And'([Cond|Conds], I, O, E) :-
-    mydebug('And'(in), ([Cond|Conds], I, O)),
+and([], _I, true, _E) :-
+    mydebug(and(done), true).
+and([Cond|Conds], I, O, E) :-
+    mydebug(and(in), ([Cond|Conds], I, O)),
     reduce(Cond, I, M1, E),
-    'And'(Conds, I, M2, E),
+    and(Conds, I, M2, E),
     and(M1, M2, O),
-    mydebug('And'(out), ([Cond|Conds], I, O)).
+    mydebug(and(out), ([Cond|Conds], I, O)).
 
-'Or'([], _I, false, _E) :-
-    mydebug('Or'(done), false).
-'Or'([Cond|Conds], I, O, E) :-
-    mydebug('Or'(in), ([Cond|Conds], I, O)),
+or([], _I, false, _E) :-
+    mydebug(or(done), false).
+or([Cond|Conds], I, O, E) :-
+    mydebug(or(in), ([Cond|Conds], I, O)),
     reduce(Cond, I, M1, E),
-    'Or'(Conds, I, M2, E),
+    or(Conds, I, M2, E),
     or(M1, M2, O),
-    mydebug('Or'(out), ([Cond|Conds], I, O)).
+    mydebug(or(out), ([Cond|Conds], I, O)).
 
-'BooleanEquals'(Variable, Value, I, O, _E) :-
-    mydebug('BooleanEquals'(in), (Variable, Value, I, O)),
+boolean_equals(Variable, Value, I, O, _E) :-
+    mydebug(boolean_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V == Value ->  O = true; O = false ), _, O = false),
-    mydebug('BooleanEquals'(out), (Variable, Value, I, O)).
+    mydebug(boolean_equals(out), (Variable, Value, I, O)).
 
-'NumericEquals'(Variable, Value, I, O, _E) :-
-    mydebug('NumericEquals'(in), (Variable, Value, I, O)),
+numeric_equals(Variable, Value, I, O, _E) :-
+    mydebug(numeric_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V =:= Value ->  O = true; O = false), _, O = false),
-    mydebug('NumericEquals'(out), (Variable, Value, I, O)).
+    mydebug(numeric_equals(out), (Variable, Value, I, O)).
 
-'NumericGreaterThan'(Variable, Value, I, O, _E) :-
-    mydebug('NumericGreaterThan'(in), (Variable, Value, I, O)),
+numeric_greater_than(Variable, Value, I, O, _E) :-
+    mydebug(numeric_greater_than(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V > Value ->  O = true; O = false ), _, O = false),
-    mydebug('NumericGreaterThan'(out), (Variable, Value, I, O)).
+    mydebug(numeric_greater_than(out), (Variable, Value, I, O)).
 
-'NumericGreaterThanEquals'(Variable, Value, I, O, _E) :-
-    mydebug('NumericGreaterThanEquals'(in), (Variable, Value, I, O)),
+numeric_greater_than_equals(Variable, Value, I, O, _E) :-
+    mydebug(numeric_greater_than_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V >= Value ->  O = true; O = false ), _, O = false),
-    mydebug('NumericGreaterThanEquals'(out), (Variable, Value, I, O)).
+    mydebug(numeric_greater_than_equals(out), (Variable, Value, I, O)).
 
-'NumericLessThan'(Variable, Value, I, O, _E) :-
-    mydebug('NumericLessThan'(in), (Variable, Value, I, O)),
+numeric_less_than(Variable, Value, I, O, _E) :-
+    mydebug(numeric_less_than(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V < Value ->  O = true; O = false ), _, O = false),
-    mydebug('NumericLessThan'(out), (Variable, Value, I, O)).
+    mydebug(numeric_less_than(out), (Variable, Value, I, O)).
 
-'NumericLessThanEquals'(Variable, Value, I, O, _E) :-
-    mydebug('NumericLessThanEquals'(in), (Variable, Value, I, O)),
+numeric_less_than_equals(Variable, Value, I, O, _E) :-
+    mydebug(numeric_less_than_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V =< Value ->  O = true; O = false ), _, O = false),
-    mydebug('NumericLessThanEquals'(out), (Variable, Value, I, O)).
+    mydebug(numeric_less_than_equals(out), (Variable, Value, I, O)).
 
-'StringEquals'(Variable, Value, I, O, _E) :-
-    mydebug('StringEquals'(in), (Variable, Value, I, O)),
+string_equals(Variable, Value, I, O, _E) :-
+    mydebug(string_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V == Value ->  O = true; O = false ), _, O = false),
-    mydebug('StringEquals'(out), (Variable, Value, I, O)).
+    mydebug(string_equals(out), (Variable, Value, I, O)).
 
-'StringGreaterThan'(Variable, Value, I, O, _E) :-
-    mydebug('StringGreaterThan'(in), (Variable, Value, I, O)),
+string_greater_than(Variable, Value, I, O, _E) :-
+    mydebug(string_greater_than(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V @> Value ->  O = true; O = false ), _, O = false),
-    mydebug('StringGreaterThan'(out), (Variable, Value, I, O)).
+    mydebug(string_greater_than(out), (Variable, Value, I, O)).
 
-'StringGreaterThanEquals'(Variable, Value, I, O, _E) :-
-    mydebug('StringGreaterThanEquals'(in), (Variable, Value, I, O)),
+string_greater_than_equals(Variable, Value, I, O, _E) :-
+    mydebug(string_greater_than_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V @>= Value ->  O = true; O = false ), _, O = false),
-    mydebug('StringGreaterThanEquals'(out), (Variable, Value, I, O)).
+    mydebug(string_greater_than_equals(out), (Variable, Value, I, O)).
 
-'StringLessThan'(Variable, Value, I, O, _E) :-
-    mydebug('StringLessThan'(in), (Variable, Value, I, O)),
+string_less_than(Variable, Value, I, O, _E) :-
+    mydebug(string_less_than(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V @< Value ->  O = true; O = false ), _, O = false),
-    mydebug('StringLessThan'(out), (Variable, Value, I, O)).
+    mydebug(string_less_than(out), (Variable, Value, I, O)).
 
-'StringLessThanEquals'(Variable, Value, I, O, _E) :-
-    mydebug('StringLessThanEquals'(in), (Variable, Value, I, O)),
+string_less_than_equals(Variable, Value, I, O, _E) :-
+    mydebug(string_less_than_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V @=< Value ->  O = true; O = false ), _, O = false),
-    mydebug('StringLessThanEquals'(out), (Variable, Value, I, O)).
+    mydebug(string_less_than_equals(out), (Variable, Value, I, O)).
 
-'TimestampEquals'(Variable, Value, I, O, _E) :-
-    mydebug('TimestampEquals'(in), (Variable, Value, I, O)),
+timestamp_equals(Variable, Value, I, O, _E) :-
+    mydebug(timestamp_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            parse_time(V, VariableStamp),
            parse_time(Value, ValueStamp),
            VariableStamp =:= ValueStamp ->  O = true; O = false ), _, O = false),
-    mydebug('TimestampEquals'(out), (Variable, Value, I, O)).
+    mydebug(timestamp_equals(out), (Variable, Value, I, O)).
 
-'TimestampGreaterThan'(Variable, Value, I, O, _E) :-
-    mydebug('TimestampGreaterThan'(in), (Variable, Value, I, O)),
+timestamp_greater_than(Variable, Value, I, O, _E) :-
+    mydebug(timestamp_greater_than(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            parse_time(V, VariableStamp),
            parse_time(Value, ValueStamp),
            VariableStamp > ValueStamp ->  O = true; O = false ), _, O = false),
-    mydebug('TimestampGreaterThan'(out), (Variable, Value, I, O)).
+    mydebug(timestamp_greater_than(out), (Variable, Value, I, O)).
 
-'TimestampGreaterThanEquals'(Variable, Value, I, O, _E) :-
-    mydebug('TimestampGreaterThanEquals'(in), (Variable, Value, I, O)),
+timestamp_greater_than_equals(Variable, Value, I, O, _E) :-
+    mydebug(timestamp_greater_than_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            parse_time(V, VariableStamp),
            parse_time(Value, ValueStamp),
            VariableStamp >= ValueStamp ->  O = true; O = false ), _, O = false),
-    mydebug('TimestampGreaterThanEquals'(out), (Variable, Value, I, O)).
+    mydebug(timestamp_greater_than_equals(out), (Variable, Value, I, O)).
 
-'TimestampLessThan'(Variable, Value, I, O, _E) :-
-    mydebug('TimestampLessThan'(in), (Variable, Value, I, O)),
+timestamp_less_than(Variable, Value, I, O, _E) :-
+    mydebug(timestamp_less_than(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            parse_time(V, VariableStamp),
            parse_time(Value, ValueStamp),
            VariableStamp < ValueStamp ->  O = true; O = false ), _, O = false),
-    mydebug('TimestampLessThan'(out), (Variable, Value, I, O)).
+    mydebug(timestamp_less_than(out), (Variable, Value, I, O)).
 
-'TimestampLessThanEquals'(Variable, Value, I, O, _E) :-
-    mydebug('TimestampLessThanEquals'(in), (Variable, Value, I, O)),
+timestamp_less_than_equals(Variable, Value, I, O, _E) :-
+    mydebug(timestamp_less_than_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            parse_time(V, VariableStamp),
            parse_time(Value, ValueStamp),
            VariableStamp =< ValueStamp ->  O = true; O = false ), _, O = false),
-    mydebug('TimestampLessThanEquals'(out), (Variable, Value, I, O)).
+    mydebug(timestamp_less_than_equals(out), (Variable, Value, I, O)).
 
 %% Input and Output Processing
 process_input(OriginalInput, Input, Optional) :-

@@ -277,81 +277,81 @@ branches(States, StateKey, [B|Bs], [D|Ds], Graph, Path) :-
     append([StateKey>StartAtKey | G1], G2, Graph).
 
 %%
-choice_rules(Rules, 'BooleanEquals'(VariableKey, Bool)) :-
+choice_rules(Rules, boolean_equals(VariableKey, Bool)) :-
     _{'Variable': Variable, 'BooleanEquals': Bool} :< Rules,
     dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'NumericEquals'(VariableKey, Num)) :-
+choice_rules(Rules, numeric_equals(VariableKey, Num)) :-
     _{'Variable': Variable, 'NumericEquals': Num} :< Rules,
     dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'NumericGreaterThan'(VariableKey, Num)) :-
+choice_rules(Rules, numeric_greater_than(VariableKey, Num)) :-
     _{'Variable': Variable, 'NumericGreaterThan': Num} :< Rules,
     dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'NumericGreaterThanEquals'(VariableKey, Num)) :-
+choice_rules(Rules, numeric_greater_than_equals(VariableKey, Num)) :-
     _{'Variable': Variable, 'NumericGreaterThanEquals': Num} :< Rules,
     dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'NumericLessThan'(VariableKey, Num)) :-
+choice_rules(Rules, numeric_less_than(VariableKey, Num)) :-
     _{'Variable': Variable, 'NumericLessThan': Num} :< Rules,
     dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'NumericLessThanEquals'(VariableKey, Num)) :-
+choice_rules(Rules, numeric_less_than_equals(VariableKey, Num)) :-
     _{'Variable': Variable, 'NumericLessThanEquals': Num} :< Rules,
     dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'StringEquals'(VariableKey, Str)) :-
+choice_rules(Rules, string_equals(VariableKey, Str)) :-
     _{'Variable': Variable, 'StringEquals': Str} :< Rules,
     dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'StringGreaterThan'(VariableKey, Str)) :-
+choice_rules(Rules, string_greater_than(VariableKey, Str)) :-
     _{'Variable': Variable, 'StringGreaterThan': Str} :< Rules,
     dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'StringGreaterThanEquals'(VariableKey, Str)) :-
+choice_rules(Rules, string_greater_than_equals(VariableKey, Str)) :-
     _{'Variable': Variable, 'StringGreaterThanEquals': Str} :< Rules,
     dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'StringLessThan'(VariableKey, Str)) :-
+choice_rules(Rules, string_less_than(VariableKey, Str)) :-
     _{'Variable': Variable, 'StringLessThan': Str} :< Rules,
     dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'StringLessThanEquals'(VariableKey, Str)) :-
+choice_rules(Rules, string_less_than_equals(VariableKey, Str)) :-
     _{'Variable': Variable, 'StringLessThanEquals': Str} :< Rules,
     dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'TimestampEquals'(VariableKey, Time)) :-
+choice_rules(Rules, timestamp_equals(VariableKey, Time)) :-
     _{'Variable': Variable, 'TimestampEquals': Time} :< Rules,
     dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'TimestampGreaterThan'(VariableKey, Time)) :-
+choice_rules(Rules, timestamp_greater_than(VariableKey, Time)) :-
     _{'Variable': Variable, 'TimestampGreaterThan': Time} :< Rules,
     dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'TimestampGreaterThanEquals'(VariableKey, Time)) :-
+choice_rules(Rules, timestamp_greater_than_equals(VariableKey, Time)) :-
     _{'Variable': Variable, 'TimestampGreaterThanEquals': Time} :< Rules,
     dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'TimestampLessThan'(VariableKey, Time)) :-
+choice_rules(Rules, timestamp_less_than(VariableKey, Time)) :-
     _{'Variable': Variable, 'TimestampLessThan': Time} :< Rules,
     dollarvar_key(Variable, VariableKey).
 
-choice_rules(Rules, 'TimestampLessThanEquals'(VariableKey, Time)) :-
+choice_rules(Rules, timestamp_less_than_equals(VariableKey, Time)) :-
     _{'Variable': Variable, 'TimestampLessThanEquals': Time} :< Rules,
     dollarvar_key(Variable, VariableKey).
 
 %% the value of a Not operator must be a single Choice Rule
 %% that must not contain Next fields. 
-choice_rules(Rules, 'Not'(Term)) :-
+choice_rules(Rules, not(Term)) :-
     _{'Not': Cond} :< Rules,
     choice_rules(Cond, Term).
 
-choice_rules(Rules, 'And'(Terms)) :-
+choice_rules(Rules, and(Terms)) :-
     _{'And': Conds} :< Rules,
     choice_rules_next(Conds, Terms).
 
-choice_rules(Rules, 'Or'(Terms)) :-
+choice_rules(Rules, or(Terms)) :-
     _{'Or': Conds} :< Rules,
     choice_rules_next(Conds, Terms).
 %%
@@ -361,7 +361,7 @@ choice_rules_next([C|Cs], [T|Ts]) :-
     choice_rules_next(Cs, Ts).
 
 %% 
-retry_rules(Rule, case('ErrorEquals'(ErrorCodes), Optional)) :-
+retry_rules(Rule, case(error_equals(ErrorCodes), Optional)) :-
     _{'ErrorEquals':ErrorCodes} :< Rule,
     ( _{'IntervalSeconds': I} :< Rule; I = 1 ),
     ( _{'MaxAttempts': M} :< Rule; M = 3 ),
@@ -385,7 +385,7 @@ fallback_rules(States, StateKey, Rule, Dsl, Graph, Path) :-
     string(Next),
     atom_string(NextKey, Next),
     parse(States, NextKey, D1, G1, [StateKey>NextKey | Path]),
-    Dsl = [case('ErrorEquals'(ErrorCodes), D1)],
+    Dsl = [case(error_equals(ErrorCodes), D1)],
     Graph = [StateKey>NextKey | G1].
 
 fallback_rules_next(_, _, [], [], [], _).
