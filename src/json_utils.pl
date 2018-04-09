@@ -33,9 +33,10 @@ term_json_dict(Term, Dict) :-
 
 %%
 load_json(File, Asl) :-
-    open(File, read, S, []),
-    json_read_dict(S, Asl, []),
-    close(S).
+    setup_call_cleanup(
+            open(File, read, S, []),
+            json_read_dict(S, Asl, []),
+            close(S)).
 
 %%
 search_dic(D, K, V, [K]) :-

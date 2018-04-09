@@ -77,9 +77,10 @@ main(File, Dsl, Graph) :-
     main(Asl, Dsl, Graph).
 
 load_json(File, Asl) :-
-    open(File, read, S, []),
-    json_read_dict(S, Asl, []),
-    close(S).
+    setup_call_cleanup(
+            open(File, read, S, []),
+            json_read_dict(S, Asl, []),
+            close(S)).
 
 %% Asl Root
 parse(Asl, asl(Dsl), Graph, Path) :-
