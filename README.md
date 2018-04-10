@@ -142,7 +142,7 @@ only [AWS Lambda][1] but also functions in other FaaS Infrastructures.
             }
           }
         },
-        "dsl":"asl([task('HelloWorld',\"arn:aws:lambda:us-east-2:410388484666:function:hello\",[])])",
+        "dsl":"fsm([task('HelloWorld',\"arn:aws:lambda:us-east-2:410388484666:function:hello\",[])])",
         "name":"hello_world_task.json",
         "namespace":"demo",
         "output":"ok"
@@ -165,7 +165,7 @@ only [AWS Lambda][1] but also functions in other FaaS Infrastructures.
             }
           }
         },
-        "dsl":"asl([task('HelloWorld',\"arn:aws:lambda:us-east-2:410388484666:function:hello\",[])])",
+        "dsl":"fsm([task('HelloWorld',\"arn:aws:lambda:us-east-2:410388484666:function:hello\",[])])",
         "input": {"name":"Curl"},
         "name":"hello_world_task.json",
         "namespace":"demo",

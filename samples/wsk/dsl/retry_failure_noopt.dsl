@@ -1,4 +1,4 @@
-asl([task('CreateAccount',"frn:wsk:functions:::function:helloPython",
+fsm([task('CreateAccount',"frn:wsk:functions:::function:helloPython",
           [timeout_seconds(2),
            fallback([case(error_equals(["CustomError"]),
                           [pass('CustomErrorFallback',[result("A")])]),

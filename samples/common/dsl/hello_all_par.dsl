@@ -1,4 +1,4 @@
-asl([parallel('Parallel',
+fsm([parallel('Parallel',
               branches([[task('HelloAWS',"arn:aws:lambda:${aws_region}:${aws_account_id}:function:hello",
                               [result_path('$.par.aws'),output_path('$.par')])],
                         [task('HelloGCP',"frn:gcp:functions:${gcp_location_id}:${gcp_project_id}:function:hello",

@@ -56,7 +56,7 @@ start(File, Options, I, O) :-
     start(Term, Options, I, O).
 
 start(Term, Options, I, O) :-
-    Term = asl(Dsl), !,
+    Term = fsm(Dsl), !,
     mydebug(start(in), (Term, I, O)),
     reduce(Term, I, O, _{faas: Options, asl: Dsl}),
     mydebug(start(out), (I, O)).
@@ -65,11 +65,11 @@ start(Term, Options, I, O) :-
 %% begin of iterpreter
 %%
 %% reduce(+Dsl, +Input, -Output, +Environment)
-reduce(asl(Dsl), I, O, E) :- 
+reduce(fsm(Dsl), I, O, E) :- 
     !,
-    mydebug(reduce(asl(in)), (I, O)),
+    mydebug(reduce(fsm(in)), (I, O)),
     reduce(Dsl, I, O, E),
-    mydebug(reduce(asl(out)), (I, O)).
+    mydebug(reduce(fsm(out)), (I, O)).
 reduce([], O, O, _E) :-
     !,
     mydebug(reduce(done), O).

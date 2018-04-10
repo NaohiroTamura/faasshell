@@ -1,4 +1,4 @@
-asl([task('FirstState',"frn:wsk:functions:::function:/whisk.system/utils/echo",[]),
+fsm([task('FirstState',"frn:wsk:functions:::function:/whisk.system/utils/echo",[]),
      choices('ChoiceState',
              [case(numeric_equals('$.foo',1),
                    [task('FirstMatchState',"frn:wsk:functions:::function:hello",

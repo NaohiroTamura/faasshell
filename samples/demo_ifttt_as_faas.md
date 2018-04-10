@@ -75,7 +75,7 @@ $ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/save_result.json?overwrite=tru
         }
       }
     },
-    "dsl":"asl([task('HelloWorld',\"frn:wsk:functions:::function:hello\",[]),pass('UpdateArg',[result_path('$.ifttt.value1'),input_path('$.payload'),output_path('$.ifttt')])$
+    "dsl":"fsm([task('HelloWorld',\"frn:wsk:functions:::function:hello\",[]),pass('UpdateArg',[result_path('$.ifttt.value1'),input_path('$.payload'),output_path('$.ifttt')])$
   task('SaveResult',\"frn:ifttt:webhooks:::function:save_result\",[])])",
     "name":"save_result.json",
     "namespace":"demo",

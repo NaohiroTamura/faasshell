@@ -1,1 +1,1 @@
-asl([pass('HelloWorld',[result("Hello World!"),result_path('$.message')])]).
+fsm([pass('HelloWorld',[result("Hello World!"),result_path('$.message')])]).

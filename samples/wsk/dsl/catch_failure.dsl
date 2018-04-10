@@ -1,4 +1,4 @@
-asl([task('CreateAccount',"frn:wsk:functions:::function:hello",
+fsm([task('CreateAccount',"frn:wsk:functions:::function:hello",
           [fallback([case(error_equals(["CustomError"]),
                           [pass('CustomErrorFallback','{"Result":"This is a fallback from a custom Lambda function exception"}')]),
                      case(error_equals(["States.TaskFailed"]),

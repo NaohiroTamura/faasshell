@@ -1,4 +1,4 @@
-asl([parallel('Parallel',
+fsm([parallel('Parallel',
               branches([[task('HelloT1',"frn:wsk:functions:::function:hello",
                               [result_path('$.par.task1'),output_path('$.par')])],
                         [task('HelloT2',"frn:wsk:functions:::function:hello",

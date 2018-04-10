@@ -1,4 +1,4 @@
-asl([task('Submit Job',"frn:wsk:functions:::function:/whisk.system/utils/echo",
+fsm([task('Submit Job',"frn:wsk:functions:::function:/whisk.system/utils/echo",
           [result_path('$.guid')]),
      wait('Wait X Seconds',seconds_path('$.wait_time'),[]),
      task('Get Job Status',"frn:wsk:functions:::function:job",

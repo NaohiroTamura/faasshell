@@ -1,4 +1,4 @@
-asl([task('FirstState',"frn:wsk:functions:::function:/whisk.system/utils/echo",[]),
+fsm([task('FirstState',"frn:wsk:functions:::function:/whisk.system/utils/echo",[]),
      choices('ChoiceStateX',
              [case(not(string_equals('$.type',"Private")),
                    [task('Public',"frn:wsk:functions:::function:hello",

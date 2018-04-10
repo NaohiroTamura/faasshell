@@ -1,1 +1,1 @@
-asl([task('HelloWorld',"::states:::activity:test",[])]).
+fsm([task('HelloWorld',"::states:::activity:test",[])]).

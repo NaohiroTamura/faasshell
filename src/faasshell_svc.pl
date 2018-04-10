@@ -318,9 +318,9 @@ statemachine(put, Request) :-
       option(faasshell_auth(NS), Request)
       -> atomics_to_string([NS, "/", File], NSFile),
          asl_compile:gen_dsl(Dict, Dsl),
-         http_log('~w: ~w~n', [NSFile, dsl(Dsl)]),
+         http_log('~w: ~w~n', [NSFile, fsm(Dsl)]),
          term_string(Dsl, DslStr),
-         ( Dsl = asl(_)
+         ( Dsl = fsm(_)
            -> AslDict = _{name: File, namespace: NS, asl: Dict, dsl: DslStr},
               http_parameters(Request, [overwrite(Overwrite, [default(false)])]),
               http_log('~w~n', [overwrite(Overwrite)]),
@@ -364,7 +364,7 @@ statemachine(post, Request) :-
          select_dict(_{'_id':_, '_rev':_}, Dict, DictRest),
          DictParams = DictRest.put(Params),
          ( Code = 200
-           -> % http_log('~w~n', [dsl(Dict.Dsl)]),
+           -> % http_log('~w~n', [fsm(Dict.Dsl)]),
               term_string(Dsl, Dict.dsl),
               http_parameters(Request, [blocking(Blocking, [default(false)])]),
               http_log('~w~n', [blocking(Blocking)]),
@@ -478,7 +478,7 @@ shell(put, Request) :-
     ( memberchk(path_info(File), Request),
       option(faasshell_auth(NS), Request)
       -> ( term_string(Dsl, DslStr),
-           Dsl = asl(_)
+           Dsl = fsm(_)
            -> atomics_to_string([NS, "/", File], NSFile),
               http_parameters(Request, [overwrite(Overwrite, [default(false)])]),
               http_log('~w~n', [overwrite(Overwrite)]),
@@ -523,7 +523,7 @@ shell(post, Request) :-
          ( Code = 200
            -> select_dict(_{'_id':_, '_rev':_}, Dict, DictRest),
               DictParams = DictRest.put(Params),
-              % http_log('~w~n', [dsl(Dsl)]),
+              % http_log('~w~n', [fsm(Dsl)]),
               term_string(Dsl, Dict.dsl),
               http_parameters(Request, [blocking(Blocking, [default(false)])]),
               http_log('~w~n', [blocking(Blocking)]),

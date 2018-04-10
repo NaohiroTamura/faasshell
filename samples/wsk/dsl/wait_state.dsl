@@ -1,4 +1,4 @@
-asl([task('FirstState',"frn:wsk:functions:::function:hello",
+fsm([task('FirstState',"frn:wsk:functions:::function:hello",
           [result_path('$.first_state')]),
      wait(wait_using_seconds,seconds(3),[]),
      wait(wait_using_timestamp,timestamp("2015-09-04T01:59:00Z"),[]),

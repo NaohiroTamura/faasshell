@@ -35,7 +35,7 @@ $ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/activity_task.json \
       }
     }
   },
-  "dsl":"asl([task('HelloWorld',\"frn:wsk:states:::activity:test\",[])])",
+  "dsl":"fsm([task('HelloWorld',\"frn:wsk:states:::activity:test\",[])])",
   "name":"activity_task.json",
   "namespace":"demo",
   "output":"ok"
@@ -63,7 +63,7 @@ $ curl -ksX POST ${FAASSHELL_APIHOST}/statemachine/activity_task.json?blocking=f
       }
     }
   },
-  "dsl":"asl([task('HelloWorld',\"frn:wsk:states:::activity:test\",[])])",
+  "dsl":"fsm([task('HelloWorld',\"frn:wsk:states:::activity:test\",[])])",
   "input": {"name":"Activity"},
   "name":"activity_task.json",
   "namespace":"demo",

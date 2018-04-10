@@ -83,7 +83,7 @@ load_json(File, Asl) :-
             close(S)).
 
 %% Asl Root
-parse(Asl, asl(Dsl), Graph, Path) :-
+parse(Asl, fsm(Dsl), Graph, Path) :-
     _{'StartAt':StartAt, 'States':States} :< Asl,
     string(StartAt),
     atom_string(StartAtKey, StartAt),
