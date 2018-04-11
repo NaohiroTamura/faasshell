@@ -679,3 +679,8 @@ or(true, true, true).
 or(true, false, true).
 or(false, true, true).
 or(false, false, false).
+
+%%
+%% repl
+%%
+fsm_start(I, I, I, _E).
