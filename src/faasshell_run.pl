@@ -683,4 +683,19 @@ or(false, false, false).
 %%
 %% repl
 %%
-fsm_start(I, I, I, _E).
+d(on, _I, _O, _E) :-
+    debug(repl > user_error).
+
+d(off, _I, _O, _E) :-
+    nodebug(repl).
+
+fsm_start(I, I, I, _E) :-
+    mydebug(fsm_start, I).
+
+fsm_end(O, O, O, _E) :-
+    mydebug(fsm_end, O).
+
+fsm_apply(Func, I, O, _E) :-
+    mydebug(fsm_apply(in), (Func, I, O)),
+    call(Func, I, O),
+    mydebug(fsm_apply(out), (Func, I, O)).

@@ -16,32 +16,59 @@
 %%
 
 :- module(faasshell_repl,
-          [ shell_main/0
+          [ repl/0
           ]).
+
+:- use_module(library(readline)).
 
 :- use_module(faasshell_run).
 
-:- initialization(shell_main).
+:- set_prolog_flag(verbose, silent).
+:- set_prolog_flag(toplevel_prompt, 'faasshell debug> ').
+:- set_prolog_flag(readline, readline).
 
-shell_main :- 
-    set_prolog_flag(verbose, silent),
-    set_prolog_flag(toplevel_prompt, 'faasshell debug> '),
-    prompt(_OldPrompt, 'faasshell> '),
-    debug(repl > user_error),
-    repl.
+:- initialization(repl).
 
 repl :-
-    read_term(Term, []),
-    debug(repl, 'repl: ~w', [term(Term)]),
+    debug(repl > user_error),
+    set_setting(http:logfile,'/logs/httpd.log'), % docker volume /tmp
+    prompt(_OldPrompt, 'faasshell> '),
+    current_prolog_flag(readline, Readline),
+    debug(repl, 'repl: ~w', [readline(Readline)]),
+    load_history,
+    repl_loop.
+
+repl_loop :-
+    read_term(Term, [variable_names(Vars)]),
+    debug(repl, 'repl: ~w, ~w', [term(Term), vars(Vars)]),
     ( Term == end_of_file
-      -> !
-      ;  phrase(tuple_list(Term), Dsl),
+      -> save_history, !
+      ;  term_to_atom(Term, Atom),
+         debug(repl, 'repl: ~w', [atom(Atom)]),
+         rl_add_history(Atom),
+         phrase(tuple_list(Term), Dsl),
          debug(repl, 'repl: ~w', [fsm(Dsl)]),
          faasshell_run:start(fsm(Dsl), [], I, O),
          debug(repl, 'repl: ~w, ~w', [input(I), output(O)]),
-         repl
+         writeln(Vars),
+         repl_loop
     ).
 
 tuple_list((A,B)) --> !, tuple_list(A), tuple_list(B).
 tuple_list(I)     --> { compound(I) }, [I].
 
+history_file(File) :-
+    getenv('HOME', HOME),
+    atomic_list_concat([HOME, '.faasshell_history'], '/', File).
+
+load_history :-
+    history_file(File),
+    access_file(File, read)
+    -> rl_read_history(File)
+    ;  true.
+
+save_history :-
+    history_file(File),
+    access_file(File, write)
+    -> rl_write_history(File)
+    ;  true.

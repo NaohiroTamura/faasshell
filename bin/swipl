@@ -1,6 +1,6 @@
 #!/bin/bash
 docker run -it --rm -v /home:/home -u $(id -u):$(id -g) -w $PWD \
-    --net=host -v /tmp:/logs \
+    -e HOME=${HOME} --net=host -v /tmp:/logs \
     -e FAASSHELL_DB_APIHOST=${FAASSHELL_DB_APIHOST} \
     -e FAASSHELL_DB_AUTH=${FAASSHELL_DB_AUTH} \
     -e aws_region=${aws_region} \
