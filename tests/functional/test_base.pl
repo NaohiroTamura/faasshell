@@ -45,6 +45,7 @@ test(version, Code = 200) :-
     http_get(URL, Data, [authorization(basic(ID, PW)),
                          cert_verify_hook(cert_accept_any), status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{version: _} = Dict).
+    read_version(Version),
+    assertion(_{version: Version} = Dict).
 
 :- end_tests(base).

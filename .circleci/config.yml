@@ -6,11 +6,21 @@ jobs:
     steps:
       - checkout
       - run:
+          name: setting up
+          command: >
+            oc login $OC_APIHOST -u $OC_ID -p $OC_PW ;
+            make undeploy ;
+            make oc_build_image ;
+            make oc_app_image
+      - run:
+          name: test with kafka
+          command: make test_with_kafka -e FAASSHELL_MQ=kafka -e FAASSHELL_APIHOST=https://127.0.0.1:8443
+      - run:
+          name: deploy
+          command: make deploy -e docker_image_prefix=docker-registry.default.svc:5000/faasshell
+      - run:
           name: unit test
           command: make unit_test
       - run:
           name: functional test
           command: make functional_test
-      - run:
-          name: test with kafka
-          command: make test_with_kafka -e FAASSHELL_MQ=kafka

@@ -44,14 +44,12 @@ unit_test:
 
 functional_test:
 	@echo "functional  test"
-	swipl -q -l src/faasshell_svc.pl -g main -t halt &
 	swipl -q -l tests/unit/unit_test_utils.pl -g faas_test_setup -t halt
 	sleep 3
 	for case in $(functional_test_files); do \
 		echo $$case; \
 		swipl -q -l $$case -g run_tests -t halt; \
 	done
-	pkill -HUP swipl
 
 test_with_kafka:
 	@echo "unit and functional tests with kafka"
@@ -70,11 +68,24 @@ test_with_kafka:
 	pkill -HUP swipl
 	pkill -KILL java
 
+oc_build_image:
+	@echo "create build image in OpenShift Online"
+	-oc delete buildconfigs/faasshell
+	oc new-build --docker-image=$(docker_image_prefix)/s2i-swipl:$(docker_image_tag) --binary=true --name=faasshell
+
+oc_app_image:
+	@echo "create application image in OpenShift Online"
+	sed -i "s/'\$$Id\$$'/'\$$Id $(shell git log -n 1 --date=short --format=format:"rev.%ad.%h" HEAD) \$$'/g" src/faasshell_version.pl
+	tar zcvf ../faasshell.tgz . --exclude='./.git/'
+	oc start-build faasshell --from-dir=../faasshell.tgz
+	-oc create route passthrough faasshell --service=faasshell --port=8443
+	rm -f ../faasshell.tgz
+
 build_image:
-	@echo "create build image"
+	@echo "create build image in Docker"
 	if [ -v $(HTTP_PROXY) -a -v $(HTTPS_PROXY) ]; \
 	then \
-		docker build -t s2i-swipl . ; \
+		docker build -t $(docker_image_prefix)/s2i-swipl:$(docker_image_tag) . ; \
 	else \
 		docker build -t s2i-swipl . \
 			 --build-arg HTTP_PROXY=$(HTTP_PROXY) \
@@ -82,13 +93,15 @@ build_image:
 			 --build-arg HTTPS_PROXY=$(HTTPS_PROXY) \
 			 --build-arg https_proxy=$(HTTPS_PROXY) ; \
 	fi
+	docker push  $(docker_image_prefix)/s2i-swipl:$(docker_image_tag)
 
 # make -e docker_image_prefix=myprefix -e docker_image_tag=0.1 app_image
 app_image:
-	@echo "create application image"
+	@echo "create application image in Docker"
 	rm src/faasshell_version.pl
 	git checkout src/faasshell_version.pl
-	s2i build . s2i-swipl $(docker_image_prefix)/faasshell:$(docker_image_tag) -c
+	s2i build . $(docker_image_prefix)/s2i-swipl:$(docker_image_tag) $(docker_image_prefix)/faasshell:$(docker_image_tag) -c
+	docker push  $(docker_image_prefix)/faasshell:$(docker_image_tag)
 
 # make -e docker_image_prefix=myprefix -e docker_image_tag=0.1 deploy
 ifdef HTTP_PROXY
@@ -100,8 +113,7 @@ else
 endif
 deploy:
 	@echo "deploy app_image to kubernetes"
-	docker push  $(docker_image_prefix)/faasshell:$(docker_image_tag)
-	kubectl -n faasshell create secret generic faasshell \
+	-kubectl -n faasshell create secret generic faasshell \
 		--from-literal=faasshell_db_auth=$(FAASSHELL_DB_AUTH) \
 		--from-literal=faasshell_db_apihost=$(FAASSHELL_DB_APIHOST) \
 		--from-literal=aws_access_key_id=$(AWS_ACCESS_KEY_ID) \
@@ -118,7 +130,8 @@ deploy:
 
 undeploy:
 	@echo "undeploy app_image from kubernetes"
-	kubectl delete -f faasshell.yml
+	-kubectl delete -f faasshell.yml
+	-kubectl delete secret faasshell -n faasshell
 
 # make -e docker_image_prefix=myprefix -e docker_image_tag=0.1 run
 run:
