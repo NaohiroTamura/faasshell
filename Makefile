@@ -70,13 +70,15 @@ test_with_kafka:
 
 oc_build_image:
 	@echo "create build image in OpenShift Online"
+	-oc delete imagestreams/s2i-swipl
+	-oc delete imagestreams/faasshell
 	-oc delete buildconfigs/faasshell
 	oc new-build --docker-image=$(docker_image_prefix)/s2i-swipl:$(docker_image_tag) --binary=true --name=faasshell
 
 oc_app_image:
 	@echo "create application image in OpenShift Online"
 	sed -i "s/'\$$Id\$$'/'\$$Id $(shell git log -n 1 --date=short --format=format:"rev.%ad.%h" HEAD) \$$'/g" src/faasshell_version.pl
-	tar zcvf ../faasshell.tgz . --exclude='./.git/'
+	tar zcvf ../faasshell.tgz --exclude-vcs .
 	oc start-build faasshell --from-dir=../faasshell.tgz
 	-oc create route passthrough faasshell --service=faasshell --port=8443
 	rm -f ../faasshell.tgz
