@@ -79,8 +79,16 @@ reduce([A|B], I, O, E) :-
     reduce(A, I, M, E), % M stands for Middle state
     reduce(B, M, O, E),
     mydebug(reduce(bin(out)), (M, O)).
+reduce((A=B), I, O, E) :-
+    var(A), !,
+    mydebug(reduce(substitute(in)), (A,B,I, O)),
+    ( compound(B)
+      -> fsm_apply(B, I, O, E)
+      ;  A=B ),
+    A=O,
+    mydebug(reduce(substitute(out)), (I, O)).
 reduce(A, I, O, E) :-
-    mydebug(reduce(op(in)), (I, O)),
+    mydebug(reduce(op(in)), (A, I, O)),
     call(A, I, O, E),
     mydebug(reduce(op(out)), (I, O)).
 %% end of interpreter
@@ -699,3 +707,15 @@ fsm_apply(Func, I, O, _E) :-
     mydebug(fsm_apply(in), (Func, I, O)),
     call(Func, I, O),
     mydebug(fsm_apply(out), (Func, I, O)).
+
+set(Key, Value, _I, O, E) :-
+    mydebug(set(in), (Key, Value, I, O)),
+    O = [Key=Value],
+    option(repl_cmd(set), E.faas),
+    mydebug(set(out), (Key, Value, I, O)).
+
+get(Key, _I, O, E) :-
+    mydebug(get(in), (Key, Value, I, O)),
+    option(repl_env(ReplEnv), E.faas),
+    O = ReplEnv.Key,
+    mydebug(get(out), (Key, Value, I, O)).

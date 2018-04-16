@@ -1,3 +1,4 @@
+#!/usr/bin/env swipl
 %% -*- mode: prolog; coding: utf-8; -*-
 %%
 %% Copyright 2018 FUJITSU LIMITED
@@ -36,26 +37,47 @@ repl :-
     current_prolog_flag(readline, Readline),
     debug(repl, 'repl: ~w', [readline(Readline)]),
     load_history,
-    repl_loop.
+    repl_loop(_{}).
 
-repl_loop :-
-    read_term(Term, [variable_names(Vars)]),
+repl_loop(E) :-
+    read_term(Term, [variable_names(Vars), syntax_errors(fail)]),
     debug(repl, 'repl: ~w, ~w', [term(Term), vars(Vars)]),
     ( Term == end_of_file
       -> save_history, !
-      ;  term_to_atom(Term, Atom),
+      ;  phrase(tuple_list(Term), Dsl),
+         debug(repl, 'repl: ~w', [dsl(Dsl)]),
+
+         replace_logical_var(Vars, Term, Atom),
          debug(repl, 'repl: ~w', [atom(Atom)]),
-         rl_add_history(Atom),
-         phrase(tuple_list(Term), Dsl),
-         debug(repl, 'repl: ~w', [fsm(Dsl)]),
-         faasshell_run:start(fsm(Dsl), [], I, O),
-         debug(repl, 'repl: ~w, ~w', [input(I), output(O)]),
-         writeln(Vars),
-         repl_loop
+         ( rl_add_history(Atom)
+           -> true
+           ;  debug(repl, 'repl: dup ~w', [rl_add_history(Atom)])
+         ),
+
+         ( Options = [repl_env(E), repl_cmd(_)],
+           faasshell_run:start(fsm(Dsl), Options, I, O)
+           -> true
+           ;  debug(repl, 'repl: false ~w',
+                    [faasshell_run:start(fsm(Dsl), Options, I, O)])
+         ),
+         debug(repl, 'repl: ~w, ~w, ~w', [options(Options), input(I), output(O)]),
+         ( option(repl_cmd(set), Options)
+           -> O = [K=V], E2 = E.put(K,V)
+           ;  E2 = E
+         ),
+         maplist(writeln, Vars),
+         repl_loop(E2)
     ).
 
 tuple_list((A,B)) --> !, tuple_list(A), tuple_list(B).
-tuple_list(I)     --> { compound(I) }, [I].
+tuple_list(I)     --> [I].
+
+replace_logical_var(Variables, CommandTerm, CommandReplaced) :-
+    term_to_atom(CommandTerm, CommandAtom),
+    foldl([(X=LogicalVar),Y,Z]>>(
+              term_to_atom(LogicalVar, LogicalVarAtom),
+              re_replace(LogicalVarAtom/a, X, Y, Z)
+          ), Variables, CommandAtom, CommandReplaced).
 
 history_file(File) :-
     getenv('HOME', HOME),
