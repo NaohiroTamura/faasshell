@@ -223,5 +223,6 @@ sub-directory based on the following State Machine Template.
 * [REST API](http://editor.swagger.io/?url=https://raw.githubusercontent.com/NaohiroTamura/faasshell/master/docs/faasshell_swagger.yaml)
 * [Resource Naming](docs/resource_naming.md)
 * [Environment Variables](docs/environment_variables.md)
+* [REPL (Interactive Shell)](docs/repl.md)
 
 ## [TODO](TODO.md)

@@ -33,13 +33,14 @@
 repl :-
     debug(repl > user_error),
     set_setting(http:logfile,'/logs/httpd.log'), % docker volume /tmp
-    prompt(_OldPrompt, 'faasshell> '),
+    prompt(_OldPrompt, '| '),
     current_prolog_flag(readline, Readline),
     debug(repl, 'repl: ~w', [readline(Readline)]),
     load_history,
     repl_loop(_{}).
 
 repl_loop(E) :-
+    prompt1('faasshell> '),
     read_term(Term, [variable_names(Vars), syntax_errors(fail)]),
     debug(repl, 'repl: ~w, ~w', [term(Term), vars(Vars)]),
     ( Term == end_of_file
@@ -49,22 +50,23 @@ repl_loop(E) :-
 
          replace_logical_var(Vars, Term, Atom),
          debug(repl, 'repl: ~w', [atom(Atom)]),
-         ( rl_add_history(Atom)
-           -> true
-           ;  debug(repl, 'repl: dup ~w', [rl_add_history(Atom)])
-         ),
+         rl_add_history(Atom),
 
-         ( Options = [repl_env(E), repl_cmd(_)],
-           faasshell_run:start(fsm(Dsl), Options, I, O)
-           -> true
-           ;  debug(repl, 'repl: false ~w',
-                    [faasshell_run:start(fsm(Dsl), Options, I, O)])
-         ),
+         Options = [repl_env(E), repl_cmd(Cmd)],
+         catch( faasshell_run:start(fsm(Dsl), Options, I, O),
+                Error,
+                print_message(error, Error)
+              ),
          debug(repl, 'repl: ~w, ~w, ~w', [options(Options), input(I), output(O)]),
-         ( option(repl_cmd(set), Options)
-           -> O = [K=V], E2 = E.put(K,V)
-           ;  E2 = E
+         ( nonvar(Cmd), option(repl_cmd(set(K,V)), Options)
+           -> E2 = E.put(K,V)
+         ; nonvar(Cmd), option(repl_cmd(unset(K)), Options)
+           -> del_dict(K, E, _, E2)
+         ; nonvar(Cmd), option(repl_cmd(unsetall), Options)
+           -> E2 = _{}
+         ;  E2 = E
          ),
+         format('Output=~w~n', [O]),
          maplist(writeln, Vars),
          repl_loop(E2)
     ).
@@ -76,7 +78,7 @@ replace_logical_var(Variables, CommandTerm, CommandReplaced) :-
     term_to_atom(CommandTerm, CommandAtom),
     foldl([(X=LogicalVar),Y,Z]>>(
               term_to_atom(LogicalVar, LogicalVarAtom),
-              re_replace(LogicalVarAtom/a, X, Y, Z)
+              re_replace(LogicalVarAtom/ga, X, Y, Z)
           ), Variables, CommandAtom, CommandReplaced).
 
 history_file(File) :-

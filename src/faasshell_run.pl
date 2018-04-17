@@ -79,14 +79,20 @@ reduce([A|B], I, O, E) :-
     reduce(A, I, M, E), % M stands for Middle state
     reduce(B, M, O, E),
     mydebug(reduce(bin(out)), (M, O)).
-reduce((A=B), I, O, E) :-
+reduce((A=B), I, I, E) :-
     var(A), !,
-    mydebug(reduce(substitute(in)), (A,B,I, O)),
-    ( compound(B)
-      -> fsm_apply(B, I, O, E)
+    mydebug(reduce(substitute(in)), (A, B, I)),
+    ( callable(B)
+      -> call(B, I, A, E)
       ;  A=B ),
-    A=O,
-    mydebug(reduce(substitute(out)), (I, O)).
+    mydebug(reduce(substitute(out)), (A, B, I)).
+reduce($(A), I, O, E) :-
+    nonvar(A), !,
+    mydebug(reduce(reference(in)), (A, I, O)),
+    ( callable(A)
+      -> call(A, I, O, E)
+      ;  O=I ),
+    mydebug(reduce(reference(out)), (I, O)).
 reduce(A, I, O, E) :-
     mydebug(reduce(op(in)), (A, I, O)),
     call(A, I, O, E),
@@ -689,33 +695,63 @@ or(false, true, true).
 or(false, false, false).
 
 %%
-%% repl
+%% repl commands
 %%
-d(on, _I, _O, _E) :-
+help(I, O, _E) :-
+    mydebug(help(in), (I, O)),
+    format(atom(O), 'help
+debug(on)      : display debug message
+debug(off)     : suppress debug message
+startsm(Input) : start state machine with Input value
+endsm(Output)  : end state machine to get Output value
+set(X,Y)       : set local variable X to value Y
+unset(X)       : unset local variable X
+unsetall       : unset all local variables
+get(X)         : get a value of the local variable X
+getall         : get all values of the local variables
+', []),
+    mydebug(help(out), (I, O)).
+
+debug(on, _I, on, _E) :-
     debug(repl > user_error).
 
-d(off, _I, _O, _E) :-
+debug(off, _I, off, _E) :-
     nodebug(repl).
 
-fsm_start(I, I, I, _E) :-
-    mydebug(fsm_start, I).
+startsm(I, _I, I, _E) :-
+    mydebug(startsm, I).
 
-fsm_end(O, O, O, _E) :-
-    mydebug(fsm_end, O).
+endsm(O, O, O, _E) :-
+    mydebug(endsm, O).
 
-fsm_apply(Func, I, O, _E) :-
-    mydebug(fsm_apply(in), (Func, I, O)),
-    call(Func, I, O),
-    mydebug(fsm_apply(out), (Func, I, O)).
-
-set(Key, Value, _I, O, E) :-
+set(Key, Value, I, O, E) :-
     mydebug(set(in), (Key, Value, I, O)),
-    O = [Key=Value],
-    option(repl_cmd(set), E.faas),
+    option(repl_cmd(set(Key, Value)), E.faas),
+    O = Value,
     mydebug(set(out), (Key, Value, I, O)).
 
-get(Key, _I, O, E) :-
+unset(Key, I, O, E) :-
+    mydebug(unset(in), (Key, I, O)),
+    option(repl_env(ReplEnv), E.faas),
+    O = ReplEnv.Key,
+    option(repl_cmd(unset(Key)), E.faas),
+    mydebug(unset(out), (Key, I, O)).
+
+unsetall(I, O, E) :-
+    mydebug(unsetall(in), (I, O)),
+    option(repl_env(ReplEnv), E.faas),
+    O = ReplEnv,
+    option(repl_cmd(unsetall), E.faas),
+    mydebug(unsetall(out), (I, O)).
+
+get(Key, I, O, E) :-
     mydebug(get(in), (Key, Value, I, O)),
     option(repl_env(ReplEnv), E.faas),
     O = ReplEnv.Key,
     mydebug(get(out), (Key, Value, I, O)).
+
+getall(I, O, E) :-
+    mydebug(getall(in), (I, O)),
+    option(repl_env(ReplEnv), E.faas),
+    O = ReplEnv,
+    mydebug(getall(out), (I, O)).
