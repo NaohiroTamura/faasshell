@@ -206,6 +206,10 @@ sub-directory based on the following State Machine Template.
 
   This demonstrates that the statemachine invokes IFTTT Applet as a task and saves the result into Google sheets.
 
+* [IFTTT as FaaS in REPL](samples/demo_ifttt_as_faas_in_repl.md)
+
+  This shows how to execute the above "IFTTT as FaaS" demo in REPL, interactive shell environment.
+
 * [Activity Task](samples/demo_activity_task.md)
 
   This demonstrates that the long running activity task hosted outside of FaaS.

@@ -31,7 +31,7 @@
 :- initialization(repl).
 
 repl :-
-    debug(repl > user_error),
+    % debug(repl > user_error),
     set_setting(http:logfile,'/logs/httpd.log'), % docker volume /tmp
     prompt(_OldPrompt, '| '),
     current_prolog_flag(readline, Readline),
@@ -50,7 +50,10 @@ repl_loop(E) :-
 
          replace_logical_var(Vars, Term, Atom),
          debug(repl, 'repl: ~w', [atom(Atom)]),
-         rl_add_history(Atom),
+         ( rl_add_history(Atom)
+           -> true
+           ;  debug(repl, 'repl: dup ~w', [rl_add_history(Atom)])
+         ),
 
          Options = [repl_env(E), repl_cmd(Cmd)],
          catch( faasshell_run:start(fsm(Dsl), Options, I, O),

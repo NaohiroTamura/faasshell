@@ -79,18 +79,20 @@ reduce([A|B], I, O, E) :-
     reduce(A, I, M, E), % M stands for Middle state
     reduce(B, M, O, E),
     mydebug(reduce(bin(out)), (M, O)).
-reduce((A=B), I, I, E) :-
+reduce((A=B), I, I, _E) :-
     var(A), !,
     mydebug(reduce(substitute(in)), (A, B, I)),
-    ( callable(B)
-      -> call(B, I, A, E)
-      ;  A=B ),
+    A=B,
     mydebug(reduce(substitute(out)), (A, B, I)).
 reduce($(A), I, O, E) :-
     nonvar(A), !,
     mydebug(reduce(reference(in)), (A, I, O)),
     ( callable(A)
-      -> call(A, I, O, E)
+      -> ( atom(A)
+           -> reduce(get(A), I, Value, E),
+              reduce($(Value), I, O, E)
+           ;  call(A, I, O, E)
+         )
       ;  O=I ),
     mydebug(reduce(reference(out)), (I, O)).
 reduce(A, I, O, E) :-
