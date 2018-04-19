@@ -41,8 +41,10 @@ repl :-
 
 repl_loop(E) :-
     prompt1('faasshell> '),
-    read_term(Term, [variable_names(Vars), syntax_errors(fail)]),
-    debug(repl, 'repl: ~w, ~w', [term(Term), vars(Vars)]),
+    ( read_term(Term, [variable_names(Vars), syntax_errors(fail)])
+      -> debug(repl, 'repl: ~w, ~w', [term(Term), vars(Vars)])
+      ;  repl_loop(E)
+    ),
     ( Term == end_of_file
       -> save_history, !
       ;  phrase(tuple_list(Term), Dsl),
@@ -56,7 +58,11 @@ repl_loop(E) :-
          ),
 
          Options = [repl_env(E), repl_cmd(Cmd)],
-         catch( faasshell_run:start(fsm(Dsl), Options, I, O),
+         catch( ( faasshell_run:start(fsm(Dsl), Options, I, O)
+                  -> true
+                  ;  debug(repl, 'repl: failed ~w', [start(fsm(Dsl), Options, I, O)]),
+                     nonvar(O) -> true; O = false
+                ),
                 Error,
                 print_message(error, Error)
               ),
@@ -74,8 +80,9 @@ repl_loop(E) :-
          repl_loop(E2)
     ).
 
+tuple_list(I)     --> { var(I) }, [I].
 tuple_list((A,B)) --> !, tuple_list(A), tuple_list(B).
-tuple_list(I)     --> [I].
+tuple_list(I)     --> { nonvar(I) }, [I].
 
 replace_logical_var(Variables, CommandTerm, CommandReplaced) :-
     term_to_atom(CommandTerm, CommandAtom),

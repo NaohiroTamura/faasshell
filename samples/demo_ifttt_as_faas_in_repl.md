@@ -89,7 +89,7 @@ The scope of the local variable is within one command line.
 faasshell> Hello = task('HelloWorld',"frn:wsk:functions:::function:hello",[]),
 | UpdateArg = pass('UpdateArg',[result_path('$.ifttt.value1'),input_path('$.payload'),output_path('$.ifttt')]),
 | SaveResult = task('SaveResult',"frn:ifttt:webhooks:::function:save_result",[]),
-| startsm(_{name:"Repl"}), $Hello, $UpdateArg, $SaveResult.
+| startsm(_{name:"Repl"}), Hello, UpdateArg, SaveResult.
 
 Output=Congratulations! You've fired the save_result event
 Hello=task(HelloWorld,frn:wsk:functions:::function:hello,[])

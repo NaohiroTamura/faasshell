@@ -728,12 +728,14 @@ endsm(O, O, O, _E) :-
 
 set(Key, Value, I, O, E) :-
     mydebug(set(in), (Key, Value, I, O)),
+    nonvar(Key),
     option(repl_cmd(set(Key, Value)), E.faas),
     O = Value,
     mydebug(set(out), (Key, Value, I, O)).
 
 unset(Key, I, O, E) :-
     mydebug(unset(in), (Key, I, O)),
+    nonvar(Key),
     option(repl_env(ReplEnv), E.faas),
     O = ReplEnv.Key,
     option(repl_cmd(unset(Key)), E.faas),
