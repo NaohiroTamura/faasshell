@@ -49,18 +49,21 @@ mydebug(F, M) :-
 start(File, Options, I, O) :-
     ( atom(File); string(File) ), !,
     set_setting(http:logfile,'/logs/httpd.log'), % docker volume /tmp
-    setup_call_cleanup(
-            open(File, read, S),
-            read_term(S, Term, []),
-            close(S)),
+    load_term(File, Term),
     start(Term, Options, I, O).
 
 start(Term, Options, I, O) :-
     Term = fsm(Dsl), !,
     mydebug(start(in), (Term, I, O)),
-    reduce(Term, I, O, _{faas: Options, asl: Dsl}),
+    reduce(Term, I, O, _{faas: Options, dsl: Dsl}),
     mydebug(start(out), (I, O)).
-              
+
+load_term(File, Term) :-
+    setup_call_cleanup(
+            open(File, read, S),
+            read_term(S, Term, []),
+            close(S)).
+
 %%
 %% begin of iterpreter
 %%
@@ -408,26 +411,38 @@ branch_execute(Branch, (I, O, E), (I, O, E)) :-
 %%
 goto(state(Target), I, O, E) :-
     mydebug(goto(in), (Target, I, O)),
-    States = E.asl,
-    setof(N, faasshell_run:lookup_state(Target,States,N),Next),
-    length(Next,1),
+    States = E.dsl,
+    lookup_state(Target,States,Next),
     mydebug(goto(out), (Next, I, O)),
     reduce(Next, I, O, E).
 
+lookup_state(_Target, [], _) :- !.
+lookup_state($(Target), [$(Target)|States], [$(Target)|States]) :-
+    debug(lookup_state, '~w', [v1(Target)]),
+    !.
+lookup_state($(Target), [$(State)|States], Next) :-
+    debug(lookup_state, '~w', [v2(State)]),
+    !, lookup_state($(Target), States, Next).
+lookup_state(Target, [parallel(_,branches(ListOfList),_)|States], Next) :-
+    debug(lookup_state, '~w', [p1(ListOfList, States)]),
+    lookup_state(Target, ListOfList, [State|Rest]),
+    ( nonvar(State), State =.. [Cmd, Target | _], Cmd \== goto )
+    -> Next = [State|Rest]
+    ;  !, lookup_state(Target, States, Next).
 lookup_state(Target, [State|States], Next) :-
-    \+ is_list(State),   % writeln(s1(State)),
-    State =.. [_, Target | _]
+    \+ is_list(State),
+    debug(lookup_state, '~w', [s1(State)]),
+    ( State =.. [Cmd, Target | _], Cmd \== goto )
     -> Next = [State|States]
-    ;  lookup_state(Target, States, Next).
+    ;  !, lookup_state(Target, States, Next).
 lookup_state(Target, [Ss|Sss], Next) :-
-    is_list(Ss),         % writeln(s2(Ss)),
-    lookup_state(Target, Ss, Next);
-    lookup_state(Target, Sss, Next).
-lookup_state(Target, [parallel(_,branches(StatesList),_)|_], Next) :-
-    % writeln(s3(StatesList)),
-    lookup_state(Target, StatesList, Next).
-lookup_state(_Target, [], _) :- fail.
-        
+    is_list(Ss),
+    debug(lookup_state, '~w', [s2(Ss)]),
+    lookup_state(Target, Ss, [State|Rest]),
+    ( nonvar(State), State =.. [Cmd, Target | _], Cmd \== goto )
+    -> Next = [State|Rest]
+    ;  !, lookup_state(Target, Sss, Next).
+
 %%
 %% retry and fallback conditions
 %%
@@ -709,8 +724,9 @@ endsm(Output)  : end state machine to get Output value
 set(X,Y)       : set local variable X to value Y
 unset(X)       : unset local variable X
 unsetall       : unset all local variables
-get(X)         : get a value of the local variable X
-getall         : get all values of the local variables
+get(X)         : get a value of the global variable X
+getall         : get all values of the global variables
+$X             : evaluate a value of the global variable X
 ', []),
     mydebug(help(out), (I, O)).
 

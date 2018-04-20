@@ -21,6 +21,182 @@
 %%
 %% Unit Tests
 %%
+:- begin_tests(lookup_state).
+
+test(dollar1) :-
+    lookup_state($hello,
+                 [$hello,
+                  parallel(parallel,
+                           branches([[wait(wait,_),success(success,_)],
+                                     [fail(fail,_)]]),_),
+                  pass(pass,_),
+                  task(task,_)
+                 ], Next),
+    assertion(Next = [$hello,
+                      parallel(parallel,
+                               branches([[wait(wait,_),success(success,_)],
+                                         [fail(fail,_)]]),_),
+                      pass(pass,_),
+                      task(task,_)
+             ]).
+
+test(dollar2) :-
+    lookup_state($hello,
+                 [task(task,_),
+                  parallel(parallel,
+                           branches([[wait(wait,_),success(success,_)],
+                                     [fail(fail,_)]]),_),
+                  pass(pass,_),
+                  $hello
+                 ], Next),
+    assertion(Next = [$hello]).
+
+test(dollar3) :-
+    lookup_state($hello,
+                 [pass(pass,_),
+                  parallel(parallel,
+                           branches([[wait(wait,_),success(success,_)],
+                                     [fail(fail,_)]]),_),
+                  $hello,
+                  task(task,_)
+                 ], Next),
+    assertion(Next = [$hello,
+                      task(task,_)
+             ]).
+
+test(dollar4) :-
+    lookup_state($hello,
+                 [wait(wait,_),
+                  parallel(parallel,
+                           branches([[$hello,success(success,_)],
+                                     [fail(fail,_)]]),_),
+                  pass(pass,_),
+                  task(task,_)
+                 ], Next),
+    assertion(Next =[ $hello,
+                      success(success,_)
+             ]).
+
+test(dollar5) :-
+    lookup_state($hello,
+                 [task(task,_),
+                  parallel(parallel,
+                           branches([[wait(wait,_),success(success,_)],
+                                     [fail(fail,_)]]),_),
+                  $hello,
+                  pass(pass,_),
+                  goto(state($hello))
+                 ], Next),
+    assertion(Next = [$hello,
+                      pass(pass,_),
+                      goto(state($hello))
+             ]).
+
+test(dollar6) :-
+    lookup_state($hello,
+                 [task(task,_),
+                  parallel(parallel,
+                           branches([[wait(wait,_),success(success,_)],
+                                     [fail(fail,_)]]),_),
+                  $hello,
+                  $hello,
+                  pass(pass,_),
+                  goto(state($hello))
+                 ], Next),
+    assertion(Next = [$hello,
+                      $hello,
+                      pass(pass,_),
+                      goto(state($hello))
+             ]).
+
+test(dollar7) :-
+    lookup_state($hello,
+                 [task(task,_),
+                  parallel(parallel,
+                           branches([[wait(wait,_),success(success,_)],
+                                     [fail(fail,_)]]),_),
+                  $hello,
+                  goto(state($hello)),
+                  $hello,
+                  pass(pass,_)
+                 ], Next),
+    assertion(Next = [$hello,
+                      goto(state($hello)),
+                      $hello,
+                      pass(pass,_)
+             ]).
+
+test(nested1) :-
+    lookup_state(wait1,
+                 [task(task,_),
+                  parallel(parallel1,
+                           branches([[wait(wait1,_),
+                                      parallel(parallel2,
+                                               branches([[wait(wait2,_),
+                                                          success(success2,_)],
+                                                         [fail(fail2,_)]]),_)
+                                      ,success(success1,_)],
+                                     [fail(fail1,_)]]),_),
+                  $hello,
+                  pass(pass,_),
+                  goto(state(parallel1))
+                 ], Next),
+    assertion(Next = [wait(wait1,_),
+                      parallel(parallel2,
+                               branches([[wait(wait2,_),
+                                          success(success2,_)],
+                                         [fail(fail2,_)]]),_)
+                      ,success(success1,_)
+             ]).
+
+test(nested2) :-
+    lookup_state(parallel2,
+                 [task(task,_),
+                  parallel(parallel1,
+                           branches([[wait(wait1,_),
+                                      parallel(parallel2,
+                                               branches([[wait(wait2,_),
+                                                          success(success2,_)],
+                                                         [fail(fail2,_)]]),_)
+                                      ,success(success1,_)],
+                                     [fail(fail1,_)]]),_),
+                  $hello,
+                  pass(pass,_),
+                  goto(state(parallel1))
+                 ], Next),
+    assertion(Next = [parallel(parallel2,
+                               branches([[wait(wait2,_),
+                                          success(success2,_)],
+                                         [fail(fail2,_)]]),_)
+                      ,success(success1,_)
+             ]).
+
+test(nested3) :-
+    lookup_state(fail1,
+                 [task(task,_),
+                  parallel(parallel1,
+                           branches([[wait(wait1,_),
+                                      parallel(parallel2,
+                                               branches([[wait(wait2,_),
+                                                          success(success2,_)],
+                                                         [fail(fail2,_)]]),_)
+                                      ,success(success1,_)],
+                                     [fail(fail1,_)]]),_),
+                  $hello,
+                  pass(pass,_),
+                  goto(state(parallel1))
+                 ], Next),
+    assertion(Next = [fail(fail1,_)
+             ]).
+
+test(job_status_poller) :-
+    load_term('samples/wsk/dsl/job_status_poller.dsl', fsm(Dsl)),
+    lookup_state('Wait X Seconds', Dsl, Next),
+    Dsl = [_|Tail],
+    assertion(Next = Tail).
+
+:- end_tests(lookup_state).
+
 :- begin_tests(process_io).
 
 test(input, Input = _{val1:3, val2:4}) :-
