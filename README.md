@@ -228,5 +228,6 @@ sub-directory based on the following State Machine Template.
 * [Resource Naming](docs/resource_naming.md)
 * [Environment Variables](docs/environment_variables.md)
 * [REPL (Interactive Shell)](docs/repl.md)
+* [FaaS Shell DSL](docs/faasshell_dsl.md)
 
 ## [TODO](TODO.md)
