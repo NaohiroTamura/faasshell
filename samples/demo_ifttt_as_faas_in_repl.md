@@ -39,23 +39,31 @@ REPL supports *GNU readline*, you can edit the command line and its history such
 
 REPL console will be implemented in Web Browser later (TODO).
 
-```sh
+```
 $ git clone https://github.com/NaohiroTamura/faasshell
 
 $ cd faasshell
 
 $ src/faasshell_repl.pl
 faasshell> help.
-Output=help
+----------------------------------------------------------------------
+global variable: begin with a lower case letter
+local  variable: begin with a upper case letter
+JSON   value   : _{key:"string", number:1, list:["a","b"]}
+----------------------------------------------------------------------
 debug(on)      : display debug message
 debug(off)     : suppress debug message
 startsm(Input) : start state machine with Input value
 endsm(Output)  : end state machine to get Output value, it is optional
-set(X,Y)       : set local variable X to value Y
-unset(X)       : unset local variable X
-unsetall       : unset all local variables
-get(X)         : get a value of the local variable X
-getall         : get all values of the local variables
+set(x,y)       : set a value 'y' to a global variable 'x'
+unset(x)       : unset a global variable 'x'
+unsetall       : unset all global variables
+getall         : get all values of the global variables
+$x             : refer to a value of the global variable 'x'
+#x             : evaluate a value of the global variable 'x'
+X=Y            : substitute a value 'Y' to the local variable 'X'
+                 if 'Y' is '$x', put it in parentheses such as 'Y=($x)'
+----------------------------------------------------------------------
 ```
 
 ### Execute IFTTT as FaaS demo without variables
@@ -115,7 +123,7 @@ Output=pass(UpdateArg,[result_path($.ifttt.value1),input_path($.payload),output_
 faasshell> set(save_result, task('SaveResult',"frn:ifttt:webhooks:::function:save_result",[])).
 Output=task(SaveResult,frn:ifttt:webhooks:::function:save_result,[])
 
-faasshell> startsm(_{name:"Repl"}), $hello, $update_arg, $save_result.
+faasshell> startsm(_{name:"Repl"}), #hello, #update_arg, #save_result.
 Output=Congratulations! You've fired the save_result event
 
 faasshell>

@@ -82,22 +82,6 @@ reduce([A|B], I, O, E) :-
     reduce(A, I, M, E), % M stands for Middle state
     reduce(B, M, O, E),
     mydebug(reduce(bin(out)), (M, O)).
-reduce((A=B), I, I, _E) :-
-    var(A), !,
-    mydebug(reduce(substitute(in)), (A, B, I)),
-    A=B,
-    mydebug(reduce(substitute(out)), (A, B, I)).
-reduce($(A), I, O, E) :-
-    nonvar(A), !,
-    mydebug(reduce(reference(in)), (A, I, O)),
-    ( callable(A)
-      -> ( atom(A)
-           -> reduce(get(A), I, Value, E),
-              reduce($(Value), I, O, E)
-           ;  call(A, I, O, E)
-         )
-      ;  O=I ),
-    mydebug(reduce(reference(out)), (I, O)).
 reduce(A, I, O, E) :-
     mydebug(reduce(op(in)), (A, I, O)),
     call(A, I, O, E),
@@ -417,12 +401,12 @@ goto(state(Target), I, O, E) :-
     reduce(Next, I, O, E).
 
 lookup_state(_Target, [], _) :- !.
-lookup_state($(Target), [$(Target)|States], [$(Target)|States]) :-
+lookup_state(#(Target), [#(Target)|States], [#(Target)|States]) :-
     debug(lookup_state, '~w', [v1(Target)]),
     !.
-lookup_state($(Target), [$(State)|States], Next) :-
+lookup_state(#(Target), [#(State)|States], Next) :-
     debug(lookup_state, '~w', [v2(State)]),
-    !, lookup_state($(Target), States, Next).
+    !, lookup_state(#(Target), States, Next).
 lookup_state(Target, [parallel(_,branches(ListOfList),_)|States], Next) :-
     debug(lookup_state, '~w', [p1(ListOfList, States)]),
     lookup_state(Target, ListOfList, [State|Rest]),
@@ -716,18 +700,26 @@ or(false, false, false).
 %%
 help(I, O, _E) :-
     mydebug(help(in), (I, O)),
-    format(atom(O), 'help
+    format(atom(O), "help
+----------------------------------------------------------------------
+global variable: begin with a lower case letter
+local  variable: begin with a upper case letter
+JSON   value   : _{key:\"string\", number:1, list:[\"a\",\"b\"]}
+----------------------------------------------------------------------
 debug(on)      : display debug message
 debug(off)     : suppress debug message
 startsm(Input) : start state machine with Input value
-endsm(Output)  : end state machine to get Output value
-set(X,Y)       : set local variable X to value Y
-unset(X)       : unset local variable X
-unsetall       : unset all local variables
-get(X)         : get a value of the global variable X
+endsm(Output)  : end state machine to get Output value, it is optional
+set(x,y)       : set a value 'y' to a global variable 'x'
+unset(x)       : unset a global variable 'x'
+unsetall       : unset all global variables
 getall         : get all values of the global variables
-$X             : evaluate a value of the global variable X
-', []),
+$x             : refer to a value of the global variable 'x'
+#x             : evaluate a value of the global variable 'x'
+X=Y            : substitute a value 'Y' to the local variable 'X'
+                 if 'Y' is '$x', put it in parentheses such as 'Y=($x)'
+----------------------------------------------------------------------
+", []),
     mydebug(help(out), (I, O)).
 
 debug(on, _I, on, _E) :-
@@ -764,14 +756,39 @@ unsetall(I, O, E) :-
     option(repl_cmd(unsetall), E.faas),
     mydebug(unsetall(out), (I, O)).
 
-get(Key, I, O, E) :-
-    mydebug(get(in), (Key, Value, I, O)),
-    option(repl_env(ReplEnv), E.faas),
-    O = ReplEnv.Key,
-    mydebug(get(out), (Key, Value, I, O)).
-
 getall(I, O, E) :-
     mydebug(getall(in), (I, O)),
     option(repl_env(ReplEnv), E.faas),
     O = ReplEnv,
     mydebug(getall(out), (I, O)).
+
+$(Key, I, O, E) :-
+    mydebug(reference(in), (Key, Value, I, O)),
+    option(repl_env(ReplEnv), E.faas),
+    O = ReplEnv.Key,
+    mydebug(reference(out), (Key, Value, I, O)).
+
+#(A, I, O, E) :-
+    nonvar(A), !,
+    mydebug(evaluate(in), (A, I, O)),
+    ( callable(A)
+      -> ( atom(A)
+           -> reduce($(A), I, Value, E),
+              reduce(#(Value), I, O, E)
+           ;  call(A, I, O, E)
+         )
+      ;  O=I ),
+    mydebug(evaluate(out), (I, O)).
+
+=(A, $(B), I, I, E) :-
+    var(A), !,
+    mydebug(substitute_dollar(in), (A, B, I)),
+    reduce($(B), I, O, E),
+    A=O,
+    mydebug(substitute_dollar(out), (A, B, I)).
+
+=(A, B, I, I, _E) :-
+    var(A), !,
+    mydebug(substitute(in), (A, B, I)),
+    A=B,
+    mydebug(substitute(out), (A, B, I)).

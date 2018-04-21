@@ -20,6 +20,8 @@
           [ repl/0
           ]).
 
+:- op(1, fx, user:(#)).
+
 :- use_module(library(readline)).
 
 :- use_module(faasshell_run).
