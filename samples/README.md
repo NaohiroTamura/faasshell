@@ -253,7 +253,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksLX GET ${FAASSHELL_APIHOST}/faas/ -u 
         }
       }
     },
-    "dsl":"fsm([task('HelloWorld',\"hello\",[timeout_seconds(5)])])",
+    "dsl":"fsm([task('HelloWorld',\"hello\",[timeout_seconds(10)])])",
     "name":"hello_world_task.json",
     "namespace":"demo",
     "output":"ok"
@@ -276,7 +276,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksLX GET ${FAASSHELL_APIHOST}/statemach
       }
     }
   },
-  "dsl":"fsm([task('HelloWorld',\"frn:wsk:functions:::function:hello\",[timeout_seconds(5)])])",
+  "dsl":"fsm([task('HelloWorld',\"frn:wsk:functions:::function:hello\",[timeout_seconds(10)])])",
   "name":"hello_world_task.json",
   "namespace":"demo",
   "output":"ok"
@@ -298,7 +298,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksX POST ${FAASSHELL_APIHOST}/statemach
       }
     }
   },
-  "dsl":"fsm([task('HelloWorld',\"frn:wsk:functions:::function:hello\",[timeout_seconds(5)])])",
+  "dsl":"fsm([task('HelloWorld',\"frn:wsk:functions:::function:hello\",[timeout_seconds(10)])])",
   "input": {},
   "name":"hello_world_task.json",
   "namespace":"demo",
@@ -321,7 +321,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksX POST ${FAASSHELL_APIHOST}/statemach
       }
     }
   },
-  "dsl":"fsm([task('HelloWorld',\"frn:wsk:functions:::function:hello\",[timeout_seconds(5)])])",
+  "dsl":"fsm([task('HelloWorld',\"frn:wsk:functions:::function:hello\",[timeout_seconds(10)])])",
   "input": {"name":"Curl"},
   "name":"hello_world_task.json",
   "namespace":"demo",
@@ -383,7 +383,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksX DELETE ${FAASSHELL_APIHOST}/statema
   ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl?overwrite=true \
   -H 'Content-Type: text/plain' -d @samples/wsk/dsl/hello_world_task.dsl -u $DEMO
   {
-      "dsl":"fsm([task('HelloWorld',\"frn:wsk:functions:::function:hello\",[timeout_seconds(5)])]).",
+      "dsl":"fsm([task('HelloWorld',\"frn:wsk:functions:::function:hello\",[timeout_seconds(10)])]).",
       "name":"hello_world_task.dsl",
       "namespace":"demo",
       "output":"ok"
@@ -394,7 +394,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksX DELETE ${FAASSHELL_APIHOST}/statema
 ubuntu@trusty:~/faasshell[master]$ curl -ksLX GET ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl \
 -u $DEMO
 {
-  "dsl":"fsm([task('HelloWorld',\"frn:wsk:functions:::function:hello\",[timeout_seconds(5)])])",
+  "dsl":"fsm([task('HelloWorld',\"frn:wsk:functions:::function:hello\",[timeout_seconds(10)])])",
   "name":"hello_world_task.dsl",
   "namespace":"demo",
   "output":"ok"
@@ -404,7 +404,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksLX GET ${FAASSHELL_APIHOST}/shell/hel
 ubuntu@trusty:~/faasshell[master]$ curl -ksX POST  ${FAASSHELL_APIHOST}/shell/hello_world_task.dsl?blocking=true \
 -H 'Content-Type: application/json' -d '{"input": {"name":"Shell"}}' -u $DEMO
 {
-  "dsl":"fsm([task('HelloWorld',\"frn:wsk:functions:::function:hello\",[timeout_seconds(5),heartbeat_seconds(10)])]).",
+  "dsl":"fsm([task('HelloWorld',\"frn:wsk:functions:::function:hello\",[timeout_seconds(10)])]).",
   "input": {"name":"Shell"},
   "name":"hello_world_task.dsl",
   "namespace":"demo",

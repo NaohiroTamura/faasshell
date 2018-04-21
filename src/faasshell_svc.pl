@@ -1,4 +1,4 @@
-%% #!/usr/bin/swipl -q
+#!/usr/bin/env swipl
 %% -*- mode: prolog; coding: utf-8; -*-
 %%
 %% Copyright 2017 FUJITSU LIMITED
@@ -62,7 +62,10 @@
 user:file_search_path(config_https, faasshell('etc/server')).
 
 %% start
-%% :- initialization(main).
+:- current_prolog_flag(emacs_inferior_process, Flag),
+   Flag -> true
+   ; set_prolog_flag(verbose, silent),
+     initialization(main).
 
 %%
 %% main

@@ -226,7 +226,7 @@ task_optional(States, StateKey, Optional, Graph, Path) :-
       -> dollarvar_key(ResultPath, ResultPathKey), O1 = result_path(ResultPathKey)
       ;  O1 = [] ),
     common_optional(States.StateKey, O2),
-    task_fallback(States, StateKey, O3, Graph, Path),
+    task_catch(States, StateKey, O3, Graph, Path),
     task_retry(States.StateKey, O4),
     ( _{'TimeoutSeconds': TimeoutSeconds} :< States.StateKey
       -> O5 = timeout_seconds(TimeoutSeconds)
@@ -380,7 +380,7 @@ task_retry(State, Dsl) :-
         ;   Dsl = [].
 
 %% 
-fallback_rules(States, StateKey, Rule, Dsl, Graph, Path) :-
+catch_rules(States, StateKey, Rule, Dsl, Graph, Path) :-
     _{'ErrorEquals':ErrorCodes, 'Next':Next} :< Rule,
     string(Next),
     atom_string(NextKey, Next),
@@ -388,17 +388,17 @@ fallback_rules(States, StateKey, Rule, Dsl, Graph, Path) :-
     Dsl = [case(error_equals(ErrorCodes), D1)],
     Graph = [StateKey>NextKey | G1].
 
-fallback_rules_next(_, _, [], [], [], _).
-fallback_rules_next(States, StateKey, [R|Rs], Dsl, Graph, Path) :-
-    fallback_rules(States, StateKey, R, D1, G1, Path),
-    fallback_rules_next(States, StateKey, Rs, D2, G2, Path),
+catch_rules_next(_, _, [], [], [], _).
+catch_rules_next(States, StateKey, [R|Rs], Dsl, Graph, Path) :-
+    catch_rules(States, StateKey, R, D1, G1, Path),
+    catch_rules_next(States, StateKey, Rs, D2, G2, Path),
     append(D1, D2, Dsl),
     append(G1, G2, Graph).
 
-task_fallback(States, StateKey, Dsl, Graph, Path) :-
+task_catch(States, StateKey, Dsl, Graph, Path) :-
     _{'Catch': Catchers} :< States.StateKey
-    ->  fallback_rules_next(States, StateKey, Catchers, D2, G2, Path),
-            Dsl = [fallback(D2)], Graph = G2
+    ->  catch_rules_next(States, StateKey, Catchers, D2, G2, Path),
+            Dsl = [catch(D2)], Graph = G2
         ;   Dsl = [], Graph = [].
 %%
 %% Misc.

@@ -50,7 +50,7 @@ test(background) :-
     assertion(Code2 = 200),
     assertion(_{output: _{execution_id: _}} :< Dict2),
 
-    sleep(5), %% needs to wait for background job completion
+    sleep(10), %% needs to wait for background job completion
 
     atomics_to_string([Host, '/executions/', Dict2.output.execution_id], URL3),
     http_get(URL3, Data3, [authorization(basic(ID, PW)),

@@ -23,6 +23,8 @@
           [ start/4
          ]).
 
+:- op(1, fx, user:(#)).
+
 :- use_module(json_utils).
 :- use_module(mq_utils).
 :- use_module(wsk_api_utils).
@@ -112,8 +114,8 @@ task(State, Action, Optional, I, O, E) :-
       -> retry(task_execute(Action, Optional, I1), R, Error1, M2, E)
       ;  M2 = M1
     ),
-    ( option(fallback(F), Optional), is_dict(M2), get_dict(error, M2, Error2)
-      -> fallback(State, F, Error2, M3, E)
+    ( option(catch(F), Optional), is_dict(M2), get_dict(error, M2, Error2)
+      -> catch(State, F, Error2, M3, E)
       ;  M3 = M2
     ),
     process_output(I, M3, O, Optional),
@@ -233,19 +235,19 @@ retry(PartialFunc, [case(Cond, Params)|Cases], I, O, E) :-
     ),
     mydebug(task(retry(out)), (I, O)).
 
-fallback(State, [], O, O, _E) :-
-    mydebug(task(fallback(done)), (State, O)).
-fallback(State, [case(Cond, States)|Cases], I, O, E) :-
-    mydebug(task(fallback(in)), (State, case(Cond), I, O)),
+catch(State, [], O, O, _E) :-
+    mydebug(task(catch(done)), (State, O)).
+catch(State, [case(Cond, States)|Cases], I, O, E) :-
+    mydebug(task(catch(in)), (State, case(Cond), I, O)),
     reduce(Cond, I, M, E),
     (
         M == true
-        -> mydebug(task(fallback(true)), (State, case(Cond), I, O)),
+        -> mydebug(task(catch(true)), (State, case(Cond), I, O)),
            reduce(States, _{error: I}, O, E)
-        ;  mydebug(task(fallback(false)), (State, case(Cond), I, O)),
-           fallback(State, Cases, I, O, E)
+        ;  mydebug(task(catch(false)), (State, case(Cond), I, O)),
+           catch(State, Cases, I, O, E)
     ),
-    mydebug(task(fallback(out)), (State, case(Cond), I, O)).
+    mydebug(task(catch(out)), (State, case(Cond), I, O)).
 
 %% choices state
 choices(State, [], Optional, I, O, E) :-
@@ -345,8 +347,8 @@ parallel(State, branches(Branches), Optional, I, O, E) :-
       -> retry(parallel_execute(Branches, I), R, Error1, M2, E)
       ;  M2 = M1
     ),
-    ( option(fallback(F), Optional), is_dict(M2), get_dict(error, M2, Error2)
-      -> fallback(State, F, Error2, M3, E)
+    ( option(catch(F), Optional), is_dict(M2), get_dict(error, M2, Error2)
+      -> catch(State, F, Error2, M3, E)
       ;  M3 = M2
     ),
     process_output(I, M3, O, Optional),
