@@ -26,7 +26,8 @@
 
 :- set_prolog_flag(verbose, silent).
 :- set_prolog_flag(toplevel_prompt, 'faasshell debug> ').
-:- set_prolog_flag(readline, readline).
+:- current_prolog_flag(emacs_inferior_process, Flag),
+   Flag -> true ; set_prolog_flag(readline, readline).
 
 :- initialization(repl).
 
