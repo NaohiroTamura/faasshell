@@ -20,7 +20,7 @@
 %%
 
 :- module(faasshell_run,
-          [ start/4
+          [ start/6
          ]).
 
 :- op(1, fx, user:(#)).
@@ -48,16 +48,18 @@ mydebug(F, M) :-
     %% format("(~w): ~p~t~24| : ~p~n", [N, F, M]).
     http_log("(~w): ~p~t~24| : ~p~n", [N, F, M]).
 
-start(File, Options, I, O) :-
+start(File, Options, I, O, EI, EO) :-
     ( atom(File); string(File) ), !,
     set_setting(http:logfile,'/logs/httpd.log'), % docker volume /tmp
     load_term(File, Term),
-    start(Term, Options, I, O).
+    start(Term, Options, I, O, EI, EO).
 
-start(Term, Options, I, O) :-
+start(Term, Options, I, O, EI, EO) :-
     Term = fsm(Dsl), !,
     mydebug(start(in), (Term, I, O)),
-    reduce(Term, I, O, _{faas: Options, dsl: Dsl}),
+    E1 = _{ faas: Options, dsl: Dsl, repl: EI },
+    reduce(Term, I, O, E1, E2),
+    get_dict(repl, E2, E3) -> EO = E3 ;  EO = _{},
     mydebug(start(out), (I, O)).
 
 load_term(File, Term) :-
@@ -70,23 +72,23 @@ load_term(File, Term) :-
 %% begin of iterpreter
 %%
 %% reduce(+Dsl, +Input, -Output, +Environment)
-reduce(fsm(Dsl), I, O, E) :- 
+reduce(fsm(Dsl), I, O, EI, EO) :-
     !,
     mydebug(reduce(fsm(in)), (I, O)),
-    reduce(Dsl, I, O, E),
+    reduce(Dsl, I, O, EI, EO),
     mydebug(reduce(fsm(out)), (I, O)).
-reduce([], O, O, _E) :-
+reduce([], O, O, E, E) :-
     !,
     mydebug(reduce(done), O).
-reduce([A|B], I, O, E) :-
+reduce([A|B], I, O, EI, EO) :-
     !,
     mydebug(reduce(bin(in)), (I, O)),
-    reduce(A, I, M, E), % M stands for Middle state
-    reduce(B, M, O, E),
+    reduce(A, I, M, EI, EM), % M stands for Middle state
+    reduce(B, M, O, EM, EO),
     mydebug(reduce(bin(out)), (M, O)).
-reduce(A, I, O, E) :-
+reduce(A, I, O, EI, EO) :-
     mydebug(reduce(op(in)), (A, I, O)),
-    call(A, I, O, E),
+    call(A, I, O, EI, EO),
     mydebug(reduce(op(out)), (I, O)).
 %% end of interpreter
 %%
@@ -95,7 +97,7 @@ reduce(A, I, O, E) :-
 %% begin of state
 %%
 %% pass state
-pass(State, Optional, I, O, _E) :- 
+pass(State, Optional, I, O, E, E) :-
     mydebug(pass(in), (State, Optional, I, O)),
     process_input(I, I1, Optional),
     ( option(result(Result), Optional)
@@ -106,16 +108,16 @@ pass(State, Optional, I, O, _E) :-
     mydebug(pass(out), (State, I, O)).
 
 %% task state
-task(State, Action, Optional, I, O, E) :-
+task(State, Action, Optional, I, O, E, E) :-
     mydebug(task(in), (State, Action, Optional, I, O)),
     process_input(I, I1, Optional),
-    task_execute(Action, Optional, I1, M1, E),
+    task_execute(Action, Optional, I1, M1, E, E),
     ( option(retry(R), Optional), is_dict(M1), get_dict(error, M1, Error1)
-      -> retry(task_execute(Action, Optional, I1), R, Error1, M2, E)
+      -> retry(task_execute(Action, Optional, I1), R, Error1, M2, E, E)
       ;  M2 = M1
     ),
     ( option(catch(F), Optional), is_dict(M2), get_dict(error, M2, Error2)
-      -> catch(State, F, Error2, M3, E)
+      -> catch(State, F, Error2, M3, E, E)
       ;  M3 = M2
     ),
     process_output(I, M3, O, Optional),
@@ -136,7 +138,7 @@ activity_task_heartbeat(ActivityTaskId, Action, TaskToken,
     mydebug(activity_task_heartbeat(out), (Action, TaskToken,
                                            HeartbeatSeconds)).
 
-activity_task(Action, Optional, I, O, _E) :-
+activity_task(Action, Optional, I, O, E, E) :-
     mydebug(activity_task(in), (Action, I, O)),
 
     atom_json_dict(InputText, I, []),
@@ -175,7 +177,7 @@ activity_task(Action, Optional, I, O, _E) :-
     ),
     mydebug(activity_task(out), (I, O)).
 
-task_execute(Action, Optional, I, O, E) :-
+task_execute(Action, Optional, I, O, E, E) :-
     mydebug(task_execute(in), (I, O)),
     catch( ( atomic_list_concat([_, _, states, _, _, activity, _], ':', Action)
              -> %% process activity
@@ -183,7 +185,7 @@ task_execute(Action, Optional, I, O, E) :-
                 option(timeout_seconds(TimeoutSeconds), Optional, 99999999),
                 mydebug(task_execute(activity), timeout_seconds(TimeoutSeconds)),
                 call_with_time_limit(TimeoutSeconds,
-                                     activity_task(Action, Optional, I, O, E))
+                                     activity_task(Action, Optional, I, O, E, E))
              ;  %% process function, call faas plugin
                 %% http_open causes the following error if timeout is 99999999
                 %% "SSL(SSL_eof) negotiate: Unexpected end-of-file".
@@ -199,11 +201,11 @@ task_execute(Action, Optional, I, O, E) :-
          ),
     mydebug(task_execute(out), (I, O)).
 
-retry(_PartialFunc, [], O, O, _E) :-
+retry(_PartialFunc, [], O, O, E, E) :-
     mydebug(retry(done), O).
-retry(PartialFunc, [case(Cond, Params)|Cases], I, O, E) :-
+retry(PartialFunc, [case(Cond, Params)|Cases], I, O, E, E) :-
     mydebug(task(retry(in)), (I, O)),
-    reduce(Cond, I, M, E),
+    reduce(Cond, I, M, E, E),
     (
         M == true
         -> mydebug(task(retry(true)), (case(Cond), I, O)),
@@ -222,57 +224,57 @@ retry(PartialFunc, [case(Cond, Params)|Cases], I, O, E) :-
            ( CurrentAttempt < MaxAttempts
              -> NewAttempt is CurrentAttempt + 1,
                 merge_options([current_attempt(NewAttempt)], Params, NewParams),
-                call(PartialFunc, M1, E),
+                call(PartialFunc, M1, E, E),
                 ( _{error: Err} :< M1 
                   -> mydebug(task(retry(again)), new_optional(NewParams)),
-                     retry(PartialFunc, [case(Cond, NewParams)|Cases], Err, O, E)
-                  ;  retry(PartialFunc, [], M1, O, E)
+                     retry(PartialFunc, [case(Cond, NewParams)|Cases], Err, O, E, E)
+                  ;  retry(PartialFunc, [], M1, O, E, E)
                 )
-             ; retry(PartialFunc, [], _{error:I}, O, E)
+             ; retry(PartialFunc, [], _{error:I}, O, E, E)
            )
         ;  mydebug(task(retry(false)), (case(Cond), I, O)),
-           retry(PartialFunc, Cases, I, O, E)
+           retry(PartialFunc, Cases, I, O, E, E)
     ),
     mydebug(task(retry(out)), (I, O)).
 
-catch(State, [], O, O, _E) :-
+catch(State, [], O, O, E, E) :-
     mydebug(task(catch(done)), (State, O)).
-catch(State, [case(Cond, States)|Cases], I, O, E) :-
+catch(State, [case(Cond, States)|Cases], I, O, E, E) :-
     mydebug(task(catch(in)), (State, case(Cond), I, O)),
-    reduce(Cond, I, M, E),
+    reduce(Cond, I, M, E, E),
     (
         M == true
         -> mydebug(task(catch(true)), (State, case(Cond), I, O)),
-           reduce(States, _{error: I}, O, E)
+           reduce(States, _{error: I}, O, E, E)
         ;  mydebug(task(catch(false)), (State, case(Cond), I, O)),
-           catch(State, Cases, I, O, E)
+           catch(State, Cases, I, O, E, E)
     ),
     mydebug(task(catch(out)), (State, case(Cond), I, O)).
 
 %% choices state
-choices(State, [], Optional, I, O, E) :-
+choices(State, [], Optional, I, O, E, E) :-
     option(default(States), Optional)
     -> mydebug(choices(default(in)), (State, I, O)),
-       reduce(States, I, O, E),
+       reduce(States, I, O, E, E),
        mydebug(choices(default(out)), (State, I, O))
     ;  mydebug(choices(done(in)), (State, I, O)),
        O = I,
        mydebug(choices(done(out)), (State, I, O)).
 
-choices(State, [case(Cond, States)|Cases], Optional, I, O, E) :-
+choices(State, [case(Cond, States)|Cases], Optional, I, O, E, E) :-
     mydebug(choices(in), (State, case(Cond), I, O)),
-    reduce(Cond, I, M, E),
+    reduce(Cond, I, M, E, E),
     (
         M == true
         -> mydebug(choices(true), (State, case(Cond), I, O)),
-           reduce(States, I, O, E)
+           reduce(States, I, O, E, E)
         ;  mydebug(choices(false), (State, case(Cond), I, O)),
-           choices(State, Cases, Optional, I, O, E)
+           choices(State, Cases, Optional, I, O, E, E)
     ),
     mydebug(choices(out), (State, case(Cond), I, O)).
 
 %% wait state
-wait(State, seconds(Seconds), Optional, I, O, _E) :-
+wait(State, seconds(Seconds), Optional, I, O, E, E) :-
     mydebug(wait(in), (State, seconds(Seconds), I, O)),
     ( number(Seconds), Wait = Seconds;
       string(Seconds), number_string(Wait, Seconds)
@@ -282,7 +284,7 @@ wait(State, seconds(Seconds), Optional, I, O, _E) :-
     process_output(I, O, Optional),
     mydebug(wait(out), (State, I, O)).
 
-wait(State, timestamp(Timestamp), Optional, I, O, _E) :-
+wait(State, timestamp(Timestamp), Optional, I, O, E, E) :-
     mydebug(wait(in), (State, timestamp(Timestamp), I, O)),
     parse_time(Timestamp, TargetStamp),
     get_time(CurrentStamp),
@@ -296,7 +298,7 @@ wait(State, timestamp(Timestamp), Optional, I, O, _E) :-
     process_output(I, O, Optional),
     mydebug(wait(out), (State, I, O)).
 
-wait(State, seconds_path(SecondsPath), Optional, I, O, _E) :-
+wait(State, seconds_path(SecondsPath), Optional, I, O, E, E) :-
     mydebug(wait(in), (State, seconds_path(SecondsPath), I, O)),
     json_utils:json_path_value(SecondsPath, I, _K, _R, WaitValue),
     mydebug(wait(wait_value), (seconds_path(SecondsPath), WaitValue)),
@@ -308,7 +310,7 @@ wait(State, seconds_path(SecondsPath), Optional, I, O, _E) :-
     process_output(I, O, Optional),
     mydebug(wait(out), (State, I, O)).
 
-wait(State, timestamp_path(TimestampPath), Optional, I, O, _E) :-
+wait(State, timestamp_path(TimestampPath), Optional, I, O, E, E) :-
     mydebug(wait(in), (State, timestamp_path(TimestampPath), I, O)),
     json_utils:json_path_value(TimestampPath, I, _K, _R, TimestampValue),
     parse_time(TimestampValue, TargetStamp),
@@ -324,13 +326,13 @@ wait(State, timestamp_path(TimestampPath), Optional, I, O, _E) :-
     mydebug(wait(out), (State, I, O)).
 
 %% succeed state
-succeed(State, Optional, I, O, _E) :-
+succeed(State, Optional, I, O, E, E) :-
     mydebug(succeed(in), (State, Optional, I, O)),
     process_output(I, O, Optional),
     mydebug(succeed(out), (State, I, O)).
 
 %% fail state
-fail(State, Optional, I, O, _E) :-
+fail(State, Optional, I, O, E, E) :-
     mydebug(fail(in), (State, Optional, I, O)),
     option(cause(Cause), Optional, null),
     O1 = _{cause: Cause},
@@ -339,38 +341,38 @@ fail(State, Optional, I, O, _E) :-
     mydebug(fail(out), (State, I, O)).
 
 %% parallel state
-parallel(State, branches(Branches), Optional, I, O, E) :-
+parallel(State, branches(Branches), Optional, I, O, EI, EO) :-
     mydebug(parallel(in), (State, Optional, I, O)),
     process_input(I, I1, Optional),
-    parallel_execute(Branches, I1, M1, E),
+    parallel_execute(Branches, I1, M1, EI, E1),
     ( option(retry(R), Optional), is_dict(M1), get_dict(error, M1, Error1)
-      -> retry(parallel_execute(Branches, I), R, Error1, M2, E)
-      ;  M2 = M1
+      -> retry(parallel_execute(Branches, I), R, Error1, M2, E1, E2)
+      ;  M2 = M1, E2 = E1
     ),
     ( option(catch(F), Optional), is_dict(M2), get_dict(error, M2, Error2)
-      -> catch(State, F, Error2, M3, E)
-      ;  M3 = M2
+      -> catch(State, F, Error2, M3, E2, EO)
+      ;  M3 = M2, EO = E2
     ),
     process_output(I, M3, O, Optional),
     mydebug(parallel(out), (State, I, O)).
 
-parallel_execute(Branches, I, O, E) :-
+parallel_execute(Branches, I, O, E, E) :-
     mydebug(parallel_execute(in), (I, O)),
     catch( ( %% create logical variable for each branch.
-             %% Args has to be in the form of [(I,M1,E),(I,M2,E),(I,M3,E),...]
+             %% Args has to be in the form of [(I,M1,E,E),(I,M2,E,E),(I,M3,E,E),...]
              %% and M1,M2,M3... have to be non ground.
              length(Branches, BL),
              length(LogVars, BL),
              length(IE, BL),
-             maplist(=((I,E)), IE),
-             maplist([M,(I,E),(I,M,E)]>>true, LogVars, IE, Args),
+             maplist(=((I,E,E)), IE),
+             maplist([M,(I,E,E),(I,M,E,E)]>>true, LogVars, IE, Args),
              mydebug(parallel(args), (Args, O)),
              ( concurrent_maplist(branch_execute, Branches, Args, Results)
                -> mydebug(parallel_execute(result), Results)
                ;  mydebug(parallel_execute(result), failed(Results)),
                   throw(parallel_execute(concurrent_maplist, false))
              ),
-             maplist([(_A,B,_C),B]>>true, Results, O), %% O is list
+             maplist([(_A,B,_C,_D),B]>>true, Results, O), %% O is list
              mydebug(parallel_execute(out), O)
            ),
            Error,
@@ -380,9 +382,9 @@ parallel_execute(Branches, I, O, E) :-
         ),
     mydebug(parallel_execute(out), (I, O)).
 
-branch_execute(Branch, (I, O, E), (I, O, E)) :-
+branch_execute(Branch, (I, O, E, E), (I, O, E, E)) :-
     mydebug(branch_execute(in), (I,O)),
-    reduce(Branch, I, O, E),
+    reduce(Branch, I, O, E, E),
     ( is_dict(O), get_dict(error, O, Error)
       -> mydebug(branch_execute(error), Error),
          throw(Error)
@@ -395,12 +397,12 @@ branch_execute(Branch, (I, O, E), (I, O, E)) :-
 %%
 %% cyclic state transition
 %%
-goto(state(Target), I, O, E) :-
+goto(state(Target), I, O, EI, EO) :-
     mydebug(goto(in), (Target, I, O)),
-    States = E.dsl,
+    States = EI.dsl,
     lookup_state(Target,States,Next),
     mydebug(goto(out), (Next, I, O)),
-    reduce(Next, I, O, E).
+    reduce(Next, I, O, EI, EO).
 
 lookup_state(_Target, [], _) :- !.
 lookup_state(#(Target), [#(Target)|States], [#(Target)|States]) :-
@@ -432,13 +434,13 @@ lookup_state(Target, [Ss|Sss], Next) :-
 %%
 %% retry and fallback conditions
 %%
-error_equals(["States.ALL"], I, true, _E) :- !,
+error_equals(["States.ALL"], I, true, E, E) :- !,
     mydebug(error_equals("States.ALL"), (I, true)).
-error_equals(["States.TaskFailed"], I, O, _E) :- !,
+error_equals(["States.TaskFailed"], I, O, E, E) :- !,
     mydebug(error_equals(in), ("States.TaskFailed", I, O)),
     (re_match("Error"/i, I) -> O = true; O = false),
     mydebug(error_equals(out), ("States.TaskFailed", I, O)).
-error_equals(ErrorNames, I, O, _E) :-
+error_equals(ErrorNames, I, O, E, E) :-
     mydebug(error_equals(in), (ErrorNames, I, O)),
     (memberchk(I, ErrorNames) -> O = true; O = false),
     mydebug(error_equals(out), (ErrorNames, I, O)).
@@ -446,97 +448,97 @@ error_equals(ErrorNames, I, O, _E) :-
 %%
 %% choice conditions
 %%
-not(Cond, I, O, E) :-
+not(Cond, I, O, EI, EO) :-
     mydebug(not(in), (Cond, I, O)),
-    reduce(Cond, I, M, E),
+    reduce(Cond, I, M, EI, EO),
     not(M, O),
     mydebug(not(out), (Cond, I, O)).
 
-and([], _I, true, _E) :-
+and([], _I, true, E, E) :-
     mydebug(and(done), true).
-and([Cond|Conds], I, O, E) :-
+and([Cond|Conds], I, O, EI, EO) :-
     mydebug(and(in), ([Cond|Conds], I, O)),
-    reduce(Cond, I, M1, E),
-    and(Conds, I, M2, E),
+    reduce(Cond, I, M1, EI, E1),
+    and(Conds, I, M2, E1, EO),
     and(M1, M2, O),
     mydebug(and(out), ([Cond|Conds], I, O)).
 
-or([], _I, false, _E) :-
+or([], _I, false, E, E) :-
     mydebug(or(done), false).
-or([Cond|Conds], I, O, E) :-
+or([Cond|Conds], I, O, EI, EO) :-
     mydebug(or(in), ([Cond|Conds], I, O)),
-    reduce(Cond, I, M1, E),
-    or(Conds, I, M2, E),
+    reduce(Cond, I, M1, EI, E1),
+    or(Conds, I, M2, E1, EO),
     or(M1, M2, O),
     mydebug(or(out), ([Cond|Conds], I, O)).
 
-boolean_equals(Variable, Value, I, O, _E) :-
+boolean_equals(Variable, Value, I, O, E, E) :-
     mydebug(boolean_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V == Value ->  O = true; O = false ), _, O = false),
     mydebug(boolean_equals(out), (Variable, Value, I, O)).
 
-numeric_equals(Variable, Value, I, O, _E) :-
+numeric_equals(Variable, Value, I, O, E, E) :-
     mydebug(numeric_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V =:= Value ->  O = true; O = false), _, O = false),
     mydebug(numeric_equals(out), (Variable, Value, I, O)).
 
-numeric_greater_than(Variable, Value, I, O, _E) :-
+numeric_greater_than(Variable, Value, I, O, E, E) :-
     mydebug(numeric_greater_than(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V > Value ->  O = true; O = false ), _, O = false),
     mydebug(numeric_greater_than(out), (Variable, Value, I, O)).
 
-numeric_greater_than_equals(Variable, Value, I, O, _E) :-
+numeric_greater_than_equals(Variable, Value, I, O, E, E) :-
     mydebug(numeric_greater_than_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V >= Value ->  O = true; O = false ), _, O = false),
     mydebug(numeric_greater_than_equals(out), (Variable, Value, I, O)).
 
-numeric_less_than(Variable, Value, I, O, _E) :-
+numeric_less_than(Variable, Value, I, O, E, E) :-
     mydebug(numeric_less_than(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V < Value ->  O = true; O = false ), _, O = false),
     mydebug(numeric_less_than(out), (Variable, Value, I, O)).
 
-numeric_less_than_equals(Variable, Value, I, O, _E) :-
+numeric_less_than_equals(Variable, Value, I, O, E, E) :-
     mydebug(numeric_less_than_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V =< Value ->  O = true; O = false ), _, O = false),
     mydebug(numeric_less_than_equals(out), (Variable, Value, I, O)).
 
-string_equals(Variable, Value, I, O, _E) :-
+string_equals(Variable, Value, I, O, E, E) :-
     mydebug(string_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V == Value ->  O = true; O = false ), _, O = false),
     mydebug(string_equals(out), (Variable, Value, I, O)).
 
-string_greater_than(Variable, Value, I, O, _E) :-
+string_greater_than(Variable, Value, I, O, E, E) :-
     mydebug(string_greater_than(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V @> Value ->  O = true; O = false ), _, O = false),
     mydebug(string_greater_than(out), (Variable, Value, I, O)).
 
-string_greater_than_equals(Variable, Value, I, O, _E) :-
+string_greater_than_equals(Variable, Value, I, O, E, E) :-
     mydebug(string_greater_than_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V @>= Value ->  O = true; O = false ), _, O = false),
     mydebug(string_greater_than_equals(out), (Variable, Value, I, O)).
 
-string_less_than(Variable, Value, I, O, _E) :-
+string_less_than(Variable, Value, I, O, E, E) :-
     mydebug(string_less_than(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V @< Value ->  O = true; O = false ), _, O = false),
     mydebug(string_less_than(out), (Variable, Value, I, O)).
 
-string_less_than_equals(Variable, Value, I, O, _E) :-
+string_less_than_equals(Variable, Value, I, O, E, E) :-
     mydebug(string_less_than_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            V @=< Value ->  O = true; O = false ), _, O = false),
     mydebug(string_less_than_equals(out), (Variable, Value, I, O)).
 
-timestamp_equals(Variable, Value, I, O, _E) :-
+timestamp_equals(Variable, Value, I, O, E, E) :-
     mydebug(timestamp_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            parse_time(V, VariableStamp),
@@ -544,7 +546,7 @@ timestamp_equals(Variable, Value, I, O, _E) :-
            VariableStamp =:= ValueStamp ->  O = true; O = false ), _, O = false),
     mydebug(timestamp_equals(out), (Variable, Value, I, O)).
 
-timestamp_greater_than(Variable, Value, I, O, _E) :-
+timestamp_greater_than(Variable, Value, I, O, E, E) :-
     mydebug(timestamp_greater_than(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            parse_time(V, VariableStamp),
@@ -552,7 +554,7 @@ timestamp_greater_than(Variable, Value, I, O, _E) :-
            VariableStamp > ValueStamp ->  O = true; O = false ), _, O = false),
     mydebug(timestamp_greater_than(out), (Variable, Value, I, O)).
 
-timestamp_greater_than_equals(Variable, Value, I, O, _E) :-
+timestamp_greater_than_equals(Variable, Value, I, O, E, E) :-
     mydebug(timestamp_greater_than_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            parse_time(V, VariableStamp),
@@ -560,7 +562,7 @@ timestamp_greater_than_equals(Variable, Value, I, O, _E) :-
            VariableStamp >= ValueStamp ->  O = true; O = false ), _, O = false),
     mydebug(timestamp_greater_than_equals(out), (Variable, Value, I, O)).
 
-timestamp_less_than(Variable, Value, I, O, _E) :-
+timestamp_less_than(Variable, Value, I, O, E, E) :-
     mydebug(timestamp_less_than(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            parse_time(V, VariableStamp),
@@ -568,7 +570,7 @@ timestamp_less_than(Variable, Value, I, O, _E) :-
            VariableStamp < ValueStamp ->  O = true; O = false ), _, O = false),
     mydebug(timestamp_less_than(out), (Variable, Value, I, O)).
 
-timestamp_less_than_equals(Variable, Value, I, O, _E) :-
+timestamp_less_than_equals(Variable, Value, I, O, E, E) :-
     mydebug(timestamp_less_than_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            parse_time(V, VariableStamp),
@@ -697,10 +699,13 @@ or(true, false, true).
 or(false, true, true).
 or(false, false, false).
 
+tuple_list(I)     --> { var(I) }, [I].
+tuple_list((A,B)) --> !, tuple_list(A), tuple_list(B).
+tuple_list(I)     --> { nonvar(I) }, [I].
 %%
 %% repl commands
 %%
-help(I, O, _E) :-
+help(I, O, E, E) :-
     mydebug(help(in), (I, O)),
     format(atom(O), "help
 ----------------------------------------------------------------------
@@ -724,73 +729,75 @@ X=Y            : substitute a value 'Y' to the local variable 'X'
 ", []),
     mydebug(help(out), (I, O)).
 
-debug(on, _I, on, _E) :-
+debug(on, I, I, E, E) :-
     debug(repl > user_error).
 
-debug(off, _I, off, _E) :-
+debug(off, I, I, E, E) :-
     nodebug(repl).
 
-startsm(I, _I, I, _E) :-
+startsm(I, I, I, E, E) :-
     mydebug(startsm, I).
 
-endsm(O, O, O, _E) :-
+endsm(O, O, O, E, E) :-
     mydebug(endsm, O).
 
-set(Key, Value, I, O, E) :-
-    mydebug(set(in), (Key, Value, I, O)),
+set(Key, Value, I, I, EI, EO) :-
+    mydebug(set(in), (Key, Value, I, EI, EO)),
+    EO = EI.put(repl/Key, Value),
+    mydebug(set(out), (Key, Value, I, EI, EO)).
+
+unset(Key, I, I, EI, EO) :-
+    mydebug(unset(in), (Key, I, EI, EO)),
     nonvar(Key),
-    option(repl_cmd(set(Key, Value)), E.faas),
-    O = Value,
-    mydebug(set(out), (Key, Value, I, O)).
+    ( get_dict(Key, EI.repl, _E1)
+      -> del_dict(Key, EI.repl, _, E2),
+         EO = EI.put(_{repl: E2})
+      ;  EO = EI
+    ),
+    mydebug(unset(out), (Key, I, EI, EO)).
 
-unset(Key, I, O, E) :-
-    mydebug(unset(in), (Key, I, O)),
-    nonvar(Key),
-    option(repl_env(ReplEnv), E.faas),
-    O = ReplEnv.Key,
-    option(repl_cmd(unset(Key)), E.faas),
-    mydebug(unset(out), (Key, I, O)).
+unsetall(I, I, EI, EO) :-
+    mydebug(unsetall(in), (I, EI, EO)),
+    EO = EI.put(repl, _{}),
+    mydebug(unsetall(out), (I, EI, EO)).
 
-unsetall(I, O, E) :-
-    mydebug(unsetall(in), (I, O)),
-    option(repl_env(ReplEnv), E.faas),
-    O = ReplEnv,
-    option(repl_cmd(unsetall), E.faas),
-    mydebug(unsetall(out), (I, O)).
+getall(I, O, E, E) :-
+    mydebug(getall(in), (I, O, E)),
+    O = E.repl,
+    mydebug(getall(out), (I, O, E)).
 
-getall(I, O, E) :-
-    mydebug(getall(in), (I, O)),
-    option(repl_env(ReplEnv), E.faas),
-    O = ReplEnv,
-    mydebug(getall(out), (I, O)).
-
-$(Key, I, O, E) :-
+$(Key, I, O, E, E) :-
     mydebug(reference(in), (Key, Value, I, O)),
-    option(repl_env(ReplEnv), E.faas),
-    O = ReplEnv.Key,
+    O = E.repl.Key,
     mydebug(reference(out), (Key, Value, I, O)).
 
-#(A, I, O, E) :-
-    nonvar(A), !,
+#(A, I, O, EI, EO) :-
+    nonvar(A),
     mydebug(evaluate(in), (A, I, O)),
     ( callable(A)
       -> ( atom(A)
-           -> reduce($(A), I, Value, E),
-              reduce(#(Value), I, O, E)
-           ;  call(A, I, O, E)
+           -> reduce($(A), I, Value, EI, E1),
+              reduce(#(Value), I, O, E1, EO)
+           ;  call(A, I, O, EI, EO)
          )
-      ;  O=I ),
-    mydebug(evaluate(out), (I, O)).
+      ;  O=I, EO=EI ),
+    mydebug(evaluate(out), (A, I, O)).
 
-=(A, $(B), I, I, E) :-
+=(A, $(B), I, I, EI, EO) :-
     var(A), !,
     mydebug(substitute_dollar(in), (A, B, I)),
-    reduce($(B), I, O, E),
+    reduce($(B), I, O, EI, EO),
     A=O,
     mydebug(substitute_dollar(out), (A, B, I)).
 
-=(A, B, I, I, _E) :-
-    var(A), !,
+=(A, B, I, I, E, E) :-
+    var(A),
     mydebug(substitute(in), (A, B, I)),
     A=B,
     mydebug(substitute(out), (A, B, I)).
+
+{}(A, I, O, EI, EO) :-
+    phrase(tuple_list(A), B),
+    mydebug(parentheses(in), (A, B, I, O)),
+    reduce(B, I, O, EI, EO),
+    mydebug(parentheses(out), (A, B, I, O)).

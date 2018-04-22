@@ -26,12 +26,15 @@
 :- set_prolog_flag(verbose, silent).
 :- set_prolog_flag(toplevel_prompt, 'faasshell debug> ').
 :- current_prolog_flag(emacs_inferior_process, Flag),
-   Flag -> true ; set_prolog_flag(readline, readline).
+   ( Flag = true
+     -> set_prolog_flag(color_term, false)
+     ;  set_prolog_flag(readline, readline)
+   ).
 
 :- initialization(repl).
 
 repl :-
-    % debug(repl > user_error),
+    debug(repl > user_error),
     set_setting(http:logfile,'/logs/httpd.log'), % docker volume /tmp
     prompt(_OldPrompt, '| '),
     current_prolog_flag(readline, Readline),
@@ -39,15 +42,15 @@ repl :-
     load_history,
     repl_loop(_{}).
 
-repl_loop(E) :-
+repl_loop(EI) :-
     prompt1('faasshell> '),
     ( read_term(Term, [variable_names(Vars), syntax_errors(fail)])
       -> debug(repl, 'repl: ~w, ~w', [term(Term), vars(Vars)])
-      ;  repl_loop(E)
+      ;  repl_loop(EI)
     ),
     ( Term == end_of_file
       -> save_history, !
-      ;  phrase(tuple_list(Term), Dsl),
+      ;  phrase(faasshell_run:tuple_list(Term), Dsl),
          debug(repl, 'repl: ~w', [dsl(Dsl)]),
 
          replace_logical_var(Vars, Term, Atom),
@@ -57,32 +60,19 @@ repl_loop(E) :-
            ;  debug(repl, 'repl: dup ~w', [rl_add_history(Atom)])
          ),
 
-         Options = [repl_env(E), repl_cmd(Cmd)],
-         catch( ( faasshell_run:start(fsm(Dsl), Options, I, O)
+         catch( ( faasshell_run:start(fsm(Dsl), [], I, O, EI, EO)
                   -> true
-                  ;  debug(repl, 'repl: failed ~w', [start(fsm(Dsl), Options, I, O)]),
+                  ;  debug(repl, 'repl: failed ~w', [start(fsm(Dsl), I, O, EI)]),
                      nonvar(O) -> true; O = false
                 ),
                 Error,
                 print_message(error, Error)
               ),
-         debug(repl, 'repl: ~w, ~w, ~w', [options(Options), input(I), output(O)]),
-         ( nonvar(Cmd), option(repl_cmd(set(K,V)), Options)
-           -> E2 = E.put(K,V)
-         ; nonvar(Cmd), option(repl_cmd(unset(K)), Options)
-           -> del_dict(K, E, _, E2)
-         ; nonvar(Cmd), option(repl_cmd(unsetall), Options)
-           -> E2 = _{}
-         ;  E2 = E
-         ),
+         debug(repl, 'repl: ~w, ~w, ~w', [input(I), output(O), env(EO)]),
          format('Output=~w~n', [O]),
          maplist(writeln, Vars),
-         repl_loop(E2)
+         repl_loop(EO)
     ).
-
-tuple_list(I)     --> { var(I) }, [I].
-tuple_list((A,B)) --> !, tuple_list(A), tuple_list(B).
-tuple_list(I)     --> { nonvar(I) }, [I].
 
 replace_logical_var(Variables, CommandTerm, CommandReplaced) :-
     term_to_atom(CommandTerm, CommandAtom),

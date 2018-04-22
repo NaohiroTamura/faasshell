@@ -24,7 +24,7 @@
 
 :- use_module(faasshell_version, [git_commit_id/1]).
 :- use_module(asl_compile, [gen_dsl/2]).
-:- use_module(faasshell_run, [start/4]).
+:- use_module(faasshell_run, [start/6]).
 :- use_module(cdb_api).
 :- use_module(mq_utils).
 
@@ -372,7 +372,7 @@ statemachine(post, Request) :-
               http_parameters(Request, [blocking(Blocking, [default(false)])]),
               http_log('~w~n', [blocking(Blocking)]),
               ( Blocking = true
-                -> ( faasshell_run:start(Dsl, [], Input, O)
+                -> ( faasshell_run:start(Dsl, [], Input, O, _{}, _)
                      -> Output = DictParams.put(_{output:O})
                      ;  throw((_{error: 'failed to start',
                                  cause: 'FaaS credential is missing'}, 500))
@@ -531,7 +531,7 @@ shell(post, Request) :-
               http_parameters(Request, [blocking(Blocking, [default(false)])]),
               http_log('~w~n', [blocking(Blocking)]),
               ( Blocking = true
-                -> ( faasshell_run:start(Dsl, [], Input, O)
+                -> ( faasshell_run:start(Dsl, [], Input, O, _{}, _)
                      -> Output = DictParams.put(_{output:O})
                      ;  throw((_{error: 'failed to start',
                                  cause: 'FaaS credential is missing'}, 500))
@@ -623,7 +623,7 @@ background_job(Namespace, File, ExecId, Dsl, Input) :-
               hostname: Hostname
             },
     cdb_api:doc_create(faasshell_executions, NSFile, Dict, _C1, _R1),
-    ( faasshell_run:start(Dsl, [], Input, O)
+    ( faasshell_run:start(Dsl, [], Input, O, _{}, _)
       -> Output = O
       ;  Output = _{error: 'failed to start',
                     cause: 'FaaS credential is missing'}

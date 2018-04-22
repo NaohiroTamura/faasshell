@@ -221,7 +221,7 @@ test(output, Output = _{a:1, parallel:[_{a:1},_{a:1}]}) :-
 :- begin_tests(pass).
 
 test(hello, O = _{message:"Hello World!", name:"wsk"}) :-
-    start('samples/wsk/dsl/hello_world.dsl', [], _{name:"wsk"}, O).
+    start('samples/wsk/dsl/hello_world.dsl', [], _{name:"wsk"}, O, _{}, _).
 
 :- end_tests(pass).
 
@@ -232,7 +232,7 @@ test(hello, O = _{message:"Hello World!", name:"wsk"}) :-
                ]).
 
 test(hello, O = _{payload:"Hello, wsk!"}) :-
-    start('samples/wsk/dsl/hello_world_task.dsl', [],  _{name:"wsk"}, O).
+    start('samples/wsk/dsl/hello_world_task.dsl', [],  _{name:"wsk"}, O, _{}, _).
 
 :- end_tests(task).
 
@@ -243,26 +243,29 @@ test(hello, O = _{payload:"Hello, wsk!"}) :-
                ]).
 
 test(case1, O = _{first_match_state:_, foo:1, next_state:_}) :-
-    start('samples/wsk/dsl/choice_state.dsl', [], _{foo:1}, O).
+    start('samples/wsk/dsl/choice_state.dsl', [], _{foo:1}, O, _{}, _).
 
 test(case2, O = _{second_match_state:_, foo:2, next_state:_}) :-
-    start('samples/wsk/dsl/choice_state.dsl', [], _{foo:2}, O).
+    start('samples/wsk/dsl/choice_state.dsl', [], _{foo:2}, O, _{}, _).
 
 test(default, O = _{cause:"No Matches!",error:"DefaultStateError"}) :-
-    start('samples/wsk/dsl/choice_state.dsl', [], _{foo:5}, O).
+    start('samples/wsk/dsl/choice_state.dsl', [], _{foo:5}, O, _{}, _).
 
 test(casex1, O = _{public_state:_, type:"Public", next_state:_}) :-
-    start('samples/wsk/dsl/choice_statex.dsl', [], _{type:"Public"}, O).
+    start('samples/wsk/dsl/choice_statex.dsl', [], _{type:"Public"}, O, _{}, _).
 
 test(casex2, O = _{value_is_zero_state:_, type:"Private", value:0, next_state:_}) :-
-    start('samples/wsk/dsl/choice_statex.dsl', [], _{type:"Private", value:0}, O).
+    start('samples/wsk/dsl/choice_statex.dsl', [], _{type:"Private", value:0}, O,
+          _{}, _).
 
 test(casex3, O = _{value_in_twenties_state:_, type:"Private", value:25,
                    next_state:_}) :-
-    start('samples/wsk/dsl/choice_statex.dsl', [], _{type:"Private", value:25}, O).
+    start('samples/wsk/dsl/choice_statex.dsl', [], _{type:"Private", value:25}, O,
+          _{}, _).
 
 test(defaultx, O = _{cause:"No Matches!", error:null}) :-
-    start('samples/wsk/dsl/choice_statex.dsl', [], _{type:"Private", value:35}, O).
+    start('samples/wsk/dsl/choice_statex.dsl', [], _{type:"Private", value:35}, O,
+          _{}, _).
 
 :- end_tests(choice).
 
@@ -275,20 +278,20 @@ test(defaultx, O = _{cause:"No Matches!", error:null}) :-
 test(normal, O = _{payload:"Hello, no sleep!"}) :-
     start('samples/wsk/dsl/wait_state.dsl', [],
           _{expirydate: "2017-09-04T01:59:00Z",
-            expiryseconds:5, sleep:0, name:"no sleep"}, O).
+            expiryseconds:5, sleep:0, name:"no sleep"}, O, _{}, _).
 
 :- end_tests(wait).
 
 :- begin_tests(parallel).
 
 test(pass, O = [_{var:1}, _{var:1}]) :-
-    start('samples/wsk/dsl/parallel.dsl', [], _{var:1}, O).
+    start('samples/wsk/dsl/parallel.dsl', [], _{var:1}, O, _{}, _).
 
 test(task, O = [_{task1:_{payload:"Hello, Parallel!"}},
                 _{task2:_{payload:"Hello, Parallel!"}},
                 _{task3:_{payload:"Hello, Parallel!"}},
                 _{task4:_{payload:"Hello, Parallel!"}}]) :-
-    start('samples/wsk/dsl/parallel_task.dsl', [], _{name:"Parallel"}, O).
+    start('samples/wsk/dsl/parallel_task.dsl', [], _{name:"Parallel"}, O, _{}, _).
 
 :- end_tests(parallel).
 
@@ -301,12 +304,13 @@ test(task, O = [_{task1:_{payload:"Hello, Parallel!"}},
 
 test(succeeded, O = _{payload:"Hello, Poller!"}) :-
     start('samples/wsk/dsl/job_status_poller.dsl', [],
-          _{wait_time:1, params:["DEFAULT", "SUCCEEDED"], name:"Poller"}, O).
+          _{wait_time:1, params:["DEFAULT", "SUCCEEDED"], name:"Poller"}, O,
+          _{}, _).
 
 test(failed, O = _{cause:"AWS Batch Job Failed",
                    error:"DescribeJob returned FAILED"}) :-
     start('samples/wsk/dsl/job_status_poller.dsl', [],
-          _{wait_time:1, params:["DEFAULT", "FAILED"], name:"Poller"}, O).
+          _{wait_time:1, params:["DEFAULT", "FAILED"], name:"Poller"}, O, _{}, _).
 
 :- end_tests(job_status_poller).
 
@@ -317,12 +321,12 @@ test(failed, O = _{cause:"AWS Batch Job Failed",
 
 test(succeeded, Code = 200) :-
     start('samples/wsk/dsl/task_timer.dsl', [status_code(Code)],
-          _{timer_seconds:1, status:"Sent"}, O),
+          _{timer_seconds:1, status:"Sent"}, O, _{}, _),
     assertion(O = _{timer_seconds:1, status: "Sent"}).
 
 test(failed, Code = 502 ) :-
     start('samples/wsk/dsl/task_timer.dsl', [status_code(Code)],
-          _{timer_seconds:1, status:"ERROR"}, O),
+          _{timer_seconds:1, status:"ERROR"}, O, _{}, _),
     %% OpenWhisk Invoker / Python Runtime Issue regarding exception handling
     assertion(O = _{error:"The action did not return a dictionary."}).
 
@@ -334,7 +338,7 @@ test(activity_task_dsl_success, Status = true) :-
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/wsk/dsl/activity_task.dsl',
-                    [], _{name: "Activity"}, O),
+                    [], _{name: "Activity"}, O, _{}, _),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
@@ -359,7 +363,7 @@ test(activity_task_dsl_failure, Status = true) :-
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/wsk/dsl/activity_task.dsl',
-                    [], _{comment: "failure test"}, O),
+                    [], _{comment: "failure test"}, O, _{}, _),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
@@ -385,14 +389,14 @@ test(activity_task_dsl_failure, Status = true) :-
 
 test(activity_task_timeout_dsl) :-
     start('samples/wsk/dsl/activity_task_timeout.dsl', [],
-          _{name: "Activity Timeout"}, O),
+          _{name: "Activity Timeout"}, O, _{}, _),
     assertion(O = _{error:"States.Timeout"}).
 
 test(activity_task_heartbeat_dsl_success, Status = true) :-
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/wsk/dsl/activity_task_heartbeat.dsl',
-                    [], _{name: "Activity"}, O),
+                    [], _{name: "Activity"}, O, _{}, _),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
@@ -421,7 +425,7 @@ test(activity_task_heartbeat_dsl_hearbeat_timeout, Status = true) :-
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/wsk/dsl/activity_task_heartbeat.dsl',
-                    [], _{name: "Activity"}, O),
+                    [], _{name: "Activity"}, O, _{}, _),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
@@ -443,7 +447,7 @@ test(activity_task_timeout_heartbeat_dsl_timeout, Status = true) :-
     message_queue_create(MQueue),
     thread_create(
             ( start('samples/wsk/dsl/activity_task_timeout_heartbeat.dsl',
-                    [], _{name: "Activity"}, O),
+                    [], _{name: "Activity"}, O, _{}, _),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
