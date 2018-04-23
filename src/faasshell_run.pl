@@ -743,7 +743,12 @@ endsm(O, O, O, E, E) :-
 
 set(Key, Value, I, I, EI, EO) :-
     mydebug(set(in), (Key, Value, I, EI, EO)),
-    EO = EI.put(repl/Key, Value),
+    catch( EO = EI.put(repl/Key, Value),
+           Error,
+           ( print_message(error, Error),
+             EO = EI
+           )
+         ),
     mydebug(set(out), (Key, Value, I, EI, EO)).
 
 unset(Key, I, I, EI, EO) :-

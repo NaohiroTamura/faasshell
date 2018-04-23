@@ -41,6 +41,7 @@ unit_test:
 		echo $$case; \
 		swipl -q -l $$case -g run_tests -t halt; \
 	done
+	tests/unit/test_faasshell_repl.exp
 
 functional_test:
 	@echo "functional  test"

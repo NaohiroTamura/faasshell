@@ -25,16 +25,17 @@
 
 :- set_prolog_flag(verbose, silent).
 :- set_prolog_flag(toplevel_prompt, 'faasshell debug> ').
-:- current_prolog_flag(emacs_inferior_process, Flag),
-   ( Flag = true
-     -> set_prolog_flag(color_term, false)
-     ;  set_prolog_flag(readline, readline)
-   ).
+:- current_prolog_flag(emacs_inferior_process, true)
+   -> set_prolog_flag(color_term, false),
+      set_prolog_flag(readline, false)
+   ;  stream_property(current_output, tty(true))
+      -> set_prolog_flag(readline, readline)
+      ;  set_prolog_flag(readline, false).
 
 :- initialization(repl).
 
 repl :-
-    debug(repl > user_error),
+    %debug(repl > user_error),
     set_setting(http:logfile,'/logs/httpd.log'), % docker volume /tmp
     prompt(_OldPrompt, '| '),
     current_prolog_flag(readline, Readline),
