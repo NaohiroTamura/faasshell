@@ -411,6 +411,16 @@ lookup_state(#(Target), [#(Target)|States], [#(Target)|States]) :-
 lookup_state(#(Target), [#(State)|States], Next) :-
     debug(lookup_state, '~w', [v2(State)]),
     !, lookup_state(#(Target), States, Next).
+lookup_state(Target, [choices(_,[case(_,CaseList,_)|CaseRest],_)|States], Next) :-
+    debug(lookup_state, '~w', [c1(CaseList, States)]),
+    lookup_state(Target, CaseList, [State1|Rest1]),
+    ( nonvar(State1), State1 =.. [Cmd1, Target | _], Cmd1 \== goto )
+    -> Next = [State1|Rest1]
+    ;  lookup_state(Target, CaseRest, [State2|Rest2]),
+       ( ( nonvar(State2), State2 =.. [Cmd2, Target | _], Cmd2 \== goto )
+         -> Next = [State2|Rest2]
+         ; !, lookup_state(Target, States, Next)
+       ).
 lookup_state(Target, [parallel(_,branches(ListOfList),_)|States], Next) :-
     debug(lookup_state, '~w', [p1(ListOfList, States)]),
     lookup_state(Target, ListOfList, [State|Rest]),

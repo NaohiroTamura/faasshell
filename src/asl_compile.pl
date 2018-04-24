@@ -418,7 +418,7 @@ check_dup_state(Asl) :-
 
 dup_state([], []).
 dup_state([L|Ls], Ds) :-
-    member(L,Ls) -> Ds = [L|Ds2], dup_state(Ls, Ds2); dup_state(Ls, Ds).
+    memberchk(L,Ls) -> Ds = [L|Ds2], dup_state(Ls, Ds2); dup_state(Ls, Ds).
 
 visit_state(N, K) :-
     _ = N.'States'.K;

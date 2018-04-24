@@ -189,6 +189,77 @@ test(nested3) :-
     assertion(Next = [fail(fail1,_)
              ]).
 
+test(parallel1) :-
+    lookup_state(parallel1,
+                 [task(task,_),
+                  parallel(parallel1,
+                           branches([[wait(wait1,_),
+                                      parallel(parallel2,
+                                               branches([[wait(wait2,_),
+                                                          success(success2,_)],
+                                                         [fail(fail2,_)]]),_)
+                                      ,success(success1,_)],
+                                     [fail(fail1,_)]]),_),
+                  #hello,
+                  pass(pass,_),
+                  goto(state(parallel1))
+                 ], Next),
+    assertion(Next = [parallel(parallel1,
+                               branches([[wait(wait1,_),
+                                          parallel(parallel2,
+                                                   branches([[wait(wait2,_),
+                                                              success(success2,_)],
+                                                             [fail(fail2,_)]]),_)
+                                          ,success(success1,_)],
+                                         [fail(fail1,_)]]),_)
+             ]).
+
+test(parallel2) :-
+    lookup_state(parallel2,
+                 [task(task,_),
+                  parallel(parallel1,
+                           branches([[wait(wait1,_),
+                                      parallel(parallel2,
+                                               branches([[wait(wait2,_),
+                                                          success(success2,_)],
+                                                         [fail(fail2,_)]]),_)
+                                      ,success(success1,_)],
+                                     [fail(fail1,_)]]),_),
+                  #hello,
+                  pass(pass,_),
+                  goto(state(parallel1))
+                 ], Next),
+    assertion(Next = [parallel(parallel2,
+                               branches([[wait(wait2,_),
+                                          success(success2,_)],
+                                         [fail(fail2,_)]]),_)
+             ]).
+
+test(choice_state1) :-
+    load_term('samples/wsk/dsl/choice_state.dsl', fsm(Dsl)),
+    lookup_state('FirstMatchState', Dsl, Next),
+    assertion(Next = [task('FirstMatchState',"frn:wsk:functions:::function:hello",
+                           [result_path('$.first_match_state')]),
+                      task('NextState',"frn:wsk:functions:::function:hello",
+                           [result_path('$.next_state')])
+                     ]).
+
+test(choice_state2) :-
+    load_term('samples/wsk/dsl/choice_state.dsl', fsm(Dsl)),
+    lookup_state('SecondMatchState', Dsl, Next),
+    assertion(Next = [task('SecondMatchState',"frn:wsk:functions:::function:hello",
+                         [result_path('$.second_match_state')]),
+                      task('NextState',"frn:wsk:functions:::function:hello",
+                         [result_path('$.next_state')])
+                     ]).
+
+test(choice_state3) :-
+    load_term('samples/wsk/dsl/choice_state.dsl', fsm(Dsl)),
+    lookup_state('NextState', Dsl, Next),
+    assertion(Next = [task('NextState',"frn:wsk:functions:::function:hello",
+                           [result_path('$.next_state')])
+                     ]).
+
 test(job_status_poller) :-
     load_term('samples/wsk/dsl/job_status_poller.dsl', fsm(Dsl)),
     lookup_state('Wait X Seconds', Dsl, Next),
