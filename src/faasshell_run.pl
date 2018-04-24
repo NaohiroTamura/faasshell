@@ -725,8 +725,8 @@ JSON   value   : _{key:\"string\", number:1, list:[\"a\",\"b\"]}
 ----------------------------------------------------------------------
 debug(on)      : display debug message
 debug(off)     : suppress debug message
-startsm(Input) : start state machine with Input value
-endsm(Output)  : end state machine to get Output value, it is optional
+startsm(Input) : start state machine and inject Input data
+endsm(Output)  : end state machine and get Output data, it is optional
 set(x,y)       : set a value 'y' to a global variable 'x'
 unset(x)       : unset a global variable 'x'
 unsetall       : unset all global variables
@@ -734,7 +734,6 @@ getall         : get all values of the global variables
 $x             : refer to a value of the global variable 'x'
 #x             : evaluate a value of the global variable 'x'
 X=Y            : substitute a value 'Y' to the local variable 'X'
-                 if 'Y' is '$x', put it in parentheses such as 'Y=($x)'
 ----------------------------------------------------------------------
 ", []),
     mydebug(help(out), (I, O)).
@@ -745,8 +744,12 @@ debug(on, I, I, E, E) :-
 debug(off, I, I, E, E) :-
     nodebug(repl).
 
-startsm(I, I, I, E, E) :-
-    mydebug(startsm, I).
+startsm(Input, I, Input, E, E) :-
+    mydebug(startsm, Input),
+    ( var(I)
+      -> true
+      ; print_message(warning, format("dropped workflow data '~w'~n", [I]))
+    ).
 
 endsm(O, O, O, E, E) :-
     mydebug(endsm, O).
@@ -778,13 +781,17 @@ unsetall(I, I, EI, EO) :-
 
 getall(I, O, E, E) :-
     mydebug(getall(in), (I, O, E)),
+    ( var(I)
+      -> true
+      ; print_message(warning, format("dropped workflow data '~w'~n", [I]))
+    ),
     O = E.repl,
     mydebug(getall(out), (I, O, E)).
 
 $(Key, I, O, E, E) :-
-    mydebug(reference(in), (Key, Value, I, O)),
+    mydebug(reference(in), (Key, I, O, E)),
     O = E.repl.Key,
-    mydebug(reference(out), (Key, Value, I, O)).
+    mydebug(reference(out), (Key, I, O, E)).
 
 #(A, I, O, EI, EO) :-
     nonvar(A),

@@ -53,8 +53,8 @@ JSON   value   : _{key:"string", number:1, list:["a","b"]}
 ----------------------------------------------------------------------
 debug(on)      : display debug message
 debug(off)     : suppress debug message
-startsm(Input) : start state machine with Input value
-endsm(Output)  : end state machine to get Output value, it is optional
+startsm(Input) : start state machine and inject Input data
+endsm(Output)  : end state machine and get Output data, it is optional
 set(x,y)       : set a value 'y' to a global variable 'x'
 unset(x)       : unset a global variable 'x'
 unsetall       : unset all global variables
@@ -62,7 +62,6 @@ getall         : get all values of the global variables
 $x             : refer to a value of the global variable 'x'
 #x             : evaluate a value of the global variable 'x'
 X=Y            : substitute a value 'Y' to the local variable 'X'
-                 if 'Y' is '$x', put it in parentheses such as 'Y=($x)'
 ----------------------------------------------------------------------
 ```
 

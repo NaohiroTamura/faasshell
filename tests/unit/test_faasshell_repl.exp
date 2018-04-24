@@ -14,20 +14,130 @@
 # under the License.
 #
 
-spawn src/faasshell_repl.pl
-expect "faasshell>"
+# set timeout 10
 
-send "set(x,1).\n"
-expect -re "Output=_\[0-9]+"
+proc report {result} {
+    global case
+    puts "\n\n-> $result : $case\n"
+}
 
+spawn -noecho src/faasshell_repl.pl
+
+expect_after {
+    # default timetout is 10 sec
+    timeout {
+        report {timeout exit(1)}
+        # send Ctl-D twice
+        send "\004"
+        send "\004"
+        wait
+        close
+        exit 1
+    }
+}
+
+set case "start repl"
+expect "faasshell>" { report {passed} }
+
+set case "set a global variable 'x'"
+send "set(x,1).\r"
+expect -re {Output=_(\d)+} { report {passed} }
+
+set case "check the global variable 'x'"
 send "getall.\r"
-expect { -re Output=_[0-9]+\{x:1\} }
+expect -re {Output=_(\d)+\{x:1\}} { report {passed} }
 
-send "set(X,2).\n"
-expect "ERROR:"
+set case "set a global variable 'X'"
+send "set(X,2).\r"
+expect "ERROR:*" { report {passed} }
 
-send "getall.\n"
-expect -re "Output=_(\d)+\{x:1\}"
+set case "check if the global variable 'x' is kept"
+send "getall.\r"
+expect -re {Output=_(\d)+\{x:1\}}  { report {passed} }
 
+set case "set a global variable 'y'"
+send "set(y,2).\r"
+expect -re {Output=_(\d)+} { report {passed} }
+
+set case "check if the global variable 'x' and 'y'"
+send "getall.\r"
+expect -re {Output=_(\d)+\{x:1,y:2\}}  { report {passed} }
+
+set case "set a global variable 'z'"
+send "set(z,3).\r"
+expect -re {Output=_(\d)+} { report {passed} }
+
+set case "check if the global variable 'x', 'y' and 'z'"
+send "getall.\r"
+expect -re {Output=_(\d)+\{x:1,y:2,z:3\}}  { report {passed} }
+
+set case "unset the global variable 'z'"
+send "unset(z).\r"
+expect -re {Output=_(\d)+} { report {passed} }
+
+set case "check if the global variable 'x' and 'y' are kept"
+send "getall.\r"
+expect -re {Output=_(\d)+\{x:1,y:2\}}  { report {passed} }
+
+set case "unset the global variable 'x' and 'y'"
+send "unset(x), unset(y).\r"
+expect -re {Output=_(\d)+} { report {passed} }
+
+set case "check if the global variable is empty"
+send "getall.\r"
+expect -re {Output=_(\d)+\{\}}  { report {passed} }
+
+set case "unset unknown global variable 'unknown'"
+send "set(x,1), unset(unknown).\r"
+expect -re {Output=_(\d)+} { report {passed} }
+
+set case "check if the global variable 'x' is set"
+send "getall.\r"
+expect -re {Output=_(\d)+\{x:1\}}  { report {passed} }
+
+set case "unsetall global variable"
+send "set(x,1), set(y,2), set(z,3), unsetall, getall.\r"
+expect -re {Output=_(\d)+}  { report {passed} }
+
+set case "call getall in the middle of the workflow"
+send "startsm(1),getall.\r"
+expect -re {Warning: dropped workflow data '1'}  { report {passed} }
+
+set case "call startsm in the middle of the workflow"
+send "startsm(1),startsm(2).\r"
+expect -re {Warning: dropped workflow data '1'}  { report {passed} }
+
+set case "set a value to local variable"
+send "X = 1, startsm(X).\r"
+expect {
+    {Output=1} { exp_continue }
+    {X=1}  { report {passed} }
+}
+
+set case "\$x to get the value of the global variable 'x'"
+send "set(x,1), X = \$x, startsm(X).\r"
+expect {
+    {Output=1} { exp_continue }
+    {X=1}  { report {passed} }
+}
+
+set case "#lambda to eval the value of the global variable 'lambda'"
+send "set(lambda, set(x,1)), #lambda, X = \$x, startsm(X).\r"
+expect {
+    {Output=1} { exp_continue }
+    {X=1}  { report {passed} }
+}
+
+set case "create a block of states by parentheses"
+send "set(lambda, set(x,1)), { #lambda, X = \$x}, startsm(X).\r"
+expect {
+    {Output=1} { exp_continue }
+    {X=1}  { report {passed} }
+}
+
+# send Ctl-D twice
+send "\004"
+send "\004"
+wait
 close
-exit
+exit 0
