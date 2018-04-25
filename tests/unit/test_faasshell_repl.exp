@@ -29,6 +29,7 @@ expect_after {
         report {timeout exit(1)}
         # send Ctl-D twice
         send "\004"
+        expect "faasshell debug>"
         send "\004"
         wait
         close
@@ -39,6 +40,9 @@ expect_after {
 set case "start repl"
 expect "faasshell>" { report {passed} }
 
+#
+# basic operations
+#
 set case "set a global variable 'x'"
 send "set(x,1).\r"
 expect -re {Output=_(\d)+} { report {passed} }
@@ -129,14 +133,78 @@ expect {
 }
 
 set case "create a block of states by parentheses"
-send "set(lambda, set(x,1)), { #lambda, X = \$x}, startsm(X).\r"
+send "set(lambda, set(x,1)), { #lambda, X = \$x }, startsm(X).\r"
 expect {
     {Output=1} { exp_continue }
     {X=1}  { report {passed} }
 }
 
+#
+# run samples/wsk/dsl/job_status_poller.dsl using global variables
+#
+set case "unsetall global variable before running job_status_poller.dsl"
+send "unsetall.\r"
+expect -re {Output=_(\d)+}  { report {passed} }
+
+set case "register task('Submit Job')"
+send "set(submit_job, task('Submit Job', \
+\"frn:wsk:functions:::function:/whisk.system/utils/echo\", \
+\[result_path('$.guid')\])),\r"
+expect "|" { report {passed} }
+
+set case "register wait('Wait X Seconds')"
+send "set(wait_x_secs, wait('Wait X Seconds',seconds_path('$.wait_time'),\[\])),\r"
+expect "|" { report {passed} }
+
+set case "register wait('Wait X Seconds')"
+send "set(get_job_status, \
+task('Get Job Status',\"frn:wsk:functions:::function:job\", \
+\[input_path('$.guid'),result_path('$.guid')\])),\r"
+expect "|" { report {passed} }
+
+set case "register fail('Job Failed')"
+send "set(job_failed, fail('Job Failed',\[error(\"DescribeJob returned FAILED\"), \
+cause(\"AWS Batch Job Failed\")\])),\r"
+expect "|" { report {passed} }
+
+set case "register fail('Get Final Job Status')"
+send "set(get_final_job_status, task('Get Final Job Status', \
+\"frn:wsk:functions:::function:hello\",\[\])),\r"
+expect "|" { report {passed} }
+
+set case "register choices('Job Complete?')"
+send "set(job_complete, \
+choices('Job Complete?', \
+\[ \
+   case(string_equals('$.guid.status',\"FAILED\"), \[#job_failed]), \
+   case(string_equals('$.guid.status',\"SUCCEEDED\"), \[#get_final_job_status]) \
+\],
+\[ \
+   default(\[goto(state(#wait_x_secs))\]) \
+\])),\r"
+expect "|" { report {passed} }
+
+set case "run job_status_poller.dsl for succeeded case"
+send "startsm(_{wait_time:1, \
+                params:\[\"DEFAULT\", \"SUCCEEDED\"\], \
+                name:\"Poller\"}), \
+#submit_job, #wait_x_secs, #get_job_status, #job_complete.\r"
+expect -timeout 20 -re {Output=_(\d)+\{payload:Hello, Poller!\}} { report {passed} }
+
+set case "run job_status_poller.dsl for failed case"
+send "startsm(_{wait_time:1, \
+                params:\[\"DEFAULT\", \"FAILED\"\], \
+                name:\"Poller\"}), \
+#submit_job, #wait_x_secs, #get_job_status, #job_complete.\r"
+expect -timeout 20 -re \
+{Output=_(\d)+\{cause:AWS Batch Job Failed,error:DescribeJob returned FAILED\}} \
+{ report {passed} }
+
 # send Ctl-D twice
+sleep 1.0
+set case "exit repl"
 send "\004"
+expect "faasshell debug>" { report {passed} }
 send "\004"
 wait
 close
