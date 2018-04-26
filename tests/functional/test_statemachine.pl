@@ -143,3 +143,68 @@ test(delete, Code = 200) :-
     assertion(_{output: "ok"} :< Dict).
 
 :- end_tests(hello_all_par).
+
+%%
+%% Functional Tests for Resource URI
+%%
+:- begin_tests(hello_world_task_uri,
+               [setup((faasshell_api_host(Host), faasshell_api_key(ID-PW),
+                       string_concat(Host,
+                                     '/statemachine/hello_world_task.json',
+                                     URL),
+                       http_delete(URL, _Data, [authorization(basic(ID, PW)),
+                                                cert_verify_hook(cert_accept_any),
+                                                status_code(_Code)])))]).
+
+test(put_overwrite_true, Code = 200) :-
+    load_json('samples/common/asl/hello_world_task.json', Term),
+    faasshell_api_host(Host), faasshell_api_key(ID-PW),
+    string_concat(Host, '/statemachine/hello_world_task.json?overwrite=true',
+                  URL),
+    http_put(URL, json(Term), Data,
+             [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+              status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{output: "ok", name: "hello_world_task.json",
+                namespace: "demo", dsl: _, asl: _} = Dict).
+
+test(get, Code = 200) :-
+    faasshell_api_host(Host), faasshell_api_key(ID-PW),
+    string_concat(Host, '/statemachine/hello_world_task.json', URL),
+    http_get(URL, Data, [authorization(basic(ID, PW)),
+                         cert_verify_hook(cert_accept_any), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{output: "ok", name: "hello_world_task.json",
+                namespace: "demo", dsl: _, asl: _} :< Dict).
+
+test(post, Code = 200) :-
+    faasshell_api_host(Host), faasshell_api_key(ID-PW),
+    string_concat(Host, '/statemachine/hello_world_task.json?blocking=true', URL),
+    term_json_dict(Json, _{input: _{name: "Statemachine"}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _, input: _{name:"Statemachine"}, name: _,
+                namespace: _, output: _{payload:"Hello, Statemachine!"}} :< Dict).
+
+test(post_empty_input, Code = 200) :-
+    faasshell_api_host(Host), faasshell_api_key(ID-PW),
+    string_concat(Host, '/statemachine/hello_world_task.json?blocking=true', URL),
+    term_json_dict(Json, _{input: _{}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{asl: _, dsl: _, input: _{}, name: _, namespace: _,
+                output: _{payload:"Hello, World!"}} :< Dict).
+
+test(delete, Code = 200) :-
+    faasshell_api_host(Host), faasshell_api_key(ID-PW),
+    string_concat(Host, '/statemachine/hello_world_task.json', URL),
+    http_delete(URL, Data, [authorization(basic(ID, PW)),
+                            cert_verify_hook(cert_accept_any), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{output: "ok"} :< Dict).
+
+:- end_tests(hello_world_task_uri).

@@ -1,0 +1,169 @@
+@prefix : <https://naohirotamura.github.io/faasshell/ns/faas#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@base <https://naohirotamura.github.io/faasshell/ns/faas> .
+
+<https://naohirotamura.github.io/faasshell/ns/faas> rdf:type owl:Ontology ;
+                                                     rdfs:comment "FaaS Shell"^^xsd:string .
+
+#################################################################
+#    Object Properties
+#################################################################
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#assigns
+:assigns rdf:type owl:ObjectProperty ;
+         rdfs:domain :FaaS ;
+         rdfs:range :FRN .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#invokes
+:invokes rdf:type owl:ObjectProperty ;
+         rdfs:domain :FRN ;
+         rdfs:range :Function .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#owns
+:owns rdf:type owl:ObjectProperty ;
+      rdfs:domain :User ;
+      rdfs:range :Function .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#provides
+:provides rdf:type owl:ObjectProperty ;
+          rdfs:domain :FaaS ;
+          rdfs:range :Function .
+
+
+#################################################################
+#    Data properties
+#################################################################
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#input
+:input rdf:type owl:DatatypeProperty .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#name
+:name rdf:type owl:DatatypeProperty .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#output
+:output rdf:type owl:DatatypeProperty .
+
+
+#################################################################
+#    Classes
+#################################################################
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#FRN
+:FRN rdf:type owl:Class ;
+     rdfs:comment "FaaS Resource Name" .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#FaaS
+:FaaS rdf:type owl:Class .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#Function
+:Function rdf:type owl:Class .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#User
+:User rdf:type owl:Class .
+
+
+#################################################################
+#    Individuals
+#################################################################
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#aws
+:aws rdf:type owl:NamedIndividual ,
+              :FaaS ;
+     :assigns :frn001 ;
+     :provides :hello .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#azure
+:azure rdf:type owl:NamedIndividual ,
+                :FaaS ;
+       :assigns :frn002 ;
+       :provides :hello .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#demo
+:demo rdf:type owl:NamedIndividual ,
+               :User ;
+      :owns :hello .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#frn001
+:frn001 rdf:type owl:NamedIndividual ,
+                 :FRN ;
+        :invokes :hello ;
+        :name "arn:aws:lambda:us-east-2:410388484666:function:hello"^^xsd:string .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#frn002
+:frn002 rdf:type owl:NamedIndividual ,
+                 :FRN ;
+        :invokes :hello ;
+        :name "frn:azure:functions::glowing-program-196406:function:hello"^^xsd:string .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#frn003
+:frn003 rdf:type owl:NamedIndividual ,
+                 :FRN ;
+        :invokes :hello ;
+        :name "frn:gcp:functions:us-central1:glowing-program-196406:function:hello"^^xsd:string .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#frn004
+:frn004 rdf:type owl:NamedIndividual ,
+                 :FRN ;
+        :invokes :hello ;
+        :name "frn:wsk:functions:::function:hello"^^xsd:string .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#gcp
+:gcp rdf:type owl:NamedIndividual ,
+              :FaaS ;
+     :assigns :frn003 ;
+     :provides :hello .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#hello
+:hello rdf:type owl:NamedIndividual ,
+                :Function ;
+       :input "$.name"^^xsd:string ;
+       :name "hello"^^xsd:string ;
+       :output "$.payload"^^xsd:string .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#ifttt
+:ifttt rdf:type owl:NamedIndividual ,
+                :FaaS .
+
+
+###  https://naohirotamura.github.io/faasshell/ns/faas#wsk
+:wsk rdf:type owl:NamedIndividual ,
+              :FaaS ;
+     :assigns :frn004 ;
+     :provides :hello .
+
+
+#################################################################
+#    General axioms
+#################################################################
+
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( :FRN
+                :FaaS
+                :Function
+                :User
+              )
+] .
+
+
+###  Generated by the OWL API (version 4.2.8.20170104-2310) https://github.com/owlcs/owlapi
