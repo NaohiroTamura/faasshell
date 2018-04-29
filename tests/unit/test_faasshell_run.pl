@@ -408,12 +408,12 @@ test(failed, Code = 502 ) :-
 test(activity_task_dsl_success, Status = true) :-
     message_queue_create(MQueue),
     thread_create(
-            ( start('samples/wsk/dsl/activity_task.dsl',
+            ( start('samples/common/dsl/activity_task.dsl',
                     [], _{name: "Activity"}, O, _{}, _),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
-    Activity = "::states:::activity:test",
+    Activity = "frn::states:::activity:test",
     uuid(TaskToken),
     mq_utils:activity_start(Activity, TaskToken, InputText),
     atom_json_dict(InputText, Input, []),
@@ -433,12 +433,12 @@ test(activity_task_dsl_success, Status = true) :-
 test(activity_task_dsl_failure, Status = true) :-
     message_queue_create(MQueue),
     thread_create(
-            ( start('samples/wsk/dsl/activity_task.dsl',
+            ( start('samples/common/dsl/activity_task.dsl',
                     [], _{comment: "failure test"}, O, _{}, _),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
-    Activity = "::states:::activity:test",
+    Activity = "frn::states:::activity:test",
     uuid(TaskToken),
     mq_utils:activity_start(Activity, TaskToken, InputText),
     atom_json_dict(InputText, Input, []),
@@ -459,19 +459,19 @@ test(activity_task_dsl_failure, Status = true) :-
     assertion(O = _{error: "existence_error", cause: "key 'name' doesn't exist"}).
 
 test(activity_task_timeout_dsl) :-
-    start('samples/wsk/dsl/activity_task_timeout.dsl', [],
+    start('samples/common/dsl/activity_task_timeout.dsl', [],
           _{name: "Activity Timeout"}, O, _{}, _),
     assertion(O = _{error:"States.Timeout"}).
 
 test(activity_task_heartbeat_dsl_success, Status = true) :-
     message_queue_create(MQueue),
     thread_create(
-            ( start('samples/wsk/dsl/activity_task_heartbeat.dsl',
+            ( start('samples/common/dsl/activity_task_heartbeat.dsl',
                     [], _{name: "Activity"}, O, _{}, _),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
-    Activity = "::states:::activity:test",
+    Activity = "frn::states:::activity:test",
     uuid(TaskToken),
     mq_utils:activity_start(Activity, TaskToken, InputText),
     atom_json_dict(InputText, Input, []),
@@ -495,12 +495,12 @@ test(activity_task_heartbeat_dsl_success, Status = true) :-
 test(activity_task_heartbeat_dsl_hearbeat_timeout, Status = true) :-
     message_queue_create(MQueue),
     thread_create(
-            ( start('samples/wsk/dsl/activity_task_heartbeat.dsl',
+            ( start('samples/common/dsl/activity_task_heartbeat.dsl',
                     [], _{name: "Activity"}, O, _{}, _),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
-    Activity = "::states:::activity:test",
+    Activity = "frn::states:::activity:test",
     uuid(TaskToken),
     mq_utils:activity_start(Activity, TaskToken, InputText),
     atom_json_dict(InputText, Input, []),
@@ -517,13 +517,13 @@ test(activity_task_heartbeat_dsl_hearbeat_timeout, Status = true) :-
 test(activity_task_timeout_heartbeat_dsl_timeout, Status = true) :-
     message_queue_create(MQueue),
     thread_create(
-            ( start('samples/wsk/dsl/activity_task_timeout_heartbeat.dsl',
+            ( start('samples/common/dsl/activity_task_timeout_heartbeat.dsl',
                     [], _{name: "Activity"}, O, _{}, _),
               thread_send_message(MQueue, test_result(O))
             ),
             Id),
     uuid(TaskToken),
-    Activity = "::states:::activity:test",
+    Activity = "frn::states:::activity:test",
     mq_utils:activity_start(Activity, TaskToken, InputText),
     atom_json_dict(InputText, Input, []),
     assertion(Input = _{name: "Activity"}),

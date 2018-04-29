@@ -17,10 +17,14 @@ jobs:
           command: make test_with_kafka -e FAASSHELL_MQ=kafka -e FAASSHELL_APIHOST=https://127.0.0.1:8443
       - run:
           name: deploy
-          command: make deploy -e docker_image_prefix=docker-registry.default.svc:5000/faasshell
+          command: >
+            while ! (oc get pod | grep build | grep Completed); do sleep 5 && echo -n .; done;
+            make deploy -e docker_image_prefix=docker-registry.default.svc:5000/faasshell
       - run:
           name: unit test
           command: make unit_test
       - run:
           name: functional test
-          command: make functional_test
+          command: >
+            while ! (oc get pod | grep -v build | grep Running); do sleep 5 && echo -n .; done;
+            make functional_test

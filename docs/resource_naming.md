@@ -25,6 +25,10 @@ vendor plug-in.
 ```sh
 arn:aws:lambda:Region:Account:function:Function
 ```
+or
+```sh
+frn:aws:lambda:Region:Account:function:Function
+```
 
 ### GCP
 ```sh
@@ -52,5 +56,9 @@ FaaS Shell judges that it's activity if "Resource field" matches the
 following pattern. This is common among FaaS.
 
 ```sh
-_:_:states:_:_:activity:Activity
+arn:_:states:_:_:activity:Activity
+```
+or
+```sh
+frn:_:states:_:_:activity:Activity
 ```

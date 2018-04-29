@@ -4,7 +4,7 @@
     "States": {
         "HelloWorld": {
             "Type": "Task",
-            "Resource":"frn:wsk:states:::activity:test",
+            "Resource":"frn::states:::activity:test",
             "End": true
         }
     }

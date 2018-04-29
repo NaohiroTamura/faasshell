@@ -93,7 +93,7 @@ aws_lambda(Action, ARN, RequestParameters, Payload, Options) :-
     AWS_ACCESS_KEY_ID \== '',
     getenv('AWS_SECRET_ACCESS_KEY', AWS_SECRET_ACCESS_KEY),
     AWS_SECRET_ACCESS_KEY \== '',
-    atomic_list_concat([arn, aws, lambda, Region, _, function, Function], ':', ARN),
+    atomic_list_concat([_, aws, lambda, Region, _, function, Function], ':', ARN),
     lambda(Action, Method, Function, Resource),
     %% Region = 'us-east-2',
     Scheme = 'https',

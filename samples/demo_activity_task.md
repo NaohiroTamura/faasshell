@@ -22,7 +22,7 @@ $ DEMO=ec29e90c-188d-11e8-bb72-00163ec1cd01:0b82fe63b6bd450519ade02c3cb8f77ee581
 
 ```sh
 $ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/activity_task.json \
-  -H 'Content-Type: application/json' -d @samples/wsk/asl/activity_task.json -u $DEMO
+  -H 'Content-Type: application/json' -d @samples/common/asl/activity_task.json -u $DEMO
 {
   "asl": {
     "Comment":"A Hello World example of the Amazon States Language using a Task state",
@@ -30,12 +30,12 @@ $ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/activity_task.json \
     "States": {
       "HelloWorld": {
         "End":true,
-        "Resource":"frn:wsk:states:::activity:test",
+        "Resource":"frn::states:::activity:test",
         "Type":"Task"
       }
     }
   },
-  "dsl":"fsm([task('HelloWorld',\"frn:wsk:states:::activity:test\",[])])",
+  "dsl":"fsm([task('HelloWorld',\"frn::states:::activity:test\",[])])",
   "name":"activity_task.json",
   "namespace":"demo",
   "output":"ok"
@@ -58,12 +58,12 @@ $ curl -ksX POST ${FAASSHELL_APIHOST}/statemachine/activity_task.json?blocking=f
     "States": {
       "HelloWorld": {
         "End":true,
-        "Resource":"frn:wsk:states:::activity:test",
+        "Resource":"frn::states:::activity:test",
         "Type":"Task"
       }
     }
   },
-  "dsl":"fsm([task('HelloWorld',\"frn:wsk:states:::activity:test\",[])])",
+  "dsl":"fsm([task('HelloWorld',\"frn::states:::activity:test\",[])])",
   "input": {"name":"Activity"},
   "name":"activity_task.json",
   "namespace":"demo",
@@ -76,7 +76,7 @@ $ curl -ksX POST ${FAASSHELL_APIHOST}/statemachine/activity_task.json?blocking=f
 Activity task gets taskToken and input parameter.
 
 ```sh
-$ curl -ksLX GET ${FAASSHELL_APIHOST}/activity/frn:wsk:states:::activity:test -u $DEMO
+$ curl -ksLX GET ${FAASSHELL_APIHOST}/activity/frn::states:::activity:test -u $DEMO
 {
   "input": {"name":"Activity"},
   "output":"ok",
@@ -89,7 +89,7 @@ $ curl -ksLX GET ${FAASSHELL_APIHOST}/activity/frn:wsk:states:::activity:test -u
 Activity task heartbeats to the state machine.
 
 ```sh
-$ curl -kiLX PATCH ${FAASSHELL_APIHOST}/activity/frn:wsk:states:::activity:test \
+$ curl -kiLX PATCH ${FAASSHELL_APIHOST}/activity/frn::states:::activity:test \
  -H 'Content-Type: application/json' -d '{"taskToken": "e380661e-3647-11e8-82d9-080027306bdf"}' \
  -u $DEMO
 HTTP/1.1 200 OK
@@ -106,7 +106,7 @@ Content-Length: 2
 Activity task does some job, and sends the return value to the state machine.
 
 ```sh
-$ curl -kiX POST ${FAASSHELL_APIHOST}/activity/frn:wsk:states:::activity:test \
+$ curl -kiX POST ${FAASSHELL_APIHOST}/activity/frn::states:::activity:test \
   -H 'Content-Type: application/json' \
   -d '{"output": {"payload": "Hello, Activity!"}, "taskToken": "e380661e-3647-11e8-82d9-080027306bdf" }' \
   -u $DEMO
@@ -156,7 +156,7 @@ $ curl -ksX POST ${FAASSHELL_APIHOST}/statemachine/activity_task.json?blocking=f
 Activity task gets taskToken and input parameter.
 
 ```sh
-$ curl -ksLX GET ${FAASSHELL_APIHOST}/activity/frn:wsk:states:::activity:test -u $DEMO
+$ curl -ksLX GET ${FAASSHELL_APIHOST}/activity/frn::states:::activity:test -u $DEMO
 {
   "input": {"name":"Activity"},
   "output":"ok",
@@ -169,7 +169,7 @@ $ curl -ksLX GET ${FAASSHELL_APIHOST}/activity/frn:wsk:states:::activity:test -u
 Activity task got an error, and sends the error to the state machine.
 
 ```sh
-$ curl -ksX POST ${FAASSHELL_APIHOST}/activity/frn:wsk:states:::activity:test \
+$ curl -ksX POST ${FAASSHELL_APIHOST}/activity/frn::states:::activity:test \
   -H 'Content-Type: application/json' \
   -d '{"error": "not found", "cause":"db error", "taskToken": "10e6b1f4-3651-11e8-88af-080027306bdf" }' \
   -u $DEMO

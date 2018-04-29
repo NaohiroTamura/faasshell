@@ -37,6 +37,17 @@ test(hello, (Code, Name) = (200, "hello")) :-
 
 :- end_tests(list).
 
+:- begin_tests(frn_list).
+
+test(hello, (Code, Name) = (200, "hello")) :-
+    personal(Region, Account),
+    atomic_list_concat([frn, aws, lambda, Region, Account, function, hello],
+                       ':', ARN),
+    aws_api_lambda:faas:list(ARN, [status_code(Code)], R),
+    Name = R.'Configuration'.'FunctionName'.
+
+:- end_tests(frn_list).
+
 :- begin_tests(invoke).
 
 test(hello_noarg, (Code, R) = (200, _{payload:"Hello, World!"})) :-
@@ -58,6 +69,16 @@ test(hello_badarg, (Code, R) = (200, _{payload:"Hello, World!"})) :-
     aws_api_lambda:faas:invoke(ARN, [status_code(Code)], '', R).
 
 :- end_tests(invoke).
+
+:- begin_tests(frn_invoke).
+
+test(hello_arg, (Code, R) = (200, _{payload:"Hello, lambda!"})) :-
+    personal(Region, Account),
+    atomic_list_concat([frn, aws, lambda, Region, Account, function, hello],
+                       ':', ARN),
+    aws_api_lambda:faas:invoke(ARN, [status_code(Code)], _{name:"lambda"}, R).
+
+:- end_tests(frn_invoke).
 
 :- begin_tests(delete).
 

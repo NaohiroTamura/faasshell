@@ -31,13 +31,37 @@
 %%
 :- begin_tests(faas).
 
-test(normal, Code = 200) :-
+test(list_all, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/faas/', URL),
     http_get(URL, Data, [authorization(basic(ID, PW)),
                          cert_verify_hook(cert_accept_any), status_code(Code)]),
     term_json_dict(Data, List),
     assertion(is_list(List)).
+
+test(list_arn_function, Code = 200) :-
+    getenv('aws_region', Region),
+    getenv('aws_account_id', Account),
+    atomic_list_concat([arn, aws, lambda, Region, Account, function, hello],
+                       ':', ARN),
+    faasshell_api_host(Host), faasshell_api_key(ID-PW),
+    atomic_list_concat([Host, '/faas/', ARN], URL),
+    http_get(URL, Data, [authorization(basic(ID, PW)),
+                         cert_verify_hook(cert_accept_any), status_code(Code)]),
+    term_json_dict(Data, R),
+    assertion("hello" = R.'Configuration'.'FunctionName').
+
+test(list_frn_function, Code = 200) :-
+    getenv('aws_region', Region),
+    getenv('aws_account_id', Account),
+    atomic_list_concat([frn, aws, lambda, Region, Account, function, hello],
+                       ':', ARN),
+    faasshell_api_host(Host), faasshell_api_key(ID-PW),
+    atomic_list_concat([Host, '/faas/', ARN], URL),
+    http_get(URL, Data, [authorization(basic(ID, PW)),
+                         cert_verify_hook(cert_accept_any), status_code(Code)]),
+    term_json_dict(Data, R),
+    assertion("hello" = R.'Configuration'.'FunctionName').
 
 test(auth_error, Code = 401) :-
     faasshell_api_host(Host),

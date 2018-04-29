@@ -43,7 +43,7 @@ test(succeed, (Code1, Code2, Code3, Code4, Code5, Status)
               = (200, 200, 200, 200, 200, true)) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
 
-    load_json('samples/wsk/asl/activity_task.json', Term1),
+    load_json('samples/common/asl/activity_task.json', Term1),
     string_concat(Host, '/statemachine/activity_task.json?overwrite=true',
                   URL1),
     http_put(URL1, json(Term1), Data1,
@@ -65,7 +65,7 @@ test(succeed, (Code1, Code2, Code3, Code4, Code5, Status)
             Id),
     sleep(1),
 
-    Activity = "frn:wsk:states:::activity:test",
+    Activity = "frn::states:::activity:test",
     atomics_to_string([Host, '/activity/', Activity], ActivityURL),
 
     http_get(ActivityURL, Data3, [authorization(basic(ID, PW)),

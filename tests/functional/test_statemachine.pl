@@ -147,14 +147,7 @@ test(delete, Code = 200) :-
 %%
 %% Functional Tests for Resource URI
 %%
-:- begin_tests(hello_world_task_uri,
-               [setup((faasshell_api_host(Host), faasshell_api_key(ID-PW),
-                       string_concat(Host,
-                                     '/statemachine/hello_world_task.json',
-                                     URL),
-                       http_delete(URL, _Data, [authorization(basic(ID, PW)),
-                                                cert_verify_hook(cert_accept_any),
-                                                status_code(_Code)])))]).
+:- begin_tests(hello_world_task_uri).
 
 test(put_overwrite_true, Code = 200) :-
     load_json('samples/common/asl/hello_world_task.json', Term),

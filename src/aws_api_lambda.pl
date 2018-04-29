@@ -36,16 +36,18 @@
        faas:invoke/4.
 
 faas:list([], Options, Reply) :-
-    %%writeln(aws_list),
-    aws_list('arn:aws:lambda:us-east-2:_:function:none', Options, R),
+    %% writeln(aws_list),
+    getenv('aws_region', Region),
+    atomic_list_concat([arn, aws, lambda, Region, '', function, none], ':', ARN),
+    aws_list(ARN, Options, R),
     get_dict('Functions', R, Reply).
 faas:list(ARN, Options, Reply) :-
-    %%writeln(aws_arn(ARN)),
+    %% writeln(aws_arn(ARN)),
     aws_list(ARN, Options, Reply).
 
 aws_list(ARN, Options, Reply) :-
     atom(ARN), !,
-    atomic_list_concat([arn, aws, lambda |_ ], ':', ARN),
+    atomic_list_concat([_, aws, lambda |_ ], ':', ARN),
     aws_api_utils:aws_lambda(list, ARN, '', '', AwsOptions),
     merge_options(Options, AwsOptions, MergedOptions),
     option(url(URL), MergedOptions),
@@ -53,7 +55,7 @@ aws_list(ARN, Options, Reply) :-
     json_utils:term_json_dict(R1, Reply).
 
 faas:invoke(ARN, Options, Payload, Reply) :-
-    atomic_list_concat([arn, aws, lambda |_ ], ':', ARN), !,
+    atomic_list_concat([_, aws, lambda |_ ], ':', ARN), !,
     %% writeln(aws(invoke(ARN))),
     atom_json_dict(PayloadText, Payload, []),
     aws_api_utils:aws_lambda(invoke, ARN, '', PayloadText, AwsOptions),
