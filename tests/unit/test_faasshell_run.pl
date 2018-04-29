@@ -540,3 +540,40 @@ test(activity_task_timeout_heartbeat_dsl_timeout, Status = true) :-
     assertion(O = _{error:"States.Timeout"}).
 
 :- end_tests(activity_task).
+
+:- begin_tests(event_state, [setup(mq_utils:mq_init)]).
+
+test(event_state_success, Status = true) :-
+    message_queue_create(MQueue),
+    thread_create(
+            ( start('samples/common/dsl/event_state.dsl',
+                    [faasshell_auth(demo)], _{name:"Event"}, O, _{}, _),
+              thread_send_message(MQueue, test_result(O))
+            ),
+            Id),
+
+    mq_utils:event_subscribed(User, Event),
+
+    Action = "frn:wsk:functions:::function:hello",
+    mq_utils:event_publish(User, Event, Action),
+
+    thread_join(Id, Status),
+    thread_get_message(MQueue, test_result(O)),
+    assertion(O = _{payload:"Hello, Event!"}).
+
+test(event_state_timeout, Status = true) :-
+    message_queue_create(MQueue),
+    thread_create(
+            ( start('samples/common/dsl/event_state_option.dsl',
+                    [faasshell_auth(demo)], _{name:"Event"}, O, _{}, _),
+              thread_send_message(MQueue, test_result(O))
+            ),
+            Id),
+
+    mq_utils:event_subscribed(_User, _Event),
+
+    thread_join(Id, Status),
+    thread_get_message(MQueue, test_result(O)),
+    assertion(O = _{error:"States.Timeout"}).
+
+:- end_tests(event_state).

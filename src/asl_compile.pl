@@ -176,6 +176,21 @@ parse(States, StateKey,  Dsl, Graph, Path) :-
     Dsl = [parallel(StateKey, branches(D1), Optional)],
     flatten([[StateKey>'End'], G1, G2], Graph).
 
+%% Event State
+parse(States, StateKey, Dsl, Graph, _Path) :-
+    _{'Type':"Event", 'Resource':Resource, 'End':true} :<States.StateKey,
+    event_optional(States.StateKey, Optional),
+    Dsl = [event(StateKey, Resource, Optional)],
+    Graph = [StateKey>'End'].
+
+parse(States, StateKey, Dsl, Graph, Path) :-
+    _{'Type':"Event", 'Resource':Resource, 'Next':Next} :< States.StateKey,
+    string(Next),
+    atom_string(NextKey, Next),
+    event_optional(States.StateKey, Optional),
+    parse_next(States, StateKey, NextKey, event(StateKey, Resource, Optional),
+               Dsl, Graph, Path).
+
 %%
 %% parse next unless cycled
 parse_next(States, StateKey, NextKey, Term, Dsl, Graph, Path) :-
@@ -230,10 +245,10 @@ task_optional(States, StateKey, Optional, Graph, Path) :-
     task_retry(States.StateKey, O4),
     ( _{'TimeoutSeconds': TimeoutSeconds} :< States.StateKey
       -> O5 = timeout_seconds(TimeoutSeconds)
-      ; O5 = [] ),
+      ;  O5 = [] ),
     ( _{'HeartbeatSeconds': HeartbeatSeconds} :< States.StateKey
       -> O6 = heartbeat_seconds(HeartbeatSeconds)
-      ; O6 = [] ),
+      ;  O6 = [] ),
     flatten([O1, O2, O3, O4, O5, O6], Optional).
 
 choice_optional(States, StateKey, Optional, Graph, Path) :-
@@ -253,6 +268,13 @@ fail_optional(State, Optional) :-
     ( _{'Cause':Cause} :< State -> O2 = cause(Cause); O2 = [] ),
     common_optional(State, O3),
     flatten([O1, O2, O3], Optional).
+
+event_optional(State, Optional) :-
+    ( _{'TimeoutSeconds': TimeoutSeconds} :< State
+      -> O1 = timeout_seconds(TimeoutSeconds)
+      ;  O1 = [] ),
+    common_optional(State, O2),
+    flatten([O1, O2], Optional).
 
 %%
 choices(_States, _StateKey, [], [], [], _Path).

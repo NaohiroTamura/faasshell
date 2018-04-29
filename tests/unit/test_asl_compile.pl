@@ -97,3 +97,25 @@ test(wait_with_resultpath) :-
     main('tests/unit/test_data/wait-with-resultpath.json', _D, _G).
 
 :- end_tests(invalid).
+
+:- begin_tests(extension).
+
+test(hello) :-
+    main('samples/common/asl/event_state.json', D, G),
+    assertion(D = fsm([event('HelloWorld', "frn::states:::event:test", [])])),
+    assertion(G = ['Start'>'HelloWorld', 'HelloWorld'>'End']).
+
+test(hello_option) :-
+    main('samples/common/asl/event_state_option.json', D, G),
+    assertion(D = fsm([event('HelloWorld', "frn::states:::event:test",
+                             [timeout_seconds(5)])])),
+    assertion(G = ['Start'>'HelloWorld', 'HelloWorld'>'End']).
+
+test(hello_next) :-
+    main('samples/common/asl/event_state_next.json', D, G),
+    assertion(D = fsm([event('HelloWorld', "frn::states:::event:test",
+                             [timeout_seconds(5)]), pass('Final State', [])])),
+    assertion(G = ['Start'>'HelloWorld', 'HelloWorld'>'Final State',
+                   'Final State'>'End']).
+
+:- end_tests(extension).

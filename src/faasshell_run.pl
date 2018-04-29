@@ -392,6 +392,25 @@ branch_execute(Branch, (I, O, E, E), (I, O, E, E)) :-
       ;  mydebug(branch_execute(out), (I,O))
     ).
 
+%% event state
+event(State, Event, Optional, I, O, E, E) :-
+    mydebug(event(in), (State, Event, Optional, I, O)),
+    option(faasshell_auth(User), E.faas),
+
+    option(timeout_seconds(TimeoutSeconds), Optional, infinite),
+    mydebug(event(option), timeout_seconds(TimeoutSeconds)),
+
+    mq_utils:event_subscribe(User, Event),
+    mydebug(event(subscribe), (User, Event)),
+
+    ( TimeoutSeconds = infinite -> Timeout = 99999999; Timeout = TimeoutSeconds ),
+    ( mq_utils:event_published(User, Event, Action, Timeout)
+      -> mydebug(event(published), (User, Event, Action, Timeout)),
+         faas:invoke(Action, [timeout(TimeoutSeconds)], I, O)
+      ;  error_code(time_limit_exceeded, O)
+    ),
+    mydebug(event(out), (State, I, O)).
+
 %% end of state
 %%
 
