@@ -62,10 +62,10 @@
 user:file_search_path(config_https, faasshell('etc/server')).
 
 %% start
-:- current_prolog_flag(emacs_inferior_process, Flag),
-   Flag -> true
-   ; set_prolog_flag(verbose, silent),
-     initialization(main).
+:- current_prolog_flag(emacs_inferior_process, true)
+   -> set_prolog_flag(color_term, false)
+   ;  set_prolog_flag(verbose, silent),
+      initialization(main).
 
 %%
 %% main
@@ -234,6 +234,53 @@ activity(patch, Request) :-
          Reply = _{}
       ;  http_header:status_number(bad_request, S_400),
          throw((_{error: 'Missing activity task name'}, S_400))
+    ),
+    reply_json_dict(Reply).
+
+%%
+%% send event to event state in statemachine
+:- http_handler('/trigger/', trigger, [methods([post]), prefix,
+                                         authentication(faasshell)]).
+
+trigger(Request) :-
+    http_log('~w~n', [request(Request)]),
+    option(faasshell_auth(nil), Request)
+    -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
+    ;  memberchk(method(Method), Request),
+       catch( trigger(Method, Request),
+              (Message, Code),
+              ( http_log('~w~n', [catch((Message, Code))]),
+                reply_json_dict(Message, [status(Code)])
+              )).
+
+trigger(post, Request) :-
+    ( memberchk(path_info(Event), Request)
+      ->  http_read_json_dict(Request, Dict, []),
+          http_log('~w, ~p~n', [trigger(post), params(Dict)]),
+          option(faasshell_auth(User), Request),
+          ( _{action: Action} :< Dict
+            -> Reply = _{}
+            ;  http_header:status_number(bad_request, S_400),
+               throw((_{error: 'Missing action name'}, S_400))
+          ),
+          ( _{timeout: Timeout} :< Dict
+            -> true
+            ;  Timeout = 600
+          ),
+          ( mq_utils:event_subscribed(User, Event, Timeout)
+            -> ( mq_utils:event_publish(User, Event, Action, 600)
+                 -> http_log('~w, ~p~n', [trigger(published),
+                                          (User, Event, Action)])
+                 ; %% critical error
+                   %% subscribe message has been removed but queue is full
+                   http_header:status_number(bad_request, S_400),
+                   throw((_{error: 'Timeout publish event'}, S_400))
+               )
+            ;  http_header:status_number(bad_request, S_400),
+               throw((_{error: 'Timeout subscribe event'}, S_400))
+          )
+      ;  http_header:status_number(bad_request, S_400),
+         throw((_{error: 'Missing event name'}, S_400))
     ),
     reply_json_dict(Reply).
 

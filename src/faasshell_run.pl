@@ -399,16 +399,20 @@ event(State, Event, Optional, I, O, E, E) :-
 
     option(timeout_seconds(TimeoutSeconds), Optional, infinite),
     mydebug(event(option), timeout_seconds(TimeoutSeconds)),
-
-    mq_utils:event_subscribe(User, Event),
-    mydebug(event(subscribe), (User, Event)),
-
     ( TimeoutSeconds = infinite -> Timeout = 99999999; Timeout = TimeoutSeconds ),
-    ( mq_utils:event_published(User, Event, Action, Timeout)
-      -> mydebug(event(published), (User, Event, Action, Timeout)),
-         faas:invoke(Action, [timeout(TimeoutSeconds)], I, O)
-      ;  error_code(time_limit_exceeded, O)
+
+    ( mq_utils:event_subscribe(User, Event, Timeout)
+      ->  mydebug(event(subscribe), (User, Event, Timeout)),
+          ( mq_utils:event_published(User, Event, Action, Timeout)
+            -> mydebug(event(published), (User, Event, Action, Timeout)),
+               faas:invoke(Action, [timeout(TimeoutSeconds)], I, O)
+            ;  %% remove subscribe message by calling subscribed with timeout 0
+               mq_utils:event_subscribed(User, Event, 0),
+               error_code(time_limit_exceeded, O)
+          )
+      ;   error_code(time_limit_exceeded, O)
     ),
+
     mydebug(event(out), (State, I, O)).
 
 %% end of state

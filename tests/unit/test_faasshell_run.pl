@@ -552,10 +552,10 @@ test(event_state_success, Status = true) :-
             ),
             Id),
 
-    mq_utils:event_subscribed(User, Event),
+    mq_utils:event_subscribed(User, Event, 60),
 
     Action = "frn:wsk:functions:::function:hello",
-    mq_utils:event_publish(User, Event, Action),
+    mq_utils:event_publish(User, Event, Action, 60),
 
     thread_join(Id, Status),
     thread_get_message(MQueue, test_result(O)),
@@ -570,7 +570,7 @@ test(event_state_timeout, Status = true) :-
             ),
             Id),
 
-    mq_utils:event_subscribed(_User, _Event),
+    mq_utils:event_subscribed(_User, _Event, 60),
 
     thread_join(Id, Status),
     thread_get_message(MQueue, test_result(O)),

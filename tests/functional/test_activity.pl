@@ -93,9 +93,9 @@ test(succeed, (Code1, Code2, Code3, Code4, Code5, Status)
     assertion(Dict5 = _{}),
 
     thread_join(Id, Status),
-    thread_get_message(MQueue, test_result(Data2)),
-    term_json_dict(Data2, Dict2),
+    thread_get_message(MQueue, test_result(Data6)),
+    term_json_dict(Data6, Dict6),
     assertion(_{asl: _, dsl: _, input: _{name:"Activity"}, name: _,
-                namespace: _, output: _{payload:"Hello, Activity!"}} :< Dict2).
+                namespace: _, output: _{payload:"Hello, Activity!"}} :< Dict6).
 
 :- end_tests(activity_task).

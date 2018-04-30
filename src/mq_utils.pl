@@ -28,10 +28,10 @@
            activity_ended/4,
            activity_heartbeat/2,
            activity_heartbeated/3,
-           event_publish/3,
+           event_publish/4,
            event_published/4,
-           event_subscribe/2,
-           event_subscribed/2
+           event_subscribe/3,
+           event_subscribed/3
          ]).
 
 :- use_module(kafka_api).
@@ -96,21 +96,31 @@ activity_heartbeated(Activity, TaskToken, HeartbeatSeconds) :-
     faas:activity_heartbeated(MQType, ActivityAtom, TaskTokenAtom,
                               HeartbeatSeconds).
 
-event_publish(User, Event, Action) :-
+event_publish(User, Event, Action, Timeout) :-
     faasshell_mq(MQType),
-    faas:event_publish(MQType, User, Event, Action).
+    atom_string(UserAtom, User),
+    atom_string(EventAtom, Event),
+    atom_string(ActionAtom, Action),
+    faas:event_publish(MQType, UserAtom, EventAtom, ActionAtom, Timeout).
 
 event_published(User, Event, Action, Timeout) :-
     faasshell_mq(MQType),
-    faas:event_published(MQType, User, Event, Action, Timeout).
+    ( var(User) -> UserAtom = User ; atom_string(UserAtom, User) ),
+    ( var(Event) -> EventAtom = Event ; atom_string(EventAtom, Event) ),
+    ( var(Action) -> ActionAtom = Action ;atom_string(ActionAtom, Action) ),
+    faas:event_published(MQType, UserAtom, EventAtom, ActionAtom, Timeout).
 
-event_subscribe(User, Event) :-
+event_subscribe(User, Event, Timeout) :-
     faasshell_mq(MQType),
-    faas:event_subscribe(MQType, User, Event).
+    atom_string(UserAtom, User),
+    atom_string(EventAtom, Event),
+    faas:event_subscribe(MQType, UserAtom, EventAtom, Timeout).
 
-event_subscribed(User, Event) :-
+event_subscribed(User, Event, Timeout) :-
     faasshell_mq(MQType),
-    faas:event_subscribed(MQType, User, Event).
+    ( var(User) -> UserAtom = User ; atom_string(UserAtom, User) ),
+    ( var(Event) -> EventAtom = Event ; atom_string(EventAtom, Event) ),
+    faas:event_subscribed(MQType, UserAtom, EventAtom, Timeout).
 
 %%
 %%
@@ -122,10 +132,10 @@ event_subscribed(User, Event) :-
        faas:activity_ended/5,
        faas:activity_heartbeat/3,
        faas:activity_heartbeated/4,
-       faas:event_publish/4,
+       faas:event_publish/5,
        faas:event_published/5,
-       faas:event_subscribe/3,
-       faas:event_subscribed/3.
+       faas:event_subscribe/4,
+       faas:event_subscribed/4.
 
 
 %% activity task messaging
@@ -180,12 +190,12 @@ faas:activity_heartbeated(built_in, Activity, TaskToken, HeartbeatSeconds) :-
     -> thread_send_message(MQueue,
                            reply_task_heartbeat(Activity, TaskToken)).
 
-faas:event_publish(built_in, User, Event, Action) :-
+faas:event_publish(built_in, User, Event, Action, Timeout) :-
     activity_task_queue(MQueue),
     debug(mq, 'faas:event_publish1(built_in, ~w, ~w, ~w)~n', [User, Event, Action]),
     thread_send_message(MQueue,
                         event_publish(User, Event, Action),
-                        [timeout(60)]),
+                        [timeout(Timeout)]),
     debug(mq, 'faas:event_publish2(built_in, ~w, ~w, ~w)~n', [User, Event, Action]).
 
 faas:event_published(built_in, User, Event, Action, Timeout) :-
@@ -197,17 +207,17 @@ faas:event_published(built_in, User, Event, Action, Timeout) :-
     debug(mq, 'faas:event_published2(built_in, ~w, ~w, ~w)~n',
           [User, Event, Action]).
 
-faas:event_subscribe(built_in, User, Event) :-
+faas:event_subscribe(built_in, User, Event, Timeout) :-
     activity_task_queue(MQueue),
     debug(mq, 'faas:event_subscribe1(built_in, ~w, ~w)~n', [User, Event]),
     thread_send_message(MQueue,
                         event_subscribe(User, Event),
-                        [timeout(60)]),
+                        [timeout(Timeout)]),
     debug(mq, 'faas:event_subscribe2(built_in, ~w, ~w)~n', [User, Event]).
 
-faas:event_subscribed(built_in, User, Event) :-
+faas:event_subscribed(built_in, User, Event, Timeout) :-
     activity_task_queue(MQueue),
     debug(mq, 'faas:event_subscribed1(built_in, ~w, ~w)~n', [User, Event]),
     thread_get_message(MQueue,
-                        event_subscribe(User, Event)),
+                        event_subscribe(User, Event), [timeout(Timeout)]),
     debug(mq, 'faas:event_subscribed2(built_in, ~w, ~w)~n', [User, Event]).
