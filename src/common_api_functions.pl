@@ -21,6 +21,7 @@
 
 :- use_module(json_utils).
 :- use_module(proxy_utils).
+:- use_module(cdb_api).
 
 :- use_module(library(http/http_client)).
 :- use_module(library(http/http_ssl_plugin)).
@@ -39,7 +40,9 @@
 %% This is adhoc implementation for demo
 %%
 :- rdf_register_prefix(fs, 'https://naohirotamura.github.io/faasshell/ns/faas#').
-:- rdf_load('samples/common/asl/hello_world_task.ttl', []).
+:- cdb_api:attach_download_file(faasshell_auths, demo, '/logs/hello_world_task.ttl',
+                                _Code, _Res),
+   rdf_load('/logs/hello_world_task.ttl', []).
 
 faas:invoke(URI, Options, Payload, Reply) :-
     atom_string(URIAtom, URI),

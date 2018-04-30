@@ -48,6 +48,9 @@ test(doc, Path = ["/", "unit_test", "/", "sample"]) :-
 test(doc_slash, Path = ["/", "unit_test", "/", "guest%2fsample"]) :-
     db_path(unit_test, 'guest/sample', Path, []).
 
+test(doc_attachment, Path = ["/", "unit_test", "/", "sample", "/", "attachment1"]) :-
+    db_path(unit_test, sample, attach, attachment1, Path, []).
+
 test(design, Path = ["/","unit_test","/_design/","faasshell"]) :-
     db_path(unit_test, design, faasshell, Path, []).
 
@@ -99,6 +102,78 @@ test(db_not_exist, (Code, Res) = (404, _{error:"not_found",reason:_})) :-
     db_delete(unit_test_db, Code, Res).
 
 :- end_tests(db_crud).
+
+:- begin_tests(attachment).
+
+test(db_not_found, Code = 404) :-
+    attach_upload(test_db_attach, doc1, 'attach.txt', "this is test.", Code, Res),
+    assertion(Res = _{error:"not_found", reason:"Database does not exist."}).
+
+test(creat, (Code1, Code2, Code3) = (201, 201, 200)) :-
+    db_create(test_db_attach, Code1, Res1),
+    assertion(Res1 = _{ok:true}),
+    attach_upload(test_db_attach, doc1, 'attach.txt', "this is test.", Code2, Res2),
+    _{rev:Rev} :< Res2,
+    assertion(Res2 = _{id:"doc1", ok:true, rev:Rev}),
+    assertion(re_match("^1-",Rev)),
+    attach_download(test_db_attach, doc1, 'attach.txt',Code3, Res3),
+    assertion(Res3 = 'this is test.').
+
+test(attachment_download_not_found, Code = 404) :-
+    attach_download(test_db_attach, doc1, 'attach1.txt',Code, Res),
+    assertion(Res = json([error=not_found,
+                          reason='Document is missing attachment'])).
+
+test(update, (Code1, Code2) = (201, 200)) :-
+    attach_upload(test_db_attach, doc1, 'attach.txt', "this is update test.",
+                  Code1, Res1),
+    _{rev:Rev} :< Res1,
+    assertion(Res1 = _{id:"doc1", ok:true, rev:Rev}),
+    assertion(re_match("^2-", Rev)),
+    attach_download(test_db_attach, doc1, 'attach.txt',Code2, Res2),
+    assertion(Res2 = 'this is update test.').
+
+test(attachment_delete_doc_not_found, Code = 404) :-
+    attach_delete(test_db_attach, doc2, 'attach.txt',Code, Res),
+    assertion(Res = _{error:"not_found", reason:"missing"}).
+
+/*
+%% couchdb bug? it returns 202 and increments #rev. it should be 404.
+test(attachment_delete_attachment_not_found, Code = 404) :-
+    attach_delete(test_db_attach, doc1, 'attach1.txt',Code, Res).
+    assertion(Res = _{error:"not_found", reason:"missing"}).
+*/
+
+test(test_db_attach, Code = 201) :-
+    attach_upload_file(test_db_attach, demo,
+                       'samples/common/asl/hello_world_task.ttl', Code, Res),
+    _{rev:Rev} :< Res,
+    assertion(Res = _{id:"demo", ok:true, rev:Rev}),
+    assertion(re_match("^1-",Rev)).
+
+test(attach_upload_file, Code = 201) :-
+    attach_upload_file(test_db_attach, demo,
+                       'samples/common/asl/hello_world_task.ttl', Code, Res),
+    _{rev:Rev} :< Res,
+    assertion(Res = _{id:"demo", ok:true, rev:Rev}),
+    assertion(re_match("^2-",Rev)).
+
+test(attach_download_file, Code = 200) :-
+    attach_download_file(test_db_attach, demo, '/tmp/hello_world_task.ttl',
+                         Code, _Res),
+    shell('cmp samples/common/asl/hello_world_task.ttl /tmp/hello_world_task.ttl',
+          Status),
+    assertion(Status = 0).
+
+test(delete, (Code1, Code2) = (200, 200)) :-
+    attach_delete(test_db_attach, doc1, 'attach.txt',Code1, Res1),
+    _{rev:Rev} :< Res1,
+    assertion(Res1 = _{id:"doc1", ok:true, rev:Rev}),
+    assertion(re_match("^3-", Rev)),
+    db_delete(test_db_attach, Code2, Res2),
+    assertion(Res2 = _{ok:true}).
+
+:- end_tests(attachment).
 
 :- begin_tests(db_init).
 

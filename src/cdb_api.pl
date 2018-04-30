@@ -66,6 +66,7 @@ db_port(DB_PORT) --> [S], { atom_string(DB_PORT, S) }.
 
 db_path(DB)      --> sep, database(DB).
 db_path(DB, Doc) --> db_path(DB), sep, doc(Doc).
+db_path(DB, Doc, attach, Att) --> db_path(DB), sep, doc(Doc), sep, attachment(Att).
 db_path(DB, design, Design) -->
                      db_path(DB), design, doc(Design).
 db_path(DB, design, Design, view, View) -->
@@ -74,6 +75,8 @@ db_path(DB, design, Design, view, View) -->
 database(DB)     --> [S], { atom_string(DB, S) }.
 
 doc(Doc)         --> [S], { www_form_encode(Doc,E), atom_string(E, S) }.
+
+attachment(Att)  --> [S], { www_form_encode(Att,E), atom_string(E, S) }.
 
 sep              --> ["/"].
 design           --> ["/_design/"].
@@ -189,6 +192,62 @@ doc_delete(DB, Doc, Code, Res) :-
          http_delete(URL, Reply, Options),
          json_utils:term_json_dict(Reply, Res)
       ;  Code = Code1, Res = R1
+    ).
+
+%%
+attach_upload_file(DB, Doc, File, Code, Res) :-
+    setup_call_cleanup(
+            open(File, read, S),
+            read_string(S, _, Data),
+            close(S)),
+    file_base_name(File, BaseName),
+    attach_upload(DB, Doc, BaseName, Data, Code, Res).
+
+attach_download_file(DB, Doc, File, Code, Res) :-
+    file_base_name(File, BaseName),
+    attach_download(DB, Doc, BaseName, Code, Res),
+    setup_call_cleanup(
+            open(File, write, S),
+            write(S, Res),
+            close(S)).
+
+attach_upload(DB, Doc, Att, Data, Code, Res) :-
+    db_path(DB, Doc, attach, Att, Path, []),
+    db_url(Path, [], Options, URL, Code),
+    doc_read(DB, Doc, Code1, R1),
+    ( Code1 = 200
+      -> Options1 = [request_header('If-Match'=R1.'_rev') | Options],
+         http_put(URL, atom('application/octet-stream', Data), Reply, Options1),
+         json_utils:term_json_dict(Reply, Res)
+     ;  ( Code1 = 404
+          -> http_put(URL, atom('application/octet-stream', Data), Reply, Options),
+             json_utils:term_json_dict(Reply, Res)
+          ;  Code = Code1,
+             Res = R1
+        )
+    ).
+
+attach_download(DB, Doc, Att, Code, Res) :-
+    doc_read(DB, Doc, Code1, R1),
+    ( Code1 = 200
+      -> db_path(DB, Doc, attach, Att, Path, []),
+         db_url(Path, [], Options, URL, Code),
+         Options1 = [request_header('If-Match'=R1.'_rev') | Options],
+         http_get(URL, Res, Options1)
+     ;   Code = Code1,
+         Res = R1
+    ).
+
+attach_delete(DB, Doc, Att, Code, Res) :-
+    doc_read(DB, Doc, Code1, R1),
+    ( Code1 = 200
+      -> db_path(DB, Doc, attach, Att, Path, []),
+         db_url(Path, [], Options, URL, Code),
+         Options1 = [request_header('If-Match'=R1.'_rev') | Options],
+         http_delete(URL, Reply, Options1),
+         json_utils:term_json_dict(Reply, Res)
+     ;   Code = Code1,
+         Res = R1
     ).
 
 %%
