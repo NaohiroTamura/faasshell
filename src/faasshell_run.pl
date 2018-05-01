@@ -396,6 +396,7 @@ branch_execute(Branch, (I, O, E, E), (I, O, E, E)) :-
 event(State, Event, Optional, I, O, E, E) :-
     mydebug(event(in), (State, Event, Optional, I, O)),
     option(faasshell_auth(User), E.faas),
+    process_input(I, I1, Optional),
 
     option(timeout_seconds(TimeoutSeconds), Optional, infinite),
     mydebug(event(option), timeout_seconds(TimeoutSeconds)),
@@ -405,14 +406,15 @@ event(State, Event, Optional, I, O, E, E) :-
       ->  mydebug(event(subscribe), (User, Event, Timeout)),
           ( mq_utils:event_published(User, Event, Action, Timeout)
             -> mydebug(event(published), (User, Event, Action, Timeout)),
-               faas:invoke(Action, [timeout(TimeoutSeconds)], I, O)
+               faas:invoke(Action, [timeout(TimeoutSeconds)], I1, M1)
             ;  %% remove subscribe message by calling subscribed with timeout 0
                mq_utils:event_subscribed(User, Event, 0),
-               error_code(time_limit_exceeded, O)
+               error_code(time_limit_exceeded, M1)
           )
-      ;   error_code(time_limit_exceeded, O)
+      ;   error_code(time_limit_exceeded, M1)
     ),
 
+    process_output(I, M1, O, Optional),
     mydebug(event(out), (State, I, O)).
 
 %% end of state
