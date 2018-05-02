@@ -50,9 +50,18 @@ frn:wsk:functions:_:_:function:Action
 frn:ifttt:webhooks:_:_:function:Applet
 ```
 
+### Common
+
+If "Resource field" matches URI either http or https, then FaaS Shell looks up
+the "Function" in the predefined RDF DB such as [hello_world_task.ttl](../samples/common/asl/hello_world_task.ttl).
+
+```sh
+https://naohirotamura.github.io/faasshell/ns/faas#Function
+```
+
 ## Activity
 
-FaaS Shell judges that it's activity if "Resource field" matches the
+FaaS Shell judges that it's activity task state if "Resource field" matches the
 following pattern. This is common among FaaS.
 
 ```sh
@@ -61,4 +70,13 @@ arn:_:states:_:_:activity:Activity
 or
 ```sh
 frn:_:states:_:_:activity:Activity
+```
+
+## Event
+
+FaaS Shell judges that it's event state if "Resource field" matches the
+following pattern. This is common among FaaS.
+
+```sh
+frn:_:states:_:_:event:Event
 ```
