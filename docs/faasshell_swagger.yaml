@@ -7,6 +7,7 @@ basePath: /api/v1
 tags:
   - name: base
   - name: activity
+  - name: trigger
   - name: executions
   - name: faas
   - name: statemachine
@@ -123,6 +124,34 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/Activity'
+      responses:
+        '200':
+          description: Successful Operation
+        '400':
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
+          schema:
+            $ref: '#/definitions/Error'
+  '/trigger/{eventName}':
+    post:
+      tags:
+        - trigger
+      description: Send Event
+      parameters:
+        - name: eventName
+          in: path
+          description: Event Name to trigger
+          required: true
+          type: string
+        - name: action
+          in: body
+          description: Function Name to invoke
+          required: true
+          schema:
+            $ref: '#/definitions/Trigger'
       responses:
         '200':
           description: Successful Operation
@@ -566,6 +595,17 @@ definitions:
       - taskToken
     properties:
       taskToken:
+        type: string
+      input:
+        type: object
+      output:
+        type: object
+  Trigger:
+    type: object
+    required:
+      - action
+    properties:
+      action:
         type: string
       input:
         type: object
