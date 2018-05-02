@@ -40,9 +40,8 @@
 %% This is adhoc implementation for demo
 %%
 :- rdf_register_prefix(fs, 'https://naohirotamura.github.io/faasshell/ns/faas#').
-:- cdb_api:attach_download_file(faasshell_auths, demo, '/logs/hello_world_task.ttl',
-                                _Code, _Res),
-   rdf_load('/logs/hello_world_task.ttl', []).
+:- cdb_api:attach_download(faasshell_auths, demo, 'hello_world_task.ttl', _C, R),
+   open_string(R, S), rdf_load(stream(S), [format(turtle)]), close(S).
 
 faas:invoke(URI, Options, Payload, Reply) :-
     atom_string(URIAtom, URI),
