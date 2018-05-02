@@ -1,578 +1,578 @@
-swagger: "2.0"
+swagger: '2.0'
 info:
-  version: "0.0.1"
-  title: "FaaS Shell"
-  description: "FaaS Shell REST API"
-basePath: "/api/v1"
+  version: 0.0.1
+  title: FaaS Shell
+  description: FaaS Shell REST API
+basePath: /api/v1
 tags:
-- name: "base"
-- name: "activity"
-- name: "executions"
-- name: "faas"
-- name: "statemachine"
-- name: "shell"
+  - name: base
+  - name: activity
+  - name: executions
+  - name: faas
+  - name: statemachine
+  - name: shell
 schemes:
-- "http"
+  - http
 paths:
   /:
     get:
       tags:
-        - "base"
-      description: "Get Faas Shell Information"
+        - base
+      description: Get Faas Shell Information
       produces:
-      - "application/json"
+        - application/json
       responses:
-        200:
-          description: "Sccessful Operation"
+        '200':
+          description: Sccessful Operation
           schema:
-            $ref: "#/definitions/FaaSShell"
-        400:
-          description: "Bad Request"
+            $ref: '#/definitions/FaaSShell'
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
+            $ref: '#/definitions/Error'
   /activity:
     get:
       tags:
-        - "activity"
-      description: "Get Activity Task Token by Name"
+        - activity
+      description: Get Activity Task Token by Name
       produces:
-      - "application/json"
+        - application/json
       responses:
-        200:
-          description: "Sccessful Operation"
+        '200':
+          description: Sccessful Operation
           schema:
-            $ref: "#/definitions/Activity"
-        400:
-          description: "Bad Request"
+            $ref: '#/definitions/Activity'
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
-  /activity/{activityName}:
+            $ref: '#/definitions/Error'
+  '/activity/{activityName}':
     get:
       tags:
-        - "activity"
-      description: "Get Activity Task Token by Name"
+        - activity
+      description: Get Activity Task Token by Name
       produces:
-      - "application/json"
+        - application/json
       parameters:
-      - name: "activityName"
-        in: "path"
-        description: "Activity Task Name to return Task Token"
-        required: true
-        type: "string"
+        - name: activityName
+          in: path
+          description: Activity Task Name to return Task Token
+          required: true
+          type: string
       responses:
-        200:
-          description: "Sccessful Operation"
+        '200':
+          description: Sccessful Operation
           schema:
-            $ref: "#/definitions/Activity"
-        400:
-          description: "Bad Request"
+            $ref: '#/definitions/Activity'
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
+            $ref: '#/definitions/Error'
     post:
       tags:
-        - "activity"
-      description: "Send Task Result"
+        - activity
+      description: Send Task Result
       parameters:
-      - name: "activityName"
-        in: "path"
-        description: "Activity Task Name to send result"
-        required: true
-        type: "string"
-      - name: "activityResult"
-        in: "body"
-        description: "Activity Task Result to send"
-        required: true
-        "schema":
-          $ref: "#/definitions/Activity"
+        - name: activityName
+          in: path
+          description: Activity Task Name to send result
+          required: true
+          type: string
+        - name: activityResult
+          in: body
+          description: Activity Task Result to send
+          required: true
+          schema:
+            $ref: '#/definitions/Activity'
       responses:
-        200:
-          description: "Successful Operation"
-        400:
-          description: "Bad Request"
+        '200':
+          description: Successful Operation
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
+            $ref: '#/definitions/Error'
     patch:
       tags:
-        - "activity"
-      description: "Send Task Heartbeat"
+        - activity
+      description: Send Task Heartbeat
       parameters:
-      - name: "activityName"
-        in: "path"
-        description: "Activity Task Name to heartbeat"
-        required: true
-        type: "string"
-      - name: "activityToken"
-        in: "body"
-        description: "Activity Task Token to hearbeat"
-        required: true
-        "schema":
-          $ref: "#/definitions/Activity"
+        - name: activityName
+          in: path
+          description: Activity Task Name to heartbeat
+          required: true
+          type: string
+        - name: activityToken
+          in: body
+          description: Activity Task Token to hearbeat
+          required: true
+          schema:
+            $ref: '#/definitions/Activity'
       responses:
-        200:
-          description: "Successful Operation"
-        400:
-          description: "Bad Request"
+        '200':
+          description: Successful Operation
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
+            $ref: '#/definitions/Error'
   /executions:
     get:
       tags:
-        - "executions"
-      description: "Get Statemachine Exection Info"
+        - executions
+      description: Get Statemachine Exection Info
       produces:
-      - "application/json"
+        - application/json
       responses:
-        200:
-          description: "Successful Operation"
+        '200':
+          description: Successful Operation
           schema:
-            $ref: "#/definitions/Execution"
-        400:
-          description: "Bad Request"
+            $ref: '#/definitions/Execution'
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
-  /executions/{executionId}:
+            $ref: '#/definitions/Error'
+  '/executions/{executionId}':
     get:
       tags:
-        - "executions"
-      description: "Get Statemachine Exection Info"
+        - executions
+      description: Get Statemachine Exection Info
       produces:
-      - "application/json"
+        - application/json
       parameters:
-      - name: "executionId"
-        in: "path"
-        description: "Execution ID to return Execution Info"
-        required: true
-        type: "string"
+        - name: executionId
+          in: path
+          description: Execution ID to return Execution Info
+          required: true
+          type: string
       responses:
-        200:
-          description: "Successful Operation"
+        '200':
+          description: Successful Operation
           schema:
-            $ref: "#/definitions/Execution"
-        400:
-          description: "Bad Request"
+            $ref: '#/definitions/Execution'
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
+            $ref: '#/definitions/Error'
   /faas:
     get:
       tags:
-        - "faas"
-      description: "Get Function Info"
+        - faas
+      description: Get Function Info
       produces:
-      - "application/json"
+        - application/json
       responses:
-        200:
-          description: "Successful Operation"
+        '200':
+          description: Successful Operation
           schema:
-            $ref: "#/definitions/Function"
-        400:
-          description: "Bad Request"
+            $ref: '#/definitions/Function'
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
-  /faas/{functionName}:
+            $ref: '#/definitions/Error'
+  '/faas/{functionName}':
     get:
       tags:
-        - "faas"
-      description: "Get Function Info"
+        - faas
+      description: Get Function Info
       produces:
-      - "application/json"
+        - application/json
       parameters:
-      - name: "functionName"
-        in: "path"
-        description: "Function Name to get Function Info"
-        required: true
-        type: "string"
+        - name: functionName
+          in: path
+          description: Function Name to get Function Info
+          required: true
+          type: string
       responses:
-        200:
-          description: "Successful Operation"
+        '200':
+          description: Successful Operation
           schema:
-            $ref: "#/definitions/Function"
-        400:
-          description: "Bad Request"
+            $ref: '#/definitions/Function'
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
+            $ref: '#/definitions/Error'
   /statemachine:
     get:
       tags:
-        - "statemachine"
-      description: "Get Statemachine Info"
+        - statemachine
+      description: Get Statemachine Info
       produces:
-      - "application/json"
+        - application/json
       responses:
-        200:
-          description: "Successful Operation"
+        '200':
+          description: Successful Operation
           schema:
-            $ref: "#/definitions/Statemachine"
-        400:
-          description: "Bad Request"
+            $ref: '#/definitions/Statemachine'
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
-  /statemachine/{statemachineName}:
+            $ref: '#/definitions/Error'
+  '/statemachine/{statemachineName}':
     get:
       tags:
-        - "statemachine"
-      description: "Get Statemachine Info"
+        - statemachine
+      description: Get Statemachine Info
       produces:
-      - "application/json"
+        - application/json
       parameters:
-      - name: "statemachineName"
-        in: "path"
-        description: "Statemachine Name to get Statemachine Info"
-        required: true
-        type: "string"
+        - name: statemachineName
+          in: path
+          description: Statemachine Name to get Statemachine Info
+          required: true
+          type: string
       responses:
-        200:
-          description: "Successful Operation"
+        '200':
+          description: Successful Operation
           schema:
-            $ref: "#/definitions/Statemachine"
-        400:
-          description: "Bad Request"
+            $ref: '#/definitions/Statemachine'
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
+            $ref: '#/definitions/Error'
     put:
       tags:
-        - "statemachine"
-      description: "Register Statemachine and Compile"
+        - statemachine
+      description: Register Statemachine and Compile
       produces:
-      - "application/json"
+        - application/json
       parameters:
-      - name: "statemachineName"
-        in: "path"
-        description: "Statemachine Name to get Statemachine Info"
-        required: true
-        type: "string"
-      - name: "overwrite"
-        in: "query"
-        description: "Overwrite item if it exists. Default is false."
-        required: false
-        type: "string"
-        enum:
-          - "true"
-          - "false"
-      - name: "statemachine"
-        in: "body"
-        description: "Statemachine Info"
-        required: true
-        "schema":
-          $ref: "#/definitions/Statemachine"
+        - name: statemachineName
+          in: path
+          description: Statemachine Name to get Statemachine Info
+          required: true
+          type: string
+        - name: overwrite
+          in: query
+          description: Overwrite item if it exists. Default is false.
+          required: false
+          type: string
+          enum:
+            - 'true'
+            - 'false'
+        - name: statemachine
+          in: body
+          description: Statemachine Info
+          required: true
+          schema:
+            $ref: '#/definitions/Statemachine'
       responses:
-        200:
-          description: "Successful Operation"
+        '200':
+          description: Successful Operation
           schema:
-            $ref: "#/definitions/Statemachine"
-        400:
-          description: "Bad Request"
+            $ref: '#/definitions/Statemachine'
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
+            $ref: '#/definitions/Error'
     post:
       tags:
-        - "statemachine"
-      description: "Execte Statemachine"
+        - statemachine
+      description: Execte Statemachine
       produces:
-      - "application/json"
+        - application/json
       parameters:
-      - name: "statemachineName"
-        in: "path"
-        description: "Statemachine Name to get Statemachine Info"
-        required: true
-        type: "string"
-      - name: "blocking"
-        in: "query"
-        description: "Blocking or non-blocking execution. Default is non-blocking."
-        required: false
-        type: "string"
-        enum:
-          - "true"
-          - "false"
-      - name: "statemachineInput"
-        in: "body"
-        description: "Statemachine Input"
-        required: true
-        "schema":
-          $ref: "#/definitions/Statemachine"
+        - name: statemachineName
+          in: path
+          description: Statemachine Name to get Statemachine Info
+          required: true
+          type: string
+        - name: blocking
+          in: query
+          description: Blocking or non-blocking execution. Default is non-blocking.
+          required: false
+          type: string
+          enum:
+            - 'true'
+            - 'false'
+        - name: statemachineInput
+          in: body
+          description: Statemachine Input
+          required: true
+          schema:
+            $ref: '#/definitions/Statemachine'
       responses:
-        200:
-          description: "Successful Operation"
+        '200':
+          description: Successful Operation
           schema:
-            $ref: "#/definitions/Statemachine"
-        400:
-          description: "Bad Request"
+            $ref: '#/definitions/Statemachine'
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
+            $ref: '#/definitions/Error'
     delete:
       tags:
-        - "statemachine"
-      description: "Delete Statemachine"
+        - statemachine
+      description: Delete Statemachine
       produces:
-      - "application/json"
+        - application/json
       parameters:
-      - name: "statemachineName"
-        in: "path"
-        description: "Statemachine Name to get Statemachine Info"
-        required: true
-        type: "string"
+        - name: statemachineName
+          in: path
+          description: Statemachine Name to get Statemachine Info
+          required: true
+          type: string
       responses:
-        200:
-          description: "Successful Operation"
-        400:
-          description: "Bad Request"
+        '200':
+          description: Successful Operation
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
+            $ref: '#/definitions/Error'
     patch:
       tags:
-        - "statemachine"
-      description: "Generate Graphviz DOT"
+        - statemachine
+      description: Generate Graphviz DOT
       produces:
-      - "text/plain; charset=utf-8"
+        - text/plain; charset=utf-8
       parameters:
-      - name: "statemachineName"
-        in: "path"
-        description: "Statemachine Name to get Statemachine Info"
-        required: true
-        type: "string"
+        - name: statemachineName
+          in: path
+          description: Statemachine Name to get Statemachine Info
+          required: true
+          type: string
       responses:
-        200:
-          description: "Successful Operation"
-        400:
-          description: "Bad Request"
+        '200':
+          description: Successful Operation
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
+            $ref: '#/definitions/Error'
   /shell:
     get:
       tags:
-        - "shell"
-      description: "Get Shell Info"
+        - shell
+      description: Get Shell Info
       produces:
-      - "application/json"
+        - application/json
       responses:
-        200:
-          description: "Successful Operation"
+        '200':
+          description: Successful Operation
           schema:
-            $ref: "#/definitions/Shell"
-        400:
-          description: "Bad Request"
+            $ref: '#/definitions/Shell'
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
-  /shell/{shellName}:
+            $ref: '#/definitions/Error'
+  '/shell/{shellName}':
     get:
       tags:
-        - "shell"
-      description: "Get Shell Info"
+        - shell
+      description: Get Shell Info
       produces:
-      - "application/json"
+        - application/json
       parameters:
-      - name: "shellName"
-        in: "path"
-        description: "Shell Name to get Shell Info"
-        required: true
-        type: "string"
+        - name: shellName
+          in: path
+          description: Shell Name to get Shell Info
+          required: true
+          type: string
       responses:
-        200:
-          description: "Successful Operation"
+        '200':
+          description: Successful Operation
           schema:
-            $ref: "#/definitions/Shell"
-        400:
-          description: "Bad Request"
+            $ref: '#/definitions/Shell'
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
+            $ref: '#/definitions/Error'
     put:
       tags:
-        - "shell"
-      description: "Register Workflow DSL"
+        - shell
+      description: Register Workflow DSL
       produces:
-      - "application/json"
+        - application/json
       parameters:
-      - name: "shellName"
-        in: "path"
-        description: "Shell Name to get Shell Info"
-        required: true
-        type: "string"
-      - name: "overwrite"
-        in: "query"
-        description: "Overwrite item if it exists. Default is false."
-        required: false
-        type: "string"
-        enum:
-          - "true"
-          - "false"
-      - name: "shell"
-        in: "body"
-        description: "Shell Info"
-        required: true
-        "schema":
-          $ref: "#/definitions/Shell"
+        - name: shellName
+          in: path
+          description: Shell Name to get Shell Info
+          required: true
+          type: string
+        - name: overwrite
+          in: query
+          description: Overwrite item if it exists. Default is false.
+          required: false
+          type: string
+          enum:
+            - 'true'
+            - 'false'
+        - name: shell
+          in: body
+          description: Shell Info
+          required: true
+          schema:
+            $ref: '#/definitions/Shell'
       responses:
-        200:
-          description: "Successful Operation"
+        '200':
+          description: Successful Operation
           schema:
-            $ref: "#/definitions/Shell"
-        400:
-          description: "Bad Request"
+            $ref: '#/definitions/Shell'
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
+            $ref: '#/definitions/Error'
     post:
       tags:
-        - "shell"
-      description: "Execute Workflow DSL"
+        - shell
+      description: Execute Workflow DSL
       produces:
-      - "application/json"
+        - application/json
       parameters:
-      - name: "shellName"
-        in: "path"
-        description: "Shell Name to get Shell Info"
-        required: true
-        type: "string"
-      - name: "blocking"
-        in: "query"
-        description: "Blocking or non-blocking execution. Default is non-blocking."
-        required: false
-        type: "string"
-        enum:
-          - "true"
-          - "false"
-      - name: "shellInput"
-        in: "body"
-        description: "Shell Input"
-        required: true
-        "schema":
-          $ref: "#/definitions/Shell"
+        - name: shellName
+          in: path
+          description: Shell Name to get Shell Info
+          required: true
+          type: string
+        - name: blocking
+          in: query
+          description: Blocking or non-blocking execution. Default is non-blocking.
+          required: false
+          type: string
+          enum:
+            - 'true'
+            - 'false'
+        - name: shellInput
+          in: body
+          description: Shell Input
+          required: true
+          schema:
+            $ref: '#/definitions/Shell'
       responses:
-        200:
-          description: "Successful Operation"
+        '200':
+          description: Successful Operation
           schema:
-            $ref: "#/definitions/Shell"
-        400:
-          description: "Bad Request"
+            $ref: '#/definitions/Shell'
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
+            $ref: '#/definitions/Error'
     delete:
       tags:
-        - "shell"
-      description: "Delete Workflow DSL"
+        - shell
+      description: Delete Workflow DSL
       produces:
-      - "application/json"
+        - application/json
       parameters:
-      - name: "shellName"
-        in: "path"
-        description: "Shell Name to get Shell Info"
-        required: true
-        type: "string"
+        - name: shellName
+          in: path
+          description: Shell Name to get Shell Info
+          required: true
+          type: string
       responses:
-        200:
-          description: "Successful Operation"
-        400:
-          description: "Bad Request"
+        '200':
+          description: Successful Operation
+        '400':
+          description: Bad Request
           schema:
-            $ref: "#/definitions/Error"
-        401:
-          description: "Authentication Failure"
+            $ref: '#/definitions/Error'
+        '401':
+          description: Authentication Failure
           schema:
-            $ref: "#/definitions/Error"
+            $ref: '#/definitions/Error'
 definitions:
   Error:
-    type: "object"
+    type: object
     required:
       - error
     properties:
       error:
-        type: "string"
+        type: string
       cause:
-        type: "string"
+        type: string
   FaaSShell:
-    type: "object"
+    type: object
     required:
       - version
     properties:
       version:
-        type: "string"
+        type: string
   Activity:
-    type: "object"
+    type: object
     required:
       - taskToken
     properties:
       taskToken:
-        type: "string"
+        type: string
       input:
-        type: "object"
+        type: object
       output:
-        type: "object"
+        type: object
   Execution:
-    type: "object"
+    type: object
     required:
       - statemachine
       - namespace
@@ -581,30 +581,30 @@ definitions:
       - start
     properties:
       statemachine:
-        type: "string"
+        type: string
       namespace:
-        type: "string"
+        type: string
       execution_id:
-        type: "string"
+        type: string
       hostname:
-        type: "string"
+        type: string
       result:
-        type: "object"
+        type: object
         properties:
           input:
-            type: "object"
+            type: object
           output:
-            type: "object"
+            type: object
       start:
-        type: "number"
-        format: "double"
+        type: number
+        format: double
       end:
-        type: "number"
-        format: "double"
+        type: number
+        format: double
   Function:
-    type: "object"
+    type: object
   Statemachine:
-    type: "object"
+    type: object
     required:
       - asl
       - dsl
@@ -612,27 +612,27 @@ definitions:
       - namespace
     properties:
       asl:
-        type: "object"
+        type: object
       dsl:
-        type: "string"
+        type: string
       name:
-        type: "string"
+        type: string
       namespace:
-        type: "string"
+        type: string
   Shell:
-    type: "object"
+    type: object
     required:
       - dsl
       - name
       - namespace
     properties:
       dsl:
-        type: "string"
+        type: string
       name:
-        type: "string"
+        type: string
       namespace:
-        type: "string"
+        type: string
       input:
-        type: "object"
+        type: object
       output:
-        type: "object"
+        type: object
