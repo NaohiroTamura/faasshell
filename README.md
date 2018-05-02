@@ -12,6 +12,9 @@ Then FaaS Shell interpreter executes the workflow DSL.
 This architecture aims at mitigating potential vendor lock-in of your
 application.
 
+*Faas Shell* also has REPL, which allows us to develop workflow
+interactively typing DSL directly into the prompt.
+
 *FaaS Shell* currently supports one workflow language as the first
 step, and five FaaS infrastructures.
 
@@ -212,7 +215,11 @@ sub-directory based on the following State Machine Template.
 
 * [Activity Task](samples/demo_activity_task.md)
 
-  This demonstrates that the long running activity task hosted outside of FaaS.
+  This demonstrates how a long running process hosted outside of FaaS interacts with Activity Task State.
+
+* [Event State](samples/demo_event_state.md)
+
+  Event State is an extention of [Amazon State Language][1]. This demonstrates how an event triggers function in Event State.
 
 ## Devloper's Guide (work in progress)
 
