@@ -29,7 +29,11 @@
        faas:activity_end/5,
        faas:activity_ended/5,
        faas:activity_heartbeat/3,
-       faas:activity_heartbeated/4.
+       faas:activity_heartbeated/4,
+       faas:event_publish/5,
+       faas:event_published/5,
+       faas:event_subscribe/4,
+       faas:event_subscribed/4.
 
 %%
 %% $ swipl -q -l src/kafka_api.pl -g kafka_api:debug_kafka
@@ -117,6 +121,41 @@ faas:activity_heartbeated(kafka, Activity, TaskToken, HeartbeatSeconds) :-
        term_to_atom(reply_task_heartbeat(Activity, TaskToken), Value),
        kafka_send_message(Producer, Key, Value),
        debug(kafka, 'send(reply_task_heartbeat(~w, ~w))~n', [Activity, TaskToken]).
+
+faas:event_publish(kafka, User, Event, Action, _Timeout) :-
+    activity_task_queue(kafka(Producer, Key, _MQueue)),
+    debug(kafka, 'faas:event_publish1(kafka, ~w, ~w, ~w)~n', [User, Event, Action]),
+
+    term_to_atom(event_publish(User, Event, Action), Value),
+    kafka_send_message(Producer, Key, Value),
+
+    debug(kafka, 'faas:event_publish2(kafka, ~w, ~w, ~w)~n', [User, Event, Action]).
+
+faas:event_published(kafka, User, Event, Action, Timeout) :-
+    activity_task_queue(kafka(_Producer, _Key, MQueue)),
+    debug(kafka, 'faas:event_published1(kafka, ~w, ~w, ~w)~n',
+          [User, Event, Action]),
+    thread_get_message(MQueue,
+                       event_publish(User, Event, Action), [timeout(Timeout)]),
+    debug(kafka, 'faas:event_published2(kafka, ~w, ~w, ~w)~n',
+          [User, Event, Action]).
+
+faas:event_subscribe(kafka, User, Event, _Timeout) :-
+    activity_task_queue(kafka(Producer, Key, _MQueue)),
+    debug(kafka, 'faas:event_subscribe1(kafka, ~w, ~w)~n', [User, Event]),
+
+    term_to_atom(event_subscribe(User, Event), Value),
+    kafka_send_message(Producer, Key, Value),
+
+    debug(kafka, 'faas:event_subscribe2(kafka, ~w, ~w)~n', [User, Event]).
+
+faas:event_subscribed(kafka, User, Event, Timeout) :-
+    activity_task_queue(kafka(_Producer, _Key, MQueue)),
+
+    debug(kafka, 'faas:event_subscribed1(kafka, ~w, ~w)~n', [User, Event]),
+    thread_get_message(MQueue,
+                        event_subscribe(User, Event), [timeout(Timeout)]),
+    debug(kafka, 'faas:event_subscribed2(kafka, ~w, ~w)~n', [User, Event]).
 
 kafka_send_message(Producer, Key, Value) :-
     kafka_send(Producer, faasshell, Key, Value).

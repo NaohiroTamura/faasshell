@@ -41,6 +41,7 @@ unit_test:
 		echo $$case; \
 		swipl -q -l $$case -g run_tests -t halt; \
 	done
+	swipl -q -l tests/unit/unit_test_utils.pl -g faas_test_setup -t halt
 	tests/unit/test_faasshell_repl.exp
 
 functional_test:
@@ -59,13 +60,14 @@ test_with_kafka:
 	kafka-server-start.sh /opt/kafka/config/server.properties > /dev/null &
 	sleep 3
 	CLASSPATH=$(CLASSPATH) _JAVA_OPTIONS=$(_JAVA_OPTIONS) \
-	swipl -q -l tests/unit/test_faasshell_run.pl -g kafka_api:debug_kafka -g 'run_tests(activity_task)' -t halt
+	swipl -q -l tests/unit/test_faasshell_run.pl -g kafka_api:debug_kafka -g 'run_tests(activity_task)' -g 'run_tests(event_state)' -t halt
 	sleep 1
 	CLASSPATH=$(CLASSPATH) _JAVA_OPTIONS=$(_JAVA_OPTIONS) \
 	swipl -q -l src/faasshell_svc.pl -g main -t halt &
 	sleep 10
 	CLASSPATH=$(CLASSPATH) _JAVA_OPTIONS=$(_JAVA_OPTIONS) \
 	swipl -q -l tests/functional/test_activity.pl -g run_tests -t halt
+	swipl -q -l tests/functional/test_trigger.pl -g run_tests -t halt
 	pkill -HUP swipl
 	pkill -KILL java
 

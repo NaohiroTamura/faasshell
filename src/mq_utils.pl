@@ -46,7 +46,7 @@ debug_mq :- debug(mq > user_error).
 
 %%
 mq_init :-
-    ( getenv('FAASSHELL_MQ', MQType), MQType \== '' )
+    ( \+faasshell_mq(_), getenv('FAASSHELL_MQ', MQType), MQType \== '' )
     -> faas:mq_init(MQType),
        assertz(faasshell_mq(MQType))
     ;  faas:mq_init(built_in),

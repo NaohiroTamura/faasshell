@@ -83,7 +83,9 @@ $ make -e docker_image_prefix=YOUR_PREFIX run
 ### Run tests
 
 ```sh
-$ swipl -q -l tests/unit/test_faasshell_run.pl -g kafka_api:debug_kafka -g 'run_tests(activity_task)' -t halt
+$ swipl -q -l tests/unit/test_faasshell_run.pl -g kafka_api:debug_kafka -g 'run_tests(activity_task)' -g 'run_tests(event_state)' -t halt
 
 $ swipl -q -l tests/functional/test_activity.pl -g run_tests -t halt
+
+$ swipl -q -l tests/functional/test_trigger.pl -g run_tests -t halt
 ```
