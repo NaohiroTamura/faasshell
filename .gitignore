@@ -10,3 +10,5 @@ _site/
 Gemfile.lock
 vendor/
 demoCA/
+node_modules
+
