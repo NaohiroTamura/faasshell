@@ -55,15 +55,12 @@ search_dic(D, K, V, [K1|P]) :-
 %%      (['States', 'NextState', 'Type'], "Task")].
 
 %%
-json_path_merge(_Json, Value, [], Value).
-json_path_merge(Json, Value, [H|T], MergedJson) :-
-    json_path_merge(_{}, Value, T, J1),
-    MergedJson = Json.put(H, J1).
 %% json_path_merge(+JsonPath, +Json, +Value, -Keys, -MergedJson)
 json_path_merge(JsonPath, Json, Value, Keys, MergedJson) :-
     tokenize_atom(JsonPath, Token),
     json_path(Keys, _Range, Token, []),
-    json_path_merge(Json, Value, Keys, MergedJson).
+    [V0|L] = Keys, foldl([I,Accm,O]>>(O =.. [/,Accm,I]), L, V0, V),
+    MergedJson = Json.put(V, Value).
 
 %%
 json_path_value(Value, [], Range, Value) :-

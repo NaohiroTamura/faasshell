@@ -55,13 +55,19 @@ test(underscore2, (K, R, V) = [a_b], [0, 2], [0, 1]) :-
 test(key_error, error(existence_error(key, c, _{b:1}), _)) :-
     json_path_value('$.a.c', _{a:_{b:1}}, _K, _R, _V).
 
-test(merge, (K, M) = ([b, c], _{a:1, b:_{c:2}})) :-
+test(merge1, (K, M) = ([b, c], _{a:1, b:_{c:2}})) :-
     json_path_merge('$.b.c', _{a:1}, 2, K, M).
+
+test(merge2, (K, M) = ([b, c, d], _{a:1, b:_{c:_{d:2}}})) :-
+    json_path_merge('$.b.c.d', _{a:1}, 2, K, M).
 
 test(dup1, (K, M) = ([a], _{a:2})) :-
     json_path_merge('$.a', _{a:1}, 2, K, M).
 
 test(dup2, (K, M) = ([b, c], _{a:1, b:_{c:2}})) :-
     json_path_merge('$.b.c', _{a:1, b:3}, 2, K, M).
+
+test(dup3, (K, M) = ([b, c], _{a:1, b:_{c:2,d:3}})) :-
+    json_path_merge('$.b.c', _{a:1, b:_{d:3}}, 2, K, M).
 
 :- end_tests(json_path).
