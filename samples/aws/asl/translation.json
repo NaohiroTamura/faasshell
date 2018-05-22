@@ -1,0 +1,26 @@
+{
+    "Comment": "Translation Demo.",
+    "StartAt": "FirstState",
+    "States": {
+        "FirstState": {
+            "Type": "Task",
+            "InputPath": "$.forward",
+            "ResultPath": "$.forward",
+            "Resource": "arn:aws:lambda:us-east-2:410388484666:function:translate",
+            "Next": "UpdateArg"
+        },
+        "UpdateArg": {
+            "Type": "Pass",
+            "InputPath": "$.forward.payload.TranslatedText",
+            "ResultPath": "$.backward.payload",
+            "Next": "NextState"
+        },
+        "NextState": {
+            "Type": "Task",
+            "InputPath": "$.backward",
+            "ResultPath": "$.backward",
+            "Resource": "arn:aws:lambda:us-east-2:410388484666:function:translate",
+            "End": true
+        }
+    }
+}
