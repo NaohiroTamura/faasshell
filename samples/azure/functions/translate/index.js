@@ -37,7 +37,7 @@ module.exports = function (context, req) {
             context.log(json);
             context.res = {
                 status: 200,
-                body: {payload: JSON.parse(body)}
+                body: {payload: JSON.parse(body)[0].translations[0]}
             };
             context.done();
         });
@@ -71,8 +71,9 @@ module.exports = function (context, req) {
     }
 
     let content = JSON.stringify ([{'Text' : text}]);
-    //Translate (content, 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+    Translate (content, process.env.TRANSLATOR_KEY);
 
+/*
     return getKeyVaultCredentials().then(
         getKeyVaultSecret
     ).then(function (secret){
@@ -80,5 +81,5 @@ module.exports = function (context, req) {
         Translate (content, secret.value)
     }).catch(function (err) {
         throw (err);
-    });
+    }); */
 };

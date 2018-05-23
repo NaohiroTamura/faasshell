@@ -6,12 +6,12 @@
             "Type": "Task",
             "InputPath": "$.forward",
             "ResultPath": "$.forward",
-            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:translate",
+            "Resource": "frn:azure:functions::${azure_webapp_name}:function:translate",
             "Next": "UpdateArg"
         },
         "UpdateArg": {
             "Type": "Pass",
-            "InputPath": "$.forward.payload.TranslatedText",
+            "InputPath": "$.forward.payload.text",
             "ResultPath": "$.backward.payload",
             "Next": "NextState"
         },
@@ -19,7 +19,7 @@
             "Type": "Task",
             "InputPath": "$.backward",
             "ResultPath": "$.backward",
-            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:translate",
+            "Resource": "frn:azure:functions::${azure_webapp_name}:function:translate",
             "End": true
         }
     }

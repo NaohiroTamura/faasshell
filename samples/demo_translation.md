@@ -1,36 +1,47 @@
-{
-    "forward": {
-        "payload":"hello world",
-        "translateFrom": "en",
-        "translateTo":"de"
-    },
-    "backward": {
-        "translateFrom": "de",
-        "translateTo":"en"
-    }
-}
+# Translation Text Demo
 
-{
-    "input": {
-        "forward": {
-            "payload":"hello world",
-            "translateFrom": "en",
-            "translateTo":"de"
-        },
-        "backward": {
-            "translateFrom": "de",
-            "translateTo":"en"
-        }
-    }
-}
+## Register statemachine
+- AWS Lambda
 
+  ```sh
+  ubuntu@trusty:~/faasshell[master]$ envsubst < samples/aws/asl/translation.json | \
+  curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/translation.json?overwrite=true \
+  -H 'Content-Type: application/json' -d @/dev/stdin -u $DEMO
+  ```
 
-naohirot@bluemix:~/work/github/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/translation.json?overwrite=true \
--H 'Content-Type: application/json' -d @samples/aws/asl/translation.json -u $DEMO
+- Microsoft Azure Functions
 
-naohirot@bluemix:~/work/github/faasshell[master]$ curl -ksX GET ${FAASSHELL_APIHOST}/statemachine/translation.json -u $DEMO
+  ```sh
+  ubuntu@trusty:~/faasshell[master]$ envsubst < samples/azure/asl/translation.json | \
+  curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/translation.json?overwrite=true \
+  -H 'Content-Type: application/json' -d @/dev/stdin -u $DEMO
+  ```
 
-naohirot@bluemix:~/work/github/faasshell[master]$ curl -ksX POST ${FAASSHELL_APIHOST}/statemachine/translation.json?blocking=true \
+- Google Cloud Functions
+
+  ```sh
+  ubuntu@trusty:~/faasshell[master]$ envsubst < samples/gcp/asl/translation.json | \
+  curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/translation.json?overwrite=true \
+  -H 'Content-Type: application/json' -d @/dev/stdin -u $DEMO
+  ```
+
+- IBM Cloud Functions / Apache OpenWhisk
+
+  ```sh
+  ubuntu@trusty:~/faasshell[master]$ curl -ksX PUT ${FAASSHELL_APIHOST}/statemachine/translation.json?overwrite=true \
+  -H 'Content-Type: application/json' -d @samples/wsk/asl/translation.json -u $DEMO
+  ```
+
+## Confirm the registerd statemachine
+
+```sh
+ubuntu@trusty:~/faasshell[master]$ curl -ksX GET ${FAASSHELL_APIHOST}/statemachine/translation.json -u $DEMO
+```
+
+## Execute the statemachine
+
+```sh
+ubuntu@trusty:~/faasshell[master]$ curl -ksX POST ${FAASSHELL_APIHOST}/statemachine/translation.json?blocking=true \
 -H 'Content-Type: application/json' \
 -d '{
     "input": {
@@ -46,7 +57,7 @@ naohirot@bluemix:~/work/github/faasshell[master]$ curl -ksX POST ${FAASSHELL_API
     }
 }' -u $DEMO
 
-naohirot@bluemix:~/work/github/faasshell[master]$ curl -ksX POST ${FAASSHELL_APIHOST}/statemachine/translation.json?blocking=true \
+ubuntu@trusty:~/faasshell[master]$ curl -ksX POST ${FAASSHELL_APIHOST}/statemachine/translation.json?blocking=true \
 -H 'Content-Type: application/json' \
 -d '{
     "input": {
@@ -61,4 +72,4 @@ naohirot@bluemix:~/work/github/faasshell[master]$ curl -ksX POST ${FAASSHELL_API
         }
     }
 }' -u $DEMO
-
+```

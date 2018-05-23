@@ -11,7 +11,7 @@
         },
         "UpdateArg": {
             "Type": "Pass",
-            "InputPath": "$.forward.payload.TranslatedText",
+            "InputPath": "$.forward.payload",
             "ResultPath": "$.backward.payload",
             "Next": "NextState"
         },
