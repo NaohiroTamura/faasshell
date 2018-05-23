@@ -81,7 +81,7 @@ api_url(ApiHost, Gen, URL, Options) :-
 api_action_name(none, default, none) :- !.
 api_action_name(Action, NS, ActionName) :-
     split_string(Action, "/", "", ["", NS | AN])
-    -> (length(AN, 0), ActionName = none;
-        atomics_to_string(AN, "/", ActionName))
+    -> ( length(AN, 0) -> ActionName = none ; true ),
+       atomics_to_string(AN, "/", ActionName)
     ; ActionName = Action,
       NS = default.

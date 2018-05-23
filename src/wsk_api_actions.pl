@@ -91,9 +91,12 @@ faas:invoke(FRN, Options, Payload, Reply) :-
     json_utils:term_json_dict(Json, Payload),
     http_post(URL, json(Json), R1, MergedOptions),
     json_utils:term_json_dict(R1, D1),
-    ( _{error: Error} :< D1,
-      split_string(Error, ":", " ", [_, ErrorType, ErrorMessage])
-      -> Reply = _{error: ErrorType, cause: ErrorMessage}
+    ( _{error: Error} :< D1
+      -> ( ( string(Error),
+             split_string(Error, ":", " ", [_, ErrorType, ErrorMessage]) )
+           -> Reply = _{error: ErrorType, cause: ErrorMessage}
+           ;  Reply = _{error: Error}
+         )
       ;  Reply = D1
     ).
 

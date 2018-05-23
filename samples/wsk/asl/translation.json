@@ -1,0 +1,26 @@
+{
+    "Comment": "Translation Demo.",
+    "StartAt": "FirstState",
+    "States": {
+        "FirstState": {
+            "Type": "Task",
+            "InputPath": "$.forward",
+            "ResultPath": "$.forward",
+            "Resource": "frn:wsk:functions:::function:myTranslator/translator",
+            "Next": "UpdateArg"
+        },
+        "UpdateArg": {
+            "Type": "Pass",
+            "InputPath": "$.forward.payload.TranslatedText",
+            "ResultPath": "$.backward.payload",
+            "Next": "NextState"
+        },
+        "NextState": {
+            "Type": "Task",
+            "InputPath": "$.backward",
+            "ResultPath": "$.backward",
+            "Resource": "frn:wsk:functions:::function:myTranslator/translator",
+            "End": true
+        }
+    }
+}
