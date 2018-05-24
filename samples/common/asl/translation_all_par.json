@@ -1,0 +1,168 @@
+{
+    "Comment": "Translation Parallel Demo",
+    "StartAt": "Parallel",
+    "States": {
+        "Parallel": {
+            "Type": "Parallel",
+            "Next": "Final State",
+            "Branches": [
+                {
+                    "StartAt": "AWSForwardState",
+                    "States": {
+                        "AWSForwardState": {
+                            "Type": "Task",
+                            "InputPath": "$.forward",
+                            "ResultPath": "$.slack.text.forward",
+                            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:translate",
+                            "Next": "AWSBackwardArg"
+                        },
+                        "AWSBackwardArg": {
+                            "Type": "Pass",
+                            "InputPath": "$.slack.text.forward.payload.TranslatedText",
+                            "ResultPath": "$.backward.payload",
+                            "Next": "AWSBackwardState"
+                        },
+                        "AWSBackwardState": {
+                            "Type": "Task",
+                            "InputPath": "$.backward",
+                            "ResultPath": "$.slack.text.backward",
+                            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:translate",
+                            "Next": "AWSSlackArg"
+                        },
+                        "AWSSlackArg": {
+                            "Type": "Pass",
+                            "Result": "AWS",
+                            "ResultPath": "$.slack.username",
+                            "Next": "AWSSlackState"
+                        },
+                        "AWSSlackState": {
+                            "Type": "Task",
+                            "InputPath": "$.slack",
+                            "ResultPath": "$.slack.result",
+                            "Resource": "frn:wsk:functions:::function:slack",
+                            "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "AzureForwardState",
+                    "States": {
+                        "AzureForwardState": {
+                            "Type": "Task",
+                            "InputPath": "$.forward",
+                            "ResultPath": "$.slack.text.forward",
+                            "Resource": "frn:azure:functions::${azure_webapp_name}:function:translate",
+                            "Next": "AzureBackwardArg"
+                        },
+                        "AzureBackwardArg": {
+                            "Type": "Pass",
+                            "InputPath": "$.slack.text.forward.payload.text",
+                            "ResultPath": "$.backward.payload",
+                            "Next": "AzureBackwardState"
+                        },
+                        "AzureBackwardState": {
+                            "Type": "Task",
+                            "InputPath": "$.backward",
+                            "ResultPath": "$.slack.text.backward",
+                            "Resource": "frn:azure:functions::${azure_webapp_name}:function:translate",
+                            "Next": "AzureSlackArg"
+                        },
+                        "AzureSlackArg": {
+                            "Type": "Pass",
+                            "Result": "Azure",
+                            "ResultPath": "$.slack.username",
+                            "Next": "AzureSlackState"
+                        },
+                        "AzureSlackState": {
+                            "Type": "Task",
+                            "InputPath": "$.slack",
+                            "ResultPath": "$.slack.result",
+                            "Resource": "frn:wsk:functions:::function:slack",
+                            "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "GCPForwardState",
+                    "States": {
+                        "GCPForwardState": {
+                            "Type": "Task",
+                            "InputPath": "$.forward",
+                            "ResultPath": "$.slack.text.forward",
+                            "Resource": "frn:gcp:functions:${gcp_location_id}:${gcp_project_id}:function:translate",
+                            "Next": "GCPBackwardArg"
+                        },
+                        "GCPBackwardArg": {
+                            "Type": "Pass",
+                            "InputPath": "$.slack.text.forward.payload",
+                            "ResultPath": "$.backward.payload",
+                            "Next": "GCPBackwardState"
+                        },
+                        "GCPBackwardState": {
+                            "Type": "Task",
+                            "InputPath": "$.backward",
+                            "ResultPath": "$.slack.text.backward",
+                            "Resource": "frn:gcp:functions:${gcp_location_id}:${gcp_project_id}:function:translate",
+                            "Next": "GCPSlackArg"
+                        },
+                        "GCPSlackArg": {
+                            "Type": "Pass",
+                            "Result": "GCP",
+                            "ResultPath": "$.slack.username",
+                            "Next": "GCPSlackState"
+                        },
+                        "GCPSlackState": {
+                            "Type": "Task",
+                            "InputPath": "$.slack",
+                            "ResultPath": "$.slack.result",
+                            "Resource": "frn:wsk:functions:::function:slack",
+                            "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "IBMForwardState",
+                    "States": {
+                        "IBMForwardState": {
+                            "Type": "Task",
+                            "InputPath": "$.forward",
+                            "ResultPath": "$.slack.text.forward",
+                            "Resource": "frn:wsk:functions:::function:myTranslator/translator",
+                            "Next": "IBMBackwardArg"
+                        },
+                        "IBMBackwardArg": {
+                            "Type": "Pass",
+                            "InputPath": "$.slack.text.forward.payload",
+                            "ResultPath": "$.backward.payload",
+                            "Next": "IBMBackwardState"
+                        },
+                        "IBMBackwardState": {
+                            "Type": "Task",
+                            "InputPath": "$.backward",
+                            "ResultPath": "$.slack.text.backward",
+                            "Resource": "frn:wsk:functions:::function:myTranslator/translator",
+                            "Next": "IBMSlackArg"
+                        },
+                        "IBMSlackArg": {
+                            "Type": "Pass",
+                            "Result": "IBM",
+                            "ResultPath": "$.slack.username",
+                            "Next": "IBMSlackState"
+                        },
+                        "IBMSlackState": {
+                            "Type": "Task",
+                            "InputPath": "$.slack",
+                            "ResultPath": "$.slack.result",
+                            "Resource": "frn:wsk:functions:::function:slack",
+                            "End": true
+                        }
+                    }
+                }
+            ]
+        },
+        "Final State": {
+            "Type": "Pass",
+            "End": true
+        }
+    }
+}
