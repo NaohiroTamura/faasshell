@@ -33,8 +33,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksX POST ${FAASSHELL_APIHOST}/statemach
             "translateTo":"en"
         },
         "slack": {
-            "channel": "#general",
-            "url": "https://hooks.slack.com/services/xxxxxxxxx/yyyyyyyyy/zzzzzzzzzzzzzzzzzzzzzzzz"
+            "channel": "#general"
         }
     }
 }' -u $DEMO
@@ -73,8 +72,7 @@ ubuntu@trusty:~/faasshell[master]$ curl -ksX POST ${FAASSHELL_APIHOST}/statemach
             "translateTo":"en"
         },
         "slack": {
-            "channel": "#general",
-            "url": "https://hooks.slack.com/services/xxxxxxxxx/yyyyyyyyy/zzzzzzzzzzzzzzzzzzzzzzzz"
+            "channel": "#general"
         }
     }
 }' -u $DEMO

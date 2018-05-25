@@ -32,7 +32,7 @@
             "Type": "Task",
             "InputPath": "$.slack",
             "ResultPath": "$.slack.result",
-            "Resource": "frn:wsk:functions:::function:slack",
+            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:slack",
             "Next": "AzureForwardState"
         },
         "AzureForwardState": {
@@ -65,7 +65,7 @@
             "Type": "Task",
             "InputPath": "$.slack",
             "ResultPath": "$.slack.result",
-            "Resource": "frn:wsk:functions:::function:slack",
+            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:slack",
             "Next": "GCPForwardState"
         },
         "GCPForwardState": {
@@ -98,7 +98,7 @@
             "Type": "Task",
             "InputPath": "$.slack",
             "ResultPath": "$.slack.result",
-            "Resource": "frn:wsk:functions:::function:slack",
+            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:slack",
             "Next": "IBMForwardState"
         },
         "IBMForwardState": {
@@ -131,7 +131,7 @@
             "Type": "Task",
             "InputPath": "$.slack",
             "ResultPath": "$.slack.result",
-            "Resource": "frn:wsk:functions:::function:slack",
+            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:slack",
             "End": true
         }
     }

@@ -39,7 +39,7 @@
                             "Type": "Task",
                             "InputPath": "$.slack",
                             "ResultPath": "$.slack.result",
-                            "Resource": "frn:wsk:functions:::function:slack",
+                            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:slack",
                             "End": true
                         }
                     }
@@ -77,7 +77,7 @@
                             "Type": "Task",
                             "InputPath": "$.slack",
                             "ResultPath": "$.slack.result",
-                            "Resource": "frn:wsk:functions:::function:slack",
+                            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:slack",
                             "End": true
                         }
                     }
@@ -115,7 +115,7 @@
                             "Type": "Task",
                             "InputPath": "$.slack",
                             "ResultPath": "$.slack.result",
-                            "Resource": "frn:wsk:functions:::function:slack",
+                            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:slack",
                             "End": true
                         }
                     }
@@ -153,7 +153,7 @@
                             "Type": "Task",
                             "InputPath": "$.slack",
                             "ResultPath": "$.slack.result",
-                            "Resource": "frn:wsk:functions:::function:slack",
+                            "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:slack",
                             "End": true
                         }
                     }
