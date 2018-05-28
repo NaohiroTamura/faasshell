@@ -29,6 +29,56 @@
 %%
 %% Functional Tests for common
 %%
+:- begin_tests(choice_invalid_path).
+
+test(put_overwrite_true, Code = 200) :-
+    load_json('samples/common/asl/choice_invalid_path.json', Term),
+    faasshell_api_host(Host), faasshell_api_key(ID-PW),
+    string_concat(Host, '/statemachine/choice_invalid_path.json?overwrite=true',
+                  URL),
+    http_put(URL, json(Term), Data,
+             [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+              status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{output: "ok", name: "choice_invalid_path.json",
+                namespace: "demo", dsl: _, asl: _} = Dict).
+
+test(foo, Code = 500) :-
+    faasshell_api_host(Host), faasshell_api_key(ID-PW),
+    string_concat(Host, '/statemachine/choice_invalid_path.json?blocking=true',
+                  URL),
+    term_json_dict(Json, _{input: _{}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(
+            _{error: "States.Runtime",
+              cause :"existence_error(key,foo)"} :< Dict).
+
+test(bar, Code = 500) :-
+    faasshell_api_host(Host), faasshell_api_key(ID-PW),
+    string_concat(Host, '/statemachine/choice_invalid_path.json?blocking=true',
+                  URL),
+    term_json_dict(Json, _{input: _{foo: 3}}),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(
+            _{error: "States.Runtime",
+              cause: "existence_error(key,bar)"} :< Dict).
+
+test(delete, Code = 200) :-
+    faasshell_api_host(Host), faasshell_api_key(ID-PW),
+    string_concat(Host, '/statemachine/choice_invalid_path.json', URL),
+    http_delete(URL, Data, [authorization(basic(ID, PW)),
+                            cert_verify_hook(cert_accept_any), status_code(Code)]),
+    term_json_dict(Data, Dict),
+    assertion(_{output: "ok"} :< Dict).
+
+:- end_tests(choice_invalid_path).
+
 :- begin_tests(hello_all_seq,
                [setup((faasshell_api_host(Host), faasshell_api_key(ID-PW),
                        string_concat(Host,

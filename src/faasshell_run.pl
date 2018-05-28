@@ -511,67 +511,122 @@ or([Cond|Conds], I, O, EI, EO) :-
 boolean_equals(Variable, Value, I, O, E, E) :-
     mydebug(boolean_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
-           V == Value ->  O = true; O = false ), _, O = false),
+           V == Value ->  O = true; O = false ),
+           Error,
+           ( error_code(Error, O),
+             mydebug(boolean_equals(catch), (Error, O)),
+             throw((O, 500))
+           )),
     mydebug(boolean_equals(out), (Variable, Value, I, O)).
 
 numeric_equals(Variable, Value, I, O, E, E) :-
     mydebug(numeric_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
-           V =:= Value ->  O = true; O = false), _, O = false),
+           V =:= Value ->  O = true; O = false ),
+           Error,
+           ( error_code(Error, O),
+             mydebug(numeric_equals(catch), (Error, O)),
+             throw((O, 500))
+           )),
     mydebug(numeric_equals(out), (Variable, Value, I, O)).
 
 numeric_greater_than(Variable, Value, I, O, E, E) :-
     mydebug(numeric_greater_than(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
-           V > Value ->  O = true; O = false ), _, O = false),
+           V > Value ->  O = true; O = false ),
+           Error,
+           ( error_code(Error, O),
+             mydebug(numeric_greater_than(catch), (Error, O)),
+             throw((O, 500))
+           )),
     mydebug(numeric_greater_than(out), (Variable, Value, I, O)).
 
 numeric_greater_than_equals(Variable, Value, I, O, E, E) :-
     mydebug(numeric_greater_than_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
-           V >= Value ->  O = true; O = false ), _, O = false),
+           V >= Value ->  O = true; O = false ),
+           Error,
+           ( error_code(Error, O),
+             mydebug(numeric_greater_than_equals(catch), (Error, O)),
+             throw((O, 500))
+           )),
     mydebug(numeric_greater_than_equals(out), (Variable, Value, I, O)).
 
 numeric_less_than(Variable, Value, I, O, E, E) :-
     mydebug(numeric_less_than(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
-           V < Value ->  O = true; O = false ), _, O = false),
+           V < Value ->  O = true; O = false ),
+           Error,
+           ( error_code(Error, O),
+             mydebug(numeric_less_than(catch), (Error, O)),
+             throw((O, 500))
+           )),
     mydebug(numeric_less_than(out), (Variable, Value, I, O)).
 
 numeric_less_than_equals(Variable, Value, I, O, E, E) :-
     mydebug(numeric_less_than_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
-           V =< Value ->  O = true; O = false ), _, O = false),
+           V =< Value ->  O = true; O = false ),
+           Error,
+           ( error_code(Error, O),
+             mydebug(numeric_less_than_equals(catch), (Error, O)),
+             throw((O, 500))
+           )),
     mydebug(numeric_less_than_equals(out), (Variable, Value, I, O)).
 
 string_equals(Variable, Value, I, O, E, E) :-
     mydebug(string_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
-           V == Value ->  O = true; O = false ), _, O = false),
+           V == Value ->  O = true; O = false ),
+           Error,
+           ( error_code(Error, O),
+             mydebug(string_equals(catch), (Error, O)),
+             throw((O, 500))
+           )),
     mydebug(string_equals(out), (Variable, Value, I, O)).
 
 string_greater_than(Variable, Value, I, O, E, E) :-
     mydebug(string_greater_than(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
-           V @> Value ->  O = true; O = false ), _, O = false),
+           V @> Value ->  O = true; O = false ),
+           Error,
+           ( error_code(Error, O),
+             mydebug(string_greater_than(catch), (Error, O)),
+             throw((O, 500))
+           )),
     mydebug(string_greater_than(out), (Variable, Value, I, O)).
 
 string_greater_than_equals(Variable, Value, I, O, E, E) :-
     mydebug(string_greater_than_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
-           V @>= Value ->  O = true; O = false ), _, O = false),
+           V @>= Value ->  O = true; O = false ),
+           Error,
+           ( error_code(Error, O),
+             mydebug(string_greater_than_equals(catch), (Error, O)),
+             throw((O, 500))
+           )),
     mydebug(string_greater_than_equals(out), (Variable, Value, I, O)).
 
 string_less_than(Variable, Value, I, O, E, E) :-
     mydebug(string_less_than(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
-           V @< Value ->  O = true; O = false ), _, O = false),
+           V @< Value ->  O = true; O = false ),
+           Error,
+           ( error_code(Error, O),
+             mydebug(string_less_than(catch), (Error, O)),
+             throw((O, 500))
+           )),
     mydebug(string_less_than(out), (Variable, Value, I, O)).
 
 string_less_than_equals(Variable, Value, I, O, E, E) :-
     mydebug(string_less_than_equals(in), (Variable, Value, I, O)),
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
-           V @=< Value ->  O = true; O = false ), _, O = false),
+           V @=< Value ->  O = true; O = false ),
+           Error,
+           ( error_code(Error, O),
+             mydebug(string_less_than_equals(catch), (Error, O)),
+             throw((O, 500))
+           )),
     mydebug(string_less_than_equals(out), (Variable, Value, I, O)).
 
 timestamp_equals(Variable, Value, I, O, E, E) :-
@@ -579,7 +634,12 @@ timestamp_equals(Variable, Value, I, O, E, E) :-
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            parse_time(V, VariableStamp),
            parse_time(Value, ValueStamp),
-           VariableStamp =:= ValueStamp ->  O = true; O = false ), _, O = false),
+           VariableStamp =:= ValueStamp ->  O = true; O = false ),
+           Error,
+           ( error_code(Error, O),
+             mydebug(timestamp_equals(catch), (Error, O)),
+             throw((O, 500))
+           )),
     mydebug(timestamp_equals(out), (Variable, Value, I, O)).
 
 timestamp_greater_than(Variable, Value, I, O, E, E) :-
@@ -587,7 +647,12 @@ timestamp_greater_than(Variable, Value, I, O, E, E) :-
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            parse_time(V, VariableStamp),
            parse_time(Value, ValueStamp),
-           VariableStamp > ValueStamp ->  O = true; O = false ), _, O = false),
+           VariableStamp > ValueStamp ->  O = true; O = false ),
+           Error,
+           ( error_code(Error, O),
+             mydebug(timestamp_greater_than(catch), (Error, O)),
+             throw((O, 500))
+           )),
     mydebug(timestamp_greater_than(out), (Variable, Value, I, O)).
 
 timestamp_greater_than_equals(Variable, Value, I, O, E, E) :-
@@ -595,7 +660,12 @@ timestamp_greater_than_equals(Variable, Value, I, O, E, E) :-
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            parse_time(V, VariableStamp),
            parse_time(Value, ValueStamp),
-           VariableStamp >= ValueStamp ->  O = true; O = false ), _, O = false),
+           VariableStamp >= ValueStamp ->  O = true; O = false ),
+           Error,
+           ( error_code(Error, O),
+             mydebug(timestamp_greater_than_equals(catch), (Error, O)),
+             throw((O, 500))
+           )),
     mydebug(timestamp_greater_than_equals(out), (Variable, Value, I, O)).
 
 timestamp_less_than(Variable, Value, I, O, E, E) :-
@@ -603,7 +673,12 @@ timestamp_less_than(Variable, Value, I, O, E, E) :-
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            parse_time(V, VariableStamp),
            parse_time(Value, ValueStamp),
-           VariableStamp < ValueStamp ->  O = true; O = false ), _, O = false),
+           VariableStamp < ValueStamp ->  O = true; O = false ),
+           Error,
+           ( error_code(Error, O),
+             mydebug(timestamp_less_than(catch), (Error, O)),
+             throw((O, 500))
+           )),
     mydebug(timestamp_less_than(out), (Variable, Value, I, O)).
 
 timestamp_less_than_equals(Variable, Value, I, O, E, E) :-
@@ -611,7 +686,12 @@ timestamp_less_than_equals(Variable, Value, I, O, E, E) :-
     catch((json_utils:json_path_value(Variable, I, _K, _R, V),
            parse_time(V, VariableStamp),
            parse_time(Value, ValueStamp),
-           VariableStamp =< ValueStamp ->  O = true; O = false ), _, O = false),
+           VariableStamp =< ValueStamp ->  O = true; O = false ),
+           Error,
+           ( error_code(Error, O),
+             mydebug(timestamp_less_than_equals(catch), (Error, O)),
+             throw((O, 500))
+           )),
     mydebug(timestamp_less_than_equals(out), (Variable, Value, I, O)).
 
 %% Input and Output Processing
@@ -693,16 +773,18 @@ error_code(Error, O) :-
     Error = error(permission_error(Type, Term), context(_, Status)), !,
     mydebug(error_code(permission(in)), (Status, O)),
     print_message(error, Error),
-    term_to_atom(type_error(Type, Term), Atom),
+    term_to_atom(permission_error(Type, Term), Atom),
     O = _{error: "States.Permissions", cause: Atom},
     mydebug(error_code(permission(out)), (Status, O)).
 
 error_code(Error, O) :-
-    Error = error(existence_error(Type, Term), context(_, Status)), !,
+    ( Error = error(existence_error(Type, Term, _), context(_, Status))
+    ; Error = error(existence_error(Type, Term), context(_, Status))
+    ), !,
     mydebug(error_code(existence_error(in)), (Status, O)),
     print_message(error, Error),
-    term_to_atom(type_error(Type, Term), Atom),
-    O = _{error: "States.TaskFailed", cause: Atom},
+    term_to_atom(existence_error(Type, Term), Atom),
+    O = _{error: "States.Runtime", cause: Atom},
     mydebug(error_code(existence_error(out)), (Status, O)).
 
 error_code(Error, O) :-
@@ -717,6 +799,7 @@ error_code(heartbeat_kill, _) :-
     print_message(warning, format('caught heartbeat_kill message', [])).
 
 error_code(Error, _{error: Error}) :-
+    mydebug(error_code(default(in)), Error),
     print_message(error, Error).
 
 %%
