@@ -76,5 +76,6 @@ faas:invoke(FRN, Options, Payload, Reply) :-
     option(status_code(Code), MergedOptions),
     ( Code = 200
       -> json_utils:term_json_dict(R1, Reply)
-      ;  Reply = _{error: R1, cause: status_code(Code)}
+      ;  Reply = _{error: R1, cause: status_code(Code)},
+         throw(Reply)
     ).

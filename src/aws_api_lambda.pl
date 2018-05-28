@@ -73,7 +73,8 @@ custom_error(In, Out) :-
     json_utils:term_json_dict(In, O1),
     ( _{errorMessage: _ErrorMessage, errorType: ErrorType,
         stackTrace: _StackTrace } :< O1
-      -> Out = _{error: ErrorType, cause: O1}
+      -> Out = _{error: ErrorType, cause: O1},
+         throw(Out)
       ;  Out = O1
     ).
 

@@ -96,7 +96,8 @@ faas:invoke(FRN, Options, Payload, Reply) :-
              split_string(Error, ":", " ", [_, ErrorType, ErrorMessage]) )
            -> Reply = _{error: ErrorType, cause: ErrorMessage}
            ;  Reply = _{error: Error}
-         )
+         ),
+         throw(Reply)
       ;  Reply = D1
     ).
 

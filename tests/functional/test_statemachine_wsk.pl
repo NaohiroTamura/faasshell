@@ -445,7 +445,7 @@ test(put_overwrite_true, Code = 200) :-
     assertion(_{output: "ok", name: "catch_failure.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
 
-test(custom_error, Code = 200) :-
+test(custom_error, Code = 500) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/catch_failure.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{}}),
@@ -453,10 +453,9 @@ test(custom_error, Code = 200) :-
               [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
                status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{asl: _, dsl: _, input: _{}, name: _, namespace: _,
-                output: "This is a fallback from a custom lambda function exception"} :< Dict).
+    assertion(_{error:"CustomError", cause:"This is a custom error!"} :< Dict).
 
-test(reserved_type, Code = 200) :-
+test(reserved_type, Code = 500) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/catch_failure.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{error: "new Error('Created dynamically!')"}}),
@@ -464,9 +463,7 @@ test(reserved_type, Code = 200) :-
               [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
                status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{asl: _, dsl: _,  name: _, namespace: _,
-                input: _{error: "new Error('Created dynamically!')"},
-                output: "This is a fallback from a reserved error code"} :< Dict).
+    assertion(_{error:"Error", cause:"Created dynamically!"} :< Dict).
 
 :- end_tests(catch_failure).
 
@@ -485,7 +482,7 @@ test(put_overwrite_true, Code = 200) :-
     assertion(_{output: "ok", name: "retry_failure.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
 
-test(custom_error, Code = 200) :-
+test(custom_error, Code = 500) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/retry_failure.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{}}),
@@ -493,10 +490,9 @@ test(custom_error, Code = 200) :-
               [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
                status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{asl: _, dsl: _, input: _{}, name: _, namespace: _,
-                output: _{error: "CustomError"}} :< Dict).
+    assertion(_{error:"CustomError", cause:"This is a custom error!"} :< Dict).
 
-test(reserved_type, Code = 200) :-
+test(reserved_type, Code = 500) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/retry_failure.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{error: "new Error('Created dynamically!')"}}),
@@ -504,9 +500,7 @@ test(reserved_type, Code = 200) :-
               [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
                status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{asl: _, dsl: _,  name: _, namespace: _,
-                input: _{error: "new Error('Created dynamically!')"},
-                output: _{error: "Error"}} :< Dict).
+    assertion(_{error:"Error", cause:"Created dynamically!"} :< Dict).
 
 :- end_tests(retry_failure).
 
@@ -537,7 +531,7 @@ test(succeeded, Code = 200) :-
                 input: _{timer_seconds:1, status: "Sent"},
                 output: _{timer_seconds:1, status: "Sent"}} :< Dict).
 
-test(failed, Code = 200) :-
+test(failed, Code = 500) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/task_timer.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{timer_seconds:1, status:"ERROR"}}),
@@ -545,10 +539,8 @@ test(failed, Code = 200) :-
               [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
                status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{asl: _, dsl: _,  name: _, namespace: _,
-                input: _{timer_seconds:1, status:"ERROR"},
-                %% OpenWhisk Invoker / Python Runtime Issue
-                %% output: _{error: "Exception"}} :< Dict).
-                output: _{error: "The action did not return a dictionary."}} :< Dict).
+    %% OpenWhisk Invoker / Python Runtime Issue
+    %% output: _{error: "Exception"}} :< Dict).
+    assertion(_{error:"The action did not return a dictionary."} :< Dict).
 
 :- end_tests(task_timer).

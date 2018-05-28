@@ -196,8 +196,9 @@ task_execute(Action, Optional, I, O, E, E) :-
                 faas:invoke(Action, ApiEnv, I, O)
            ),
            Error,
-           ( mydebug(task_execute(catch), Error),
-             error_code(Error, O)
+           ( error_code(Error, O),
+             mydebug(task_execute(catch), Error),
+             throw((O, 500))
            )
          ),
     mydebug(task_execute(out), (I, O)).
@@ -772,7 +773,7 @@ error_code(heartbeat_timeout, _{error: "States.Timeout",
 error_code(Error, O) :-
     Error = error(permission_error(Type, Term), context(_, Status)), !,
     mydebug(error_code(permission(in)), (Status, O)),
-    print_message(error, Error),
+    %% print_message(error, Error),
     term_to_atom(permission_error(Type, Term), Atom),
     O = _{error: "States.Permissions", cause: Atom},
     mydebug(error_code(permission(out)), (Status, O)).
@@ -782,7 +783,7 @@ error_code(Error, O) :-
     ; Error = error(existence_error(Type, Term), context(_, Status))
     ), !,
     mydebug(error_code(existence_error(in)), (Status, O)),
-    print_message(error, Error),
+    %% print_message(error, Error),
     term_to_atom(existence_error(Type, Term), Atom),
     O = _{error: "States.Runtime", cause: Atom},
     mydebug(error_code(existence_error(out)), (Status, O)).
@@ -790,7 +791,7 @@ error_code(Error, O) :-
 error_code(Error, O) :-
     Error = error(type_error(Type, Term), context(_, Status)), !,
     mydebug(error_code(type_error(in)), (Status, O)),
-    print_message(error, Error),
+    %% print_message(error, Error),
     term_to_atom(type_error(Type, Term), Atom),
     O = _{error: "States.Runtime", cause: Atom},
     mydebug(error_code(type_error(out)), (Status, O)).
@@ -798,9 +799,15 @@ error_code(Error, O) :-
 error_code(heartbeat_kill, _) :-
     print_message(warning, format('caught heartbeat_kill message', [])).
 
+error_code(Error, Error) :-
+    _{error: _ } :< Error, !,
+    %% print_message(error, Error),
+    mydebug(error_code(contents(in)), Error).
+
 error_code(Error, _{error: Error}) :-
-    mydebug(error_code(default(in)), Error),
-    print_message(error, Error).
+    %% print_message(error, Error),
+    mydebug(error_code(default(in)), Error).
+
 
 %%
 %% misc.

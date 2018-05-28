@@ -95,46 +95,57 @@ test(nodejs, Code = 200) :-
     personal(Region, Account),
     atomic_list_concat([arn, aws, lambda, Region, Account, function, error],
                        ':', ARN),
-    aws_api_lambda:faas:invoke(ARN, [status_code(Code)], _{}, R),
+    catch(aws_api_lambda:faas:invoke(ARN, [status_code(Code)], _{}, _R),
+          Error,
+          true),
 
-    assertion(R = _{error: "CustomError",
-                    cause: _{errorMessage: "This is a custom error!",
-                             errorType: "CustomError",
-                             stackTrace: _ }}).
+    assertion(Error = _{error: "CustomError",
+                        cause: _{errorMessage: "This is a custom error!",
+                                 errorType: "CustomError",
+                                 stackTrace: _ }}).
 
 test(nodejs_dynamic, Code = 200) :-
     personal(Region, Account),
     atomic_list_concat([arn, aws, lambda, Region, Account, function, error],
                        ':', ARN),
-    aws_api_lambda:faas:invoke(ARN, [status_code(Code)],
-                               _{error: "new Error('Created dynamically!')"}, R),
+    catch(aws_api_lambda:faas:invoke(ARN, [status_code(Code)],
+                                     _{error: "new Error('Created dynamically!')"},
+                                     _R),
+          Error,
+          true
+         ),
 
-    assertion(R = _{error: "Error",
-                    cause: _{errorMessage: "Created dynamically!",
-                             errorType: "Error",
-                             stackTrace: _ }}).
+    assertion(Error = _{error: "Error",
+                        cause: _{errorMessage: "Created dynamically!",
+                                 errorType: "Error",
+                                 stackTrace: _ }}).
 
 test(python, Code = 200) :-
     personal(Region, Account),
     atomic_list_concat([arn, aws, lambda, Region, Account, function, raise],
                        ':', ARN),
-    aws_api_lambda:faas:invoke(ARN, [status_code(Code)], _{}, R),
+    catch(aws_api_lambda:faas:invoke(ARN, [status_code(Code)], _{}, _R),
+          Error,
+          true),
 
-    assertion(R = _{error: "CustomError",
-                    cause: _{errorMessage: "This is a custom error!",
-                             errorType: "CustomError",
-                             stackTrace: _ }}).
+    assertion(Error = _{error: "CustomError",
+                        cause: _{errorMessage: "This is a custom error!",
+                                 errorType: "CustomError",
+                                 stackTrace: _ }}).
 
-test(python_dynamic, Code = 200) :-
+test(python_dynamic, Code = 500) :-
     personal(Region, Account),
     atomic_list_concat([arn, aws, lambda, Region, Account, function, raise],
                        ':', ARN),
-    aws_api_lambda:faas:invoke(ARN, [status_code(Code)],
-                               _{error: "AssertionError('Created dynamically!')"}, R),
+    catch(aws_api_lambda:faas:invoke(ARN, [status_code(Code)],
+                                     _{error: "AssertionError('Created dynamically!')"},
+                                     _R),
+          Error,
+          true),
 
-    assertion(R = _{error: "AssertionError",
-                    cause: _{errorMessage: "Created dynamically!",
-                             errorType: "AssertionError",
-                             stackTrace: _ }}).
+    assertion(Error = _{error: "AssertionError",
+                        cause: _{errorMessage: "Created dynamically!",
+                                 errorType: "AssertionError",
+                                 stackTrace: _ }}).
 
 :- end_tests(custom_error).

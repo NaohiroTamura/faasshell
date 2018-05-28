@@ -102,26 +102,40 @@ test(scenarios) :-
                ]).
 
 test(nodejs, Code = 502) :-
-    wsk_api_actions:faas:invoke('frn:wsk:functions:::function:error', [status_code(Code)], _{}, R),
-    assertion(R = _{cause:"This is a custom error!",error:"CustomError"}).
+    catch(wsk_api_actions:faas:invoke('frn:wsk:functions:::function:error',
+                                      [status_code(Code)], _{}, _R),
+          Error,
+          true),
+    assertion(Error = _{cause:"This is a custom error!",error:"CustomError"}).
 
 test(nodejs_dynamic, Code = 502) :-
-    wsk_api_actions:faas:invoke('frn:wsk:functions:::function:error', [status_code(Code)],
-                                _{error: "new Error('Created dynamically!')"}, R),
-    assertion(R = _{cause:"Created dynamically!",error:"Error"}).
+    catch(wsk_api_actions:faas:invoke('frn:wsk:functions:::function:error',
+                                      [status_code(Code)],
+                                      _{error: "new Error('Created dynamically!')"},
+                                      _R),
+          Error,
+          true),
+    assertion(Error = _{cause:"Created dynamically!",error:"Error"}).
 
 test(python, Code = 502) :-
-    wsk_api_actions:faas:invoke('frn:wsk:functions:::function:raise', [status_code(Code)], _{}, R),
+    catch(wsk_api_actions:faas:invoke('frn:wsk:functions:::function:raise',
+                                      [status_code(Code)], _{}, _R),
+          Error,
+          true),
     %% OpenWhisk Python Runtime Issue
-    %% assertion(R = _{error:"An error has occurred: CustomError: This is a custom error!"}).
-    assertion(R = _{error:"The action did not return a dictionary."}).
+    %% assertion(Error = _{error:"An error has occurred: CustomError: This is a custom error!"}).
+    assertion(Error = _{error:"The action did not return a dictionary."}).
 
 test(python_dynamic, Code = 502) :-
-    wsk_api_actions:faas:invoke('frn:wsk:functions:::function:raise', [status_code(Code)],
-                                _{error: "AssertionError('Created dynamically!')"}, R),
+    catch(wsk_api_actions:faas:invoke('frn:wsk:functions:::function:raise',
+                                      [status_code(Code)],
+                                      _{error: "AssertionError('Created dynamically!')"},
+                                      _R),
+          Error,
+          true),
     %% OpenWhisk Python Runtime Issue
-    %% assertion(R = _{error:"An error has occurred: AssertionError: Created dynamically!"}).
-    assertion(R = _{error:"The action did not return a dictionary."}).
+    %% assertion(Error = _{error:"An error has occurred: AssertionError: Created dynamically!"}).
+    assertion(Error = _{error:"The action did not return a dictionary."}).
 
 /* requires openwhisk-runtime-prolog which implemented AWS Lambda compatible
    CustomError handling */

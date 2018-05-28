@@ -396,10 +396,12 @@ test(succeeded, Code = 200) :-
     assertion(O = _{timer_seconds:1, status: "Sent"}).
 
 test(failed, Code = 502 ) :-
-    start('samples/wsk/dsl/task_timer.dsl', [status_code(Code)],
-          _{timer_seconds:1, status:"ERROR"}, O, _{}, _),
+    catch(start('samples/wsk/dsl/task_timer.dsl', [status_code(Code)],
+                _{timer_seconds:1, status:"ERROR"}, _O, _{}, _),
+          Error,
+          true),
     %% OpenWhisk Invoker / Python Runtime Issue regarding exception handling
-    assertion(O = _{error:"The action did not return a dictionary."}).
+    assertion(Error = (_{error:"The action did not return a dictionary."}, 500)).
 
 :- end_tests(task_timer).
 
@@ -433,9 +435,11 @@ test(activity_task_dsl_success, Status = true) :-
 test(activity_task_dsl_failure, Status = true) :-
     message_queue_create(MQueue),
     thread_create(
-            ( start('samples/common/dsl/activity_task.dsl',
-                    [], _{comment: "failure test"}, O, _{}, _),
-              thread_send_message(MQueue, test_result(O))
+            ( catch(start('samples/common/dsl/activity_task.dsl',
+                          [], _{comment: "failure test"}, _O, _{}, _),
+                    Error,
+                    true),
+              thread_send_message(MQueue, test_result(Error))
             ),
             Id),
     Activity = "frn::states:::activity:test",
@@ -455,13 +459,16 @@ test(activity_task_dsl_failure, Status = true) :-
     mq_utils:activity_end(Activity, TaskToken, failure, OutputText),
 
     thread_join(Id, Status),
-    thread_get_message(MQueue, test_result(O)),
-    assertion(O = _{error: "existence_error", cause: "key 'name' doesn't exist"}).
+    thread_get_message(MQueue, test_result(Error)),
+    assertion(Error = _{error: "existence_error",
+                        cause: "key 'name' doesn't exist"}).
 
 test(activity_task_timeout_dsl) :-
-    start('samples/common/dsl/activity_task_timeout.dsl', [],
-          _{name: "Activity Timeout"}, O, _{}, _),
-    assertion(O = _{error:"States.Timeout"}).
+    catch(start('samples/common/dsl/activity_task_timeout.dsl', [],
+                _{name: "Activity Timeout"}, _O, _{}, _),
+          Error,
+          true),
+    assertion(Error = (_{error:"States.Timeout"}, 500)).
 
 test(activity_task_heartbeat_dsl_success, Status = true) :-
     message_queue_create(MQueue),

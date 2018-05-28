@@ -60,11 +60,13 @@ test(hello_arg, (Code, R) = (200, _{payload:"Hello, GCP!"})) :-
     gcp_api_functions:faas:invoke(FRN, [status_code(Code)], _{name: "GCP"}, R).
 
 %% should not be error such as AWS, Azure
-test(hello_badarg, (Code, R) = (400, _{cause:status_code(400),
-                                    error:'Bad Request\n'})) :-
+test(hello_badarg, (Code, Error) = (400, _{cause:status_code(400),
+                                           error:'Bad Request\n'})) :-
     personal(Location, Project),
     atomic_list_concat([frn, gcp, functions, Location, Project, function, hello],
                        ':', FRN),
-    gcp_api_functions:faas:invoke(FRN, [status_code(Code)], '', R).
+    catch(gcp_api_functions:faas:invoke(FRN, [status_code(Code)], '', _R),
+          Error,
+          true).
 
 :- end_tests(invoke).
