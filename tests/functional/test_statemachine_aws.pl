@@ -359,7 +359,7 @@ test(put_overwrite_true, Code = 200) :-
     assertion(_{output: "ok", name: "catch_failure.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
 
-test(custom_error, Code = 500) :-
+test(custom_error, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/catch_failure.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{}}),
@@ -367,12 +367,10 @@ test(custom_error, Code = 500) :-
               [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
                status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{error:"CustomError",
-                cause:_{errorMessage:"This is a custom error!",
-                        errorType:"CustomError",
-                        stackTrace:_}} :< Dict).
+    assertion(_{asl: _, dsl: _, input: _{}, name: _, namespace: _,
+                output: "This is a fallback from a custom lambda function exception"} :< Dict).
 
-test(reserved_type, Code = 500) :-
+test(reserved_type, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/catch_failure.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{error: "new Error('Created dynamically!')"}}),
@@ -380,10 +378,9 @@ test(reserved_type, Code = 500) :-
               [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
                status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{error:"Error",
-                cause:_{errorMessage:"Created dynamically!",
-                        errorType:"Error",
-                        stackTrace:_}} :< Dict).
+    assertion(_{asl: _, dsl: _,  name: _, namespace: _,
+                input: _{error: "new Error('Created dynamically!')"},
+                output: "This is a fallback from a reserved error code"} :< Dict).
 
 :- end_tests(catch_failure).
 
@@ -402,7 +399,7 @@ test(put_overwrite_true, Code = 200) :-
     assertion(_{output: "ok", name: "retry_failure.json",
                 namespace: "demo", dsl: _, asl: _} = Dict).
 
-test(custom_error, Code = 500) :-
+test(custom_error, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/retry_failure.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{}}),
@@ -410,12 +407,10 @@ test(custom_error, Code = 500) :-
               [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
                status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{error: "CustomError",
-                cause: _{errorMessage:"This is a custom error!",
-                         errorType:"CustomError",
-                         stackTrace:_}} :< Dict).
+    assertion(_{asl: _, dsl: _, input: _{}, name: _, namespace: _,
+                output: _{error: "CustomError"}} :< Dict).
 
-test(reserved_type, Code = 500) :-
+test(reserved_type, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/retry_failure.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{error: "new Error('Created dynamically!')"}}),
@@ -423,10 +418,9 @@ test(reserved_type, Code = 500) :-
               [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
                status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{error:"Error",
-                cause:_{errorMessage:"Created dynamically!",
-                        errorType:"Error",
-                        stackTrace:_}} :< Dict).
+    assertion(_{asl: _, dsl: _,  name: _, namespace: _,
+                input: _{error: "new Error('Created dynamically!')"},
+                output: _{error: "Error"}} :< Dict).
 
 :- end_tests(retry_failure).
 
@@ -457,7 +451,7 @@ test(succeeded, Code = 200) :-
                 input: _{timer_seconds:1, status: "Sent"},
                 output: _{timer_seconds:1, status: "Sent"}} :< Dict).
 
-test(failed, Code = 500) :-
+test(failed, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/statemachine/task_timer.json?blocking=true', URL),
     term_json_dict(Json, _{input: _{timer_seconds:1, status:"ERROR"}}),
@@ -465,9 +459,8 @@ test(failed, Code = 500) :-
               [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
                status_code(Code)]),
     term_json_dict(Data, Dict),
-    assertion(_{error: "Exception",
-                cause: _{errorMessage:"This is an error",
-                         errorType:"Exception",
-                         stackTrace:_}} :< Dict).
+    assertion(_{asl: _, dsl: _,  name: _, namespace: _,
+                input: _{timer_seconds:1, status:"ERROR"},
+                output: _{error: "Exception"}} :< Dict).
 
 :- end_tests(task_timer).

@@ -112,15 +112,19 @@ pass(State, Optional, I, O, E, E) :-
 task(State, Action, Optional, I, O, E, E) :-
     mydebug(task(in), (State, Action, Optional, I, O)),
     process_input(I, I1, Optional),
-    task_execute(Action, Optional, I1, M1, E, E),
-    ( option(retry(R), Optional), is_dict(M1), get_dict(error, M1, Error1)
-      -> retry(task_execute(Action, Optional, I1), R, Error1, M2, E, E)
-      ;  M2 = M1
-    ),
-    ( option(catch(F), Optional), is_dict(M2), get_dict(error, M2, Error2)
-      -> catch(State, F, Error2, M3, E, E)
-      ;  M3 = M2
-    ),
+    catch( task_execute(Action, Optional, I1, M3, E, E),
+           M1, %% Error
+           ( mydebug(task(catch), M1),
+             ( option(retry(R), Optional), is_dict(M1), get_dict(error, M1, Error1)
+               -> retry(task_execute(Action, Optional, I1), R, Error1, M2, E, E)
+               ;  M2 = M1
+             ),
+             ( option(catch(F), Optional), is_dict(M2), get_dict(error, M2, Error2)
+               -> catch(State, F, Error2, M3, E, E)
+               ;  M3 = M2
+             )
+           )
+         ),
     process_output(I, M3, O, Optional),
     mydebug(task(out), (I, O)).
 
@@ -180,27 +184,21 @@ activity_task(Action, Optional, I, O, E, E) :-
 
 task_execute(Action, Optional, I, O, E, E) :-
     mydebug(task_execute(in), (I, O)),
-    catch( ( atomic_list_concat([_, _, states, _, _, activity, _], ':', Action)
-             -> %% process activity
-                %% ASL spec defines the default timeout value is 99999999
-                option(timeout_seconds(TimeoutSeconds), Optional, 99999999),
-                mydebug(task_execute(activity), timeout_seconds(TimeoutSeconds)),
-                call_with_time_limit(TimeoutSeconds,
-                                     activity_task(Action, Optional, I, O, E, E))
-             ;  %% process function, call faas plugin
-                %% http_open causes the following error if timeout is 99999999
-                %% "SSL(SSL_eof) negotiate: Unexpected end-of-file".
-                option(timeout_seconds(TimeoutSeconds), Optional, infinite),
-                mydebug(task_execute(function), timeout_seconds(TimeoutSeconds)),
-                ApiEnv = [timeout(TimeoutSeconds) | E.faas],
-                faas:invoke(Action, ApiEnv, I, O)
-           ),
-           Error,
-           ( error_code(Error, O),
-             mydebug(task_execute(catch), Error),
-             throw((O, 500))
-           )
-         ),
+    ( atomic_list_concat([_, _, states, _, _, activity, _], ':', Action)
+      -> %% process activity
+         %% ASL spec defines the default timeout value is 99999999
+         option(timeout_seconds(TimeoutSeconds), Optional, 99999999),
+         mydebug(task_execute(activity), timeout_seconds(TimeoutSeconds)),
+         call_with_time_limit(TimeoutSeconds,
+                              activity_task(Action, Optional, I, O, E, E))
+      ;  %% process function, call faas plugin
+         %% http_open causes the following error if timeout is 99999999
+         %% "SSL(SSL_eof) negotiate: Unexpected end-of-file".
+         option(timeout_seconds(TimeoutSeconds), Optional, infinite),
+         mydebug(task_execute(function), timeout_seconds(TimeoutSeconds)),
+         ApiEnv = [timeout(TimeoutSeconds) | E.faas],
+         faas:invoke(Action, ApiEnv, I, O)
+    ),
     mydebug(task_execute(out), (I, O)).
 
 retry(_PartialFunc, [], O, O, E, E) :-
@@ -226,12 +224,15 @@ retry(PartialFunc, [case(Cond, Params)|Cases], I, O, E, E) :-
            ( CurrentAttempt < MaxAttempts
              -> NewAttempt is CurrentAttempt + 1,
                 merge_options([current_attempt(NewAttempt)], Params, NewParams),
-                call(PartialFunc, M1, E, E),
-                ( _{error: Err} :< M1 
-                  -> mydebug(task(retry(again)), new_optional(NewParams)),
-                     retry(PartialFunc, [case(Cond, NewParams)|Cases], Err, O, E, E)
-                  ;  retry(PartialFunc, [], M1, O, E, E)
-                )
+                catch(call(PartialFunc, O, E, E),
+                      M1,
+                      ( _{error: Err} :< M1
+                        -> mydebug(task(retry(again)), new_optional(NewParams)),
+                           retry(PartialFunc, [case(Cond, NewParams)|Cases],
+                                 Err, O, E, E)
+                        ;  retry(PartialFunc, [], M1, O, E, E)
+                      )
+                     )
              ; retry(PartialFunc, [], _{error:I}, O, E, E)
            )
         ;  mydebug(task(retry(false)), (case(Cond), I, O)),
@@ -346,52 +347,45 @@ fail(State, Optional, I, O, E, E) :-
 parallel(State, branches(Branches), Optional, I, O, EI, EO) :-
     mydebug(parallel(in), (State, Optional, I, O)),
     process_input(I, I1, Optional),
-    parallel_execute(Branches, I1, M1, EI, E1),
-    ( option(retry(R), Optional), is_dict(M1), get_dict(error, M1, Error1)
-      -> retry(parallel_execute(Branches, I), R, Error1, M2, E1, E2)
-      ;  M2 = M1, E2 = E1
-    ),
-    ( option(catch(F), Optional), is_dict(M2), get_dict(error, M2, Error2)
-      -> catch(State, F, Error2, M3, E2, EO)
-      ;  M3 = M2, EO = E2
-    ),
+    catch( parallel_execute(Branches, I1, M3, EI, EO),
+           M1, %% Error
+           ( mydebug(parallel(catch), M1),
+             ( option(retry(R), Optional), is_dict(M1), get_dict(error, M1, Error1)
+               -> retry(parallel_execute(Branches, I), R, Error1, M2, E1, E2)
+               ;  M2 = M1, E2 = E1
+             ),
+             ( option(catch(F), Optional), is_dict(M2), get_dict(error, M2, Error2)
+               -> catch(State, F, Error2, M3, E2, EO)
+               ;  M3 = M2, EO = E2
+             )
+           )
+         ),
     process_output(I, M3, O, Optional),
     mydebug(parallel(out), (State, I, O)).
 
 parallel_execute(Branches, I, O, E, E) :-
     mydebug(parallel_execute(in), (I, O)),
-    catch( ( %% create logical variable for each branch.
-             %% Args has to be in the form of [(I,M1,E,E),(I,M2,E,E),(I,M3,E,E),...]
-             %% and M1,M2,M3... have to be non ground.
-             length(Branches, BL),
-             length(LogVars, BL),
-             length(IE, BL),
-             maplist(=((I,E,E)), IE),
-             maplist([M,(I,E,E),(I,M,E,E)]>>true, LogVars, IE, Args),
-             mydebug(parallel(args), (Args, O)),
-             ( concurrent_maplist(branch_execute, Branches, Args, Results)
-               -> mydebug(parallel_execute(result), Results)
-               ;  mydebug(parallel_execute(result), failed(Results)),
-                  throw(parallel_execute(concurrent_maplist, false))
-             ),
-             maplist([(_A,B,_C,_D),B]>>true, Results, O), %% O is list
-             mydebug(parallel_execute(out), O)
-           ),
-           Error,
-           ( mydebug(parallel(catch), Error),
-             error_code(Error, O)
-           )
-        ),
+    %% create logical variable for each branch.
+    %% Args has to be in the form of [(I,M1,E,E),(I,M2,E,E),(I,M3,E,E),...]
+    %% and M1,M2,M3... have to be non ground.
+    length(Branches, BL),
+    length(LogVars, BL),
+    length(IE, BL),
+    maplist(=((I,E,E)), IE),
+    maplist([M,(I,E,E),(I,M,E,E)]>>true, LogVars, IE, Args),
+    mydebug(parallel(args), (Args, O)),
+    ( concurrent_maplist(branch_execute, Branches, Args, Results)
+      -> mydebug(parallel_execute(result), Results)
+      ;  mydebug(parallel_execute(result), failed(Results)),
+         throw(parallel_execute(concurrent_maplist, false))
+    ),
+    maplist([(_A,B,_C,_D),B]>>true, Results, O), %% O is list
     mydebug(parallel_execute(out), (I, O)).
 
 branch_execute(Branch, (I, O, E, E), (I, O, E, E)) :-
     mydebug(branch_execute(in), (I,O)),
     reduce(Branch, I, O, E, E),
-    ( is_dict(O), get_dict(error, O, Error)
-      -> mydebug(branch_execute(error), Error),
-         throw(Error)
-      ;  mydebug(branch_execute(out), (I,O))
-    ).
+    mydebug(branch_execute(out), (I,O)).
 
 %% event state
 event(State, Event, Optional, I, O, E, E) :-
