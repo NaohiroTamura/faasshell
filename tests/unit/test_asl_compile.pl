@@ -102,19 +102,19 @@ test(wait_with_resultpath) :-
 
 test(hello) :-
     main('samples/common/asl/event_state.json', D, G),
-    assertion(D = fsm([event('HelloWorld', "frn::states:::event:test", [])])),
+    assertion(D = fsm([event('HelloWorld', "frn::states:::event:test", []), end])),
     assertion(G = ['Start'>'HelloWorld', 'HelloWorld'>'End']).
 
 test(hello_option) :-
     main('samples/common/asl/event_state_option.json', D, G),
     assertion(D = fsm([event('HelloWorld', "frn::states:::event:test",
-                             [timeout_seconds(5)])])),
+                             [timeout_seconds(5)]), end])),
     assertion(G = ['Start'>'HelloWorld', 'HelloWorld'>'End']).
 
 test(hello_next) :-
     main('samples/common/asl/event_state_next.json', D, G),
     assertion(D = fsm([event('HelloWorld', "frn::states:::event:test",
-                             [timeout_seconds(5)]), pass('Final State', [])])),
+                             [timeout_seconds(5)]), pass('Final State', []), end])),
     assertion(G = ['Start'>'HelloWorld', 'HelloWorld'>'Final State',
                    'Final State'>'End']).
 

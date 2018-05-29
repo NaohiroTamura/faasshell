@@ -7,6 +7,16 @@
             "InputPath": "$.forward",
             "ResultPath": "$.forward",
             "Resource": "frn:wsk:functions:::function:myTranslator/translator",
+            "Catch": [
+                {
+                    "ErrorEquals": ["States.Runtime"],
+                    "Next": "ReservedTypeFallback"
+                },
+                {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "CatchAllFallback"
+                }
+            ],
             "Next": "UpdateArg"
         },
         "UpdateArg": {
@@ -20,6 +30,17 @@
             "InputPath": "$.backward",
             "ResultPath": "$.backward",
             "Resource": "frn:wsk:functions:::function:myTranslator/translator",
+            "End": true
+        },
+        "ReservedTypeFallback": {
+            "Type": "Pass",
+            "ResultPath": "$.output",
+            "Result": "This is a fallback from a reserved error code",
+            "End": true
+        },
+        "CatchAllFallback": {
+            "Type": "Pass",
+            "Result": "This is a fallback from any error code",
             "End": true
         }
     }

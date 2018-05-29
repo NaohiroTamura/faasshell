@@ -94,7 +94,7 @@ parse(Asl, fsm(Dsl), Graph, Path) :-
 parse(States, StateKey, Dsl, Graph, _Path) :-
     _{'Type':"Pass", 'End':true} :<States.StateKey,
     pass_optional(States.StateKey, Optional),
-    Dsl = [pass(StateKey, Optional)],
+    Dsl = [pass(StateKey, Optional), end],
     Graph = [StateKey>'End'].
 
 parse(States, StateKey, Dsl, Graph, Path) :-
@@ -118,7 +118,7 @@ parse(States, StateKey, Dsl, Graph, Path) :-
 parse(States, StateKey, Dsl, [StateKey>'End' | Graph], Path) :-
     _{'Type':"Task", 'Resource':Resource, 'End':true} :< States.StateKey,
     task_optional(States, StateKey, Optional, Graph, Path),
-    Dsl = [task(StateKey, Resource, Optional)].
+    Dsl = [task(StateKey, Resource, Optional), end].
     
 %% Choice State
 parse(States, StateKey, Dsl, Graph, Path) :-
@@ -138,7 +138,7 @@ parse(States, StateKey, Dsl, Graph, Path) :-
                Dsl, Graph, Path).
 
 %% Should Wait State with End be error?
-parse(States, StateKey, [wait(StateKey, Wait, Optional)],
+parse(States, StateKey, [wait(StateKey, Wait, Optional), end],
                         [StateKey>'End'], _Path) :-
     _{'Type':"Wait", 'End':true} :< States.StateKey,
     wait_required(States.StateKey, Wait, Optional).
@@ -173,14 +173,14 @@ parse(States, StateKey,  Dsl, Graph, Path) :-
     _{'Type':"Parallel",'Branches':Branches,'End':true} :< States.StateKey,
     branches(States, StateKey, Branches, D1, G1, Path),
     task_optional(States, StateKey, Optional, G2, Path),
-    Dsl = [parallel(StateKey, branches(D1), Optional)],
+    Dsl = [parallel(StateKey, branches(D1), Optional), end],
     flatten([[StateKey>'End'], G1, G2], Graph).
 
 %% Event State
 parse(States, StateKey, Dsl, Graph, _Path) :-
     _{'Type':"Event", 'Resource':Resource, 'End':true} :<States.StateKey,
     event_optional(States.StateKey, Optional),
-    Dsl = [event(StateKey, Resource, Optional)],
+    Dsl = [event(StateKey, Resource, Optional), end],
     Graph = [StateKey>'End'].
 
 parse(States, StateKey, Dsl, Graph, Path) :-
