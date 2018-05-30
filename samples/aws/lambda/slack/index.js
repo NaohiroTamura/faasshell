@@ -4,7 +4,7 @@ var request = require('request');
 
 exports.handler = (event, context, callback) => {
     let payload = {
-        channel: event.channel,
+        channel: event.channel || process.env.SLACK_CHANNEL,
         username: event.username,
         text: JSON.stringify(event.text)
     };

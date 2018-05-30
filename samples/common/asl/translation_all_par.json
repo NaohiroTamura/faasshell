@@ -14,11 +14,17 @@
                             "InputPath": "$.forward",
                             "ResultPath": "$.slack.text.forward",
                             "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:translate",
+                            "Catch": [
+                                {
+                                    "ErrorEquals": ["States.ALL"],
+                                    "Next": "AWSFallback"
+                                }
+                            ],
                             "Next": "AWSBackwardArg"
                         },
                         "AWSBackwardArg": {
                             "Type": "Pass",
-                            "InputPath": "$.slack.text.forward.payload.TranslatedText",
+                            "InputPath": "$.slack.text.forward.payload",
                             "ResultPath": "$.backward.payload",
                             "Next": "AWSBackwardState"
                         },
@@ -41,6 +47,12 @@
                             "ResultPath": "$.slack.result",
                             "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:slack",
                             "End": true
+                        },
+                        "AWSFallback": {
+                            "Type": "Pass",
+                            "InputPath": "$.error",
+                            "ResultPath": "$.slack.text.error",
+                            "Next": "AWSSlackArg"
                         }
                     }
                 },
@@ -52,11 +64,17 @@
                             "InputPath": "$.forward",
                             "ResultPath": "$.slack.text.forward",
                             "Resource": "frn:azure:functions::${azure_webapp_name}:function:translate",
+                            "Catch": [
+                                {
+                                    "ErrorEquals": ["States.ALL"],
+                                    "Next": "AzureFallback"
+                                }
+                            ],
                             "Next": "AzureBackwardArg"
                         },
                         "AzureBackwardArg": {
                             "Type": "Pass",
-                            "InputPath": "$.slack.text.forward.payload.text",
+                            "InputPath": "$.slack.text.forward.payload",
                             "ResultPath": "$.backward.payload",
                             "Next": "AzureBackwardState"
                         },
@@ -79,6 +97,12 @@
                             "ResultPath": "$.slack.result",
                             "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:slack",
                             "End": true
+                        },
+                        "AzureFallback": {
+                            "Type": "Pass",
+                            "InputPath": "$.error",
+                            "ResultPath": "$.slack.text.error",
+                            "Next": "AzureSlackArg"
                         }
                     }
                 },
@@ -90,6 +114,12 @@
                             "InputPath": "$.forward",
                             "ResultPath": "$.slack.text.forward",
                             "Resource": "frn:gcp:functions:${gcp_location_id}:${gcp_project_id}:function:translate",
+                            "Catch": [
+                                {
+                                    "ErrorEquals": ["States.ALL"],
+                                    "Next": "GCPFallback"
+                                }
+                            ],
                             "Next": "GCPBackwardArg"
                         },
                         "GCPBackwardArg": {
@@ -117,6 +147,12 @@
                             "ResultPath": "$.slack.result",
                             "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:slack",
                             "End": true
+                        },
+                        "GCPFallback": {
+                            "Type": "Pass",
+                            "InputPath": "$.error",
+                            "ResultPath": "$.slack.text.error",
+                            "Next": "GCPSlackArg"
                         }
                     }
                 },
@@ -128,6 +164,12 @@
                             "InputPath": "$.forward",
                             "ResultPath": "$.slack.text.forward",
                             "Resource": "frn:wsk:functions:::function:myTranslator/translator",
+                            "Catch": [
+                                {
+                                    "ErrorEquals": ["States.ALL"],
+                                    "Next": "IBMFallback"
+                                }
+                            ],
                             "Next": "IBMBackwardArg"
                         },
                         "IBMBackwardArg": {
@@ -155,6 +197,12 @@
                             "ResultPath": "$.slack.result",
                             "Resource": "arn:aws:lambda:${aws_region}:${aws_account_id}:function:slack",
                             "End": true
+                        },
+                        "IBMFallback": {
+                            "Type": "Pass",
+                            "InputPath": "$.error",
+                            "ResultPath": "$.slack.text.error",
+                            "Next": "IBMSlackArg"
                         }
                     }
                 }

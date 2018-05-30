@@ -37,7 +37,7 @@ module.exports = function (context, req) {
             context.log(json);
             context.res = {
                 status: 200,
-                body: {payload: JSON.parse(body)[0].translations[0]}
+                body: {payload: JSON.parse(body)[0].translations[0].text}
             };
             context.done();
         });

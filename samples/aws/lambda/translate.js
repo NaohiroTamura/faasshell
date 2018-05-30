@@ -21,7 +21,7 @@ exports.handler = (event, context, callback) => {
         }
         else {
             console.log(data);
-            callback(null, {payload: data});
+            callback(null, {payload: data.TranslatedText});
         }
     });
 };
