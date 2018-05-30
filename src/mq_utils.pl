@@ -192,7 +192,8 @@ faas:activity_heartbeated(built_in, Activity, TaskToken, HeartbeatSeconds) :-
 
 faas:event_publish(built_in, User, Event, Action, Timeout) :-
     activity_task_queue(MQueue),
-    debug(mq, 'faas:event_publish1(built_in, ~w, ~w, ~w)~n', [User, Event, Action]),
+    debug(mq, 'faas:event_publish1(built_in, ~w, ~w, ~w, ~w)~n',
+          [User, Event, Action, Timeout]),
     thread_send_message(MQueue,
                         event_publish(User, Event, Action),
                         [timeout(Timeout)]),
@@ -200,8 +201,8 @@ faas:event_publish(built_in, User, Event, Action, Timeout) :-
 
 faas:event_published(built_in, User, Event, Action, Timeout) :-
     activity_task_queue(MQueue),
-    debug(mq, 'faas:event_published1(built_in, ~w, ~w, ~w)~n',
-          [User, Event, Action]),
+    debug(mq, 'faas:event_published1(built_in, ~w, ~w, ~w, ~w)~n',
+          [User, Event, Action, Timeout]),
     thread_get_message(MQueue,
                        event_publish(User, Event, Action), [timeout(Timeout)]),
     debug(mq, 'faas:event_published2(built_in, ~w, ~w, ~w)~n',
@@ -209,15 +210,36 @@ faas:event_published(built_in, User, Event, Action, Timeout) :-
 
 faas:event_subscribe(built_in, User, Event, Timeout) :-
     activity_task_queue(MQueue),
-    debug(mq, 'faas:event_subscribe1(built_in, ~w, ~w)~n', [User, Event]),
+    debug(mq, 'faas:event_subscribe1(built_in, ~w, ~w, ~w)~n',
+          [User, Event, Timeout]),
     thread_send_message(MQueue,
                         event_subscribe(User, Event),
                         [timeout(Timeout)]),
     debug(mq, 'faas:event_subscribe2(built_in, ~w, ~w)~n', [User, Event]).
 
+
 faas:event_subscribed(built_in, User, Event, Timeout) :-
     activity_task_queue(MQueue),
-    debug(mq, 'faas:event_subscribed1(built_in, ~w, ~w)~n', [User, Event]),
-    thread_get_message(MQueue,
-                        event_subscribe(User, Event), [timeout(Timeout)]),
+    debug(mq, 'faas:event_subscribed1(built_in, ~w, ~w, ~w)~n',
+          [User, Event, Timeout]),
+    %% Timeout 0 turned to be blocked to remove message
+    %% check if queue is empty by thread_peek_message() as a workaround
+    %% maybe alarm related problem?
+    %% :- use_module(library(time)).
+    %% ( current_alarm(At, Callable, Id, Status)
+    %%  -> debug(mq, 'faas:event_subscribed4(built_in, ~w, ~w, ~w, ~w)~n',
+    %%           [At, Callable, Id, Status])
+    %%  ;  true
+    %% ),
+    ( Timeout =:= 0
+      -> ( thread_peek_message(MQueue, event_subscribe(User, Event))
+           -> debug(mq, 'faas:event_subscribed3(built_in, queued)~n', []),
+                   thread_get_message(MQueue, event_subscribe(User, Event),
+                                      [timeout(Timeout)]),
+              debug(mq, 'faas:event_subscribed3(built_in, removed)~n', [])
+           ;  debug(mq, 'faas:event_subscribed3(built_in, empty)~n', [])
+         )
+      ;  thread_get_message(MQueue,
+                            event_subscribe(User, Event), [timeout(Timeout)])
+    ),
     debug(mq, 'faas:event_subscribed2(built_in, ~w, ~w)~n', [User, Event]).

@@ -153,8 +153,19 @@ faas:event_subscribed(kafka, User, Event, Timeout) :-
     activity_task_queue(kafka(_Producer, _Key, MQueue)),
 
     debug(kafka, 'faas:event_subscribed1(kafka, ~w, ~w)~n', [User, Event]),
-    thread_get_message(MQueue,
-                        event_subscribe(User, Event), [timeout(Timeout)]),
+    %% Timeout 0 turned to be blocked to remove message
+    %% check if queue is empty by thread_peek_message() as a workaround
+    ( Timeout =:= 0
+      -> ( thread_peek_message(MQueue, event_subscribe(User, Event))
+           -> debug(kafka, 'faas:event_subscribed3(kafka, queued)~n', []),
+              thread_get_message(MQueue, event_subscribe(User, Event),
+                                 [timeout(Timeout)]),
+              debug(kafka, 'faas:event_subscribed3(kafka, removed)~n', [])
+           ;  debug(kafka, 'faas:event_subscribed3(kafka, empty)~n', [])
+         )
+      ;  thread_get_message(MQueue,
+                            event_subscribe(User, Event), [timeout(Timeout)])
+    ),
     debug(kafka, 'faas:event_subscribed2(kafka, ~w, ~w)~n', [User, Event]).
 
 kafka_send_message(Producer, Key, Value) :-
