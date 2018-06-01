@@ -9,8 +9,9 @@ multiple workflow languages across multiple clouds.
 
 *Faas Shell* compiles workflow language and generate workflow DSL.
 Then FaaS Shell interpreter executes the workflow DSL.
-This architecture aims at mitigating potential vendor lock-in of your
-application.
+This architecture aims at enabling Multi Cloud Strategy which exploits
+the most attractive features from each provider beyond vendor agnostic
+solution.
 
 *Faas Shell* also has REPL, which allows us to develop workflow
 interactively typing DSL directly into the prompt.
@@ -220,6 +221,13 @@ sub-directory based on the following State Machine Template.
 * [Event State](samples/demo_event_state.md)
 
   Event State is an extention of [Amazon State Language][1]. This demonstrates how an event triggers function in Event State.
+
+* [Translation Service Evalution](samples/demo_translation_multiple_clouds.md)
+
+  In case of Artificial Intelligence services, specific service has
+  different characteristics, strength and weakness, each other among
+  providers. As an example, this demo presents translation service evaluation
+  workflow among providers using an ambiguous sentence.
 
 ## Devloper's Guide (work in progress)
 
