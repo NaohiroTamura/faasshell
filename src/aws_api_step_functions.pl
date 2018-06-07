@@ -24,7 +24,8 @@
             send_task_success/4,
             send_task_failure/4,
             start_execution/4,
-            stop_execution/4
+            stop_execution/4,
+            describe_execution/4
          ]).
 
 :- use_module(aws_api_utils).
@@ -120,6 +121,15 @@ stop_execution(ARN, Options, Request, Reply) :-
     atom_json_dict(Payload, Request, []),
     aws_api_utils:aws_step_functions(
                           'StopExecution', ARN, '', Payload, AwsOptions),
+    merge_options(Options, AwsOptions, MergedOptions),
+    option(url(URL), MergedOptions),
+    http_post(URL, atom('application/x-amz-json-1.0', Payload), R1, MergedOptions),
+    atom_json_dict(R1, Reply, []).
+
+describe_execution(ARN, Options, Request, Reply) :-
+    atom_json_dict(Payload, Request, []),
+    aws_api_utils:aws_step_functions(
+                          'DescribeExecution', ARN, '', Payload, AwsOptions),
     merge_options(Options, AwsOptions, MergedOptions),
     option(url(URL), MergedOptions),
     http_post(URL, atom('application/x-amz-json-1.0', Payload), R1, MergedOptions),

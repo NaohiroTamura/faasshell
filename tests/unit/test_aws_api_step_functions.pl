@@ -192,3 +192,55 @@ test(invalid_token_and_invalid_output,
     assertion(R4 = _{stopDate: _}).
 
 :- end_tests(activity_task).
+
+:- begin_tests(task_timeout).
+
+test(create, Code = 200) :-
+    setup_call_cleanup(
+            open(pipe('envsubst < samples/aws/asl/task_timeout.json'), read, S),
+            read_string(S, _N, ASL),
+            close(S)),
+    personal(Region, Account),
+    atomic_list_concat(
+            ['arn:aws:iam::', Account, ':role/service-role/StatesExecutionRole-',
+             Region], ARN1),
+    Request = _{'roleArn': ARN1, definition: ASL},
+    atomic_list_concat(
+            [arn, aws, states, Region, Account, stateMachine, 'TaskTimeout'],
+            ':', ARN2),
+    aws_api_step_functions:create_statemachine(ARN2, [status_code(Code)],
+                                               Request, R),
+    assertion(_{creationDate:_, stateMachineArn:_ } :<R).
+
+test(execute, (Code1, Code2) = (200, 200)) :-
+    personal(Region, Account),
+    atomic_list_concat(
+            [arn, aws, states, Region, Account, stateMachine, 'TaskTimeout'],
+            ':', ARN),
+
+    Input1 = _{name: "timeout", sleep: 2},
+    aws_api_step_functions:start_execution(ARN, [status_code(Code1)], Input1, R1),
+    %% assertion dosn't bind value
+    assertion(_{executionArn: _,  startDate: _} :< R1),
+    sleep(3),
+
+    Input2 = _{executionArn: R1.executionArn },
+    aws_api_step_functions:describe_execution(ARN, [status_code(Code2)],
+                                              Input2, R2),
+    assertion(_{executionArn: _,
+                input: "{\"name\":\"timeout\", \"sleep\":2}",
+                name: _,
+                startDate: _,
+                stopDate: _,
+                stateMachineArn: _,
+                status:"FAILED" } :< R2).
+
+test(delete, Code = 200) :-
+    personal(Region, Account),
+    atomic_list_concat(
+            [arn, aws, states, Region, Account, stateMachine, 'TaskTimeout'],
+            ':', ARN),
+    aws_api_step_functions:delete_statemachine(ARN, [status_code(Code)], R),
+    assertion(R = _{}).
+
+:- end_tests(task_timeout).

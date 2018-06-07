@@ -1,0 +1,12 @@
+{
+    "Comment": "Task state Timeout",
+    "StartAt": "DelayTask",
+    "States": {
+        "DelayTask": {
+            "Type": "Task",
+            "Resource":"arn:aws:lambda:${aws_region}:${aws_account_id}:function:delay",
+            "TimeoutSeconds": 1,
+            "End": true
+        }
+    }
+}

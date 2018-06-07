@@ -5,7 +5,6 @@
         "HelloWorld": {
             "Type": "Task",
             "Resource": "frn:wsk:functions:::function:hello",
-            "TimeoutSeconds": 5,
             "End": true
         }
     }
