@@ -405,6 +405,28 @@ test(failed, Code = 502 ) :-
 
 :- end_tests(task_timer).
 
+%% TODO: register 'samples/aws/lambda/delay.js'
+:- begin_tests(task_timeout,
+               [setup(update_action("delay",
+                                    'samples/wsk/actions/delay.js', "nodejs:6", []))
+               ]).
+
+test(wsk, Code = 200) :-
+    start('samples/wsk/dsl/task_timeout.dsl', [status_code(Code)],
+          _{name: "timeout", sleep: 2}, O, _{}, _),
+    assertion(O = _{error: "States.Timeout", cause: null}).
+
+test(aws, Code = 200) :-
+    setup_call_cleanup(
+            open(pipe('envsubst < samples/aws/dsl/task_timeout.dsl'), read, S),
+            read_term(S, DSL, []),
+            close(S)),
+    start(DSL, [status_code(Code)],
+          _{name: "timeout", sleep: 2}, O, _{}, _),
+    assertion(O = _{error: "States.Timeout", cause: null}).
+
+:- end_tests(task_timeout).
+
 :- begin_tests(activity_task, [setup(mq_utils:mq_init)]).
 
 test(activity_task_dsl_success, Status = true) :-

@@ -125,8 +125,9 @@ task(State, Action, Optional, I, O, EI, EO) :-
     catch( ( task_execute(Action, Optional, I1, M3, EI, EO),
              process_output(I, M3, O, Optional)
            ),
-           M1, %% Error
-           ( mydebug(task(catch), M1),
+           M0, %% Error
+           ( error_code(M0, M1),
+             mydebug(task(catch), (M0, M1)),
              ( option(retry(R), Optional), is_dict(M1), get_dict(error, M1, Error1)
                -> retry(task_execute(Action, Optional, I1), R, Error1, M2, EI, E2)
                ;  M2 = M1, E2 = EI
@@ -361,8 +362,9 @@ parallel(State, branches(Branches), Optional, I, O, EI, EO) :-
     catch( ( parallel_execute(Branches, I1, M3, EI, EO),
              process_output(I, M3, O, Optional)
            ),
-           M1, %% Error
-           ( mydebug(parallel(catch), M1),
+           M0, %% Error
+           ( error_code(M0, M1),
+             mydebug(parallel(catch), (M0, M1)),
              ( option(retry(R), Optional), is_dict(M1), get_dict(error, M1, Error1)
                -> retry(parallel_execute(Branches, I), R, Error1, M2, E1, E2)
                ;  M2 = M1, E2 = E1
@@ -771,7 +773,8 @@ process_output(OriginalInput, Result, Output, Optional) :-
 error_code(time_limit_exceeded, _{error: "States.Timeout"}) :-
     mydebug(error_code, time_limit_exceeded), !.
 
-error_code(error(timeout_error(_, _), _), _{error: "States.Timeout"}) :-
+error_code(error(timeout_error(_, _), _), _{error: "States.Timeout",
+                                            cause: null}) :-
     mydebug(error_code, timeout_error), !.
 
 error_code(heartbeat_timeout, _{error: "States.Timeout",
