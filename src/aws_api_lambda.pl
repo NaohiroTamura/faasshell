@@ -17,8 +17,7 @@
 
 :- module(aws_api_lambda,
           [ faas:list/3,
-            faas:invoke/4,
-            delete/3
+            faas:invoke/4
          ]).
 
 :- use_module(aws_api_utils).
@@ -77,6 +76,24 @@ custom_error(In, Out) :-
          throw(Out)
       ;  Out = O1
     ).
+
+create(ARN, Options, Payload, Reply) :-
+    atomic_list_concat([_, aws, lambda, _, _, function, _], ':', ARN), !,
+    atom_json_dict(PayloadText, Payload, []),
+    aws_api_utils:aws_lambda(create, ARN, '', PayloadText, AwsOptions),
+    merge_options(Options, AwsOptions, MergedOptions),
+    option(url(URL), MergedOptions),
+    http_post(URL, atom('application/json', PayloadText), R1, MergedOptions),
+    json_utils:term_json_dict(R1, Reply).
+
+update(ARN, Options, Payload, Reply) :-
+    atomic_list_concat([_, aws, lambda, _, _, function, _], ':', ARN), !,
+    atom_json_dict(PayloadText, Payload, []),
+    aws_api_utils:aws_lambda(update, ARN, '', PayloadText, AwsOptions),
+    merge_options(Options, AwsOptions, MergedOptions),
+    option(url(URL), MergedOptions),
+    http_put(URL, atom('application/json', PayloadText), R1, MergedOptions),
+    json_utils:term_json_dict(R1, Reply).
 
 delete(ARN, Options, Reply) :-
     aws_api_utils:aws_lambda(delete, ARN, '', '', AwsOptions),

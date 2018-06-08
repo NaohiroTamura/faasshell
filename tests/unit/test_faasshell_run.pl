@@ -405,11 +405,15 @@ test(failed, Code = 502 ) :-
 
 :- end_tests(task_timer).
 
-%% TODO: register 'samples/aws/lambda/delay.js'
 :- begin_tests(task_timeout,
-               [setup(update_action("delay",
-                                    'samples/wsk/actions/delay.js', "nodejs:6", []))
-               ]).
+               [setup(( update_action("delay",
+                                       'samples/wsk/actions/delay.js',
+                                       "nodejs:6", []),
+                        update_lambda('delay',
+                                      'samples/aws/lambda/delay.js',
+                                      'nodejs6.10')
+                     ))
+              ]).
 
 test(wsk, Code = 200) :-
     start('samples/wsk/dsl/task_timeout.dsl', [status_code(Code)],

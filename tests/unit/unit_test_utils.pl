@@ -56,6 +56,60 @@ update_action(Action, File, Kind, Container) :-
     ).
 
 %%
+update_lambda(Lambda, File, Runtime) :-
+    getenv('aws_region', Region),
+    getenv('aws_account_id', Account),
+
+    file_directory_name(File, Dir),
+    file_base_name(File, FileName),
+    file_name_extension(Base, _Ext, FileName),
+    file_name_extension(Base, '.zip', ZipFile),
+    file_name_extension(Base, '.handler', Handler),
+
+    atomic_list_concat(['cd ', Dir, '; ', 'zip ', ZipFile, ' ', FileName],
+                       ShellCmd),
+    shell(ShellCmd),
+    %%writeln(shellCmd(ShellCmd)),
+
+    atomic_list_concat(['base64 --wrap 0 ', Dir, '/', ZipFile], PipeCmd),
+    %%writeln(pipeCmd(PipeCmd)),
+    setup_call_cleanup(
+            open(pipe(PipeCmd), read, S),
+            read_string(S, _N, Base64),
+            close(S)),
+
+    atomic_list_concat([arn, aws, lambda, Region, Account, function, Lambda],
+                       ':', ARN),
+    atomic_list_concat([arn, aws, iam, '', Account,
+                        'role/service-role/LambdaExecutionRole'], ':', Role),
+    ZipCode = _{ 'ZipFile': Base64 },
+    Payload = _{ 'Code': ZipCode,
+                 'FunctionName': ARN,
+                 'Handler': Handler,
+                 'MemorySize': 128,
+                 'Role': Role,
+                 'Runtime': Runtime,
+                 'Timeout': 10
+               },
+
+    aws_api_lambda:create(ARN, [status_code(Code1)], Payload, Reply1),
+    %% writeln(create(Code1, Reply1)),
+    ( Code1 = 201
+      -> true
+      ; ( Code1 = 409
+          -> aws_api_lambda:update(ARN, [status_code(Code2)], ZipCode, Reply2),
+             %% writeln(update(Code2, Reply2)),
+             ( Code2 = 200
+               -> true
+               ;  print_message(error, format("failed update'~w' : ~w : ~w.",
+                                              [Lambda, Code2, Reply2]))
+             )
+          ;  print_message(error, format("failed create '~w' : ~w : ~w.",
+                                         [Lambda, Code1, Reply1]))
+        )
+    ).
+
+%%
 faas_test_setup :-
     update_action("delay", 'samples/wsk/actions/delay.js', "nodejs:6", []),
     update_action("error", 'samples/wsk/actions/error.js', "nodejs:6", []),

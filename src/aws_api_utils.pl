@@ -85,8 +85,12 @@ lambda(list, 'GET', Function, Resource) :-
     atomic_list_concat(['/', Function], Resource).
 lambda(invoke, 'POST', Function, Resource) :-
     atomic_list_concat(['/', Function, '/invocations'], Resource).
+lambda(create, 'POST', _Function, Resource) :-
+    atomic_list_concat(['/'], Resource).
 lambda(delete, 'DELETE', Function, Resource) :-
     atomic_list_concat(['/', Function], Resource).
+lambda(update, 'PUT', Function, Resource) :-
+    atomic_list_concat(['/', Function, '/code'], Resource).
 
 aws_lambda(Action, ARN, RequestParameters, Payload, Options) :-
     getenv('AWS_ACCESS_KEY_ID', AWS_ACCESS_KEY_ID),

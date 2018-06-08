@@ -17,10 +17,7 @@
 
 :- module(wsk_api_actions,
           [ faas:list/3,
-            create/4,
-            update/4,
-            faas:invoke/4,
-            delete/3
+            faas:invoke/4
          ]).
 
 :- use_module(wsk_api_dcg).
