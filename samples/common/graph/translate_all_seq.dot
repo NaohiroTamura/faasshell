@@ -1,0 +1,31 @@
+digraph graph_name {
+     "Start" -> "AWSForwardState" ;
+     "AWSForwardState" -> "AWSFallback" ;
+     "AWSFallback" -> "AWSSlackArg" ;
+     "AWSSlackArg" -> "AWSSlackState" ;
+     "AWSSlackState" -> "AzureForwardState" ;
+     "AzureForwardState" -> "AzureFallback" ;
+     "AzureFallback" -> "AzureSlackArg" ;
+     "AzureSlackArg" -> "AzureSlackState" ;
+     "AzureSlackState" -> "GCPForwardState" ;
+     "GCPForwardState" -> "GCPFallback" ;
+     "GCPFallback" -> "GCPSlackArg" ;
+     "GCPSlackArg" -> "GCPSlackState" ;
+     "GCPSlackState" -> "IBMForwardState" ;
+     "IBMForwardState" -> "IBMFallback" ;
+     "IBMFallback" -> "IBMSlackArg" ;
+     "IBMSlackArg" -> "IBMSlackState" ;
+     "IBMSlackState" -> "End" ;
+     "IBMForwardState" -> "IBMBackwardArg" ;
+     "IBMBackwardArg" -> "IBMBackwardState" ;
+     "IBMBackwardState" -> "IBMSlackArg" ;
+     "GCPForwardState" -> "GCPBackwardArg" ;
+     "GCPBackwardArg" -> "GCPBackwardState" ;
+     "GCPBackwardState" -> "GCPSlackArg" ;
+     "AzureForwardState" -> "AzureBackwardArg" ;
+     "AzureBackwardArg" -> "AzureBackwardState" ;
+     "AzureBackwardState" -> "AzureSlackArg" ;
+     "AWSForwardState" -> "AWSBackwardArg" ;
+     "AWSBackwardArg" -> "AWSBackwardState" ;
+     "AWSBackwardState" -> "AWSSlackArg" ;
+}

@@ -1,0 +1,36 @@
+digraph graph_name {
+     "Start" -> "Parallel" ;
+     "Parallel" -> "AWSForwardState" ;
+     "AWSForwardState" -> "AWSFallback" ;
+     "AWSFallback" -> "AWSSlackArg" ;
+     "AWSSlackArg" -> "AWSSlackState" ;
+     "AWSSlackState" -> "Final State" ;
+     "AWSForwardState" -> "AWSBackwardArg" ;
+     "AWSBackwardArg" -> "AWSBackwardState" ;
+     "AWSBackwardState" -> "AWSSlackArg" ;
+     "Parallel" -> "AzureForwardState" ;
+     "AzureForwardState" -> "AzureFallback" ;
+     "AzureFallback" -> "AzureSlackArg" ;
+     "AzureSlackArg" -> "AzureSlackState" ;
+     "AzureSlackState" -> "Final State" ;
+     "AzureForwardState" -> "AzureBackwardArg" ;
+     "AzureBackwardArg" -> "AzureBackwardState" ;
+     "AzureBackwardState" -> "AzureSlackArg" ;
+     "Parallel" -> "GCPForwardState" ;
+     "GCPForwardState" -> "GCPFallback" ;
+     "GCPFallback" -> "GCPSlackArg" ;
+     "GCPSlackArg" -> "GCPSlackState" ;
+     "GCPSlackState" -> "Final State" ;
+     "GCPForwardState" -> "GCPBackwardArg" ;
+     "GCPBackwardArg" -> "GCPBackwardState" ;
+     "GCPBackwardState" -> "GCPSlackArg" ;
+     "Parallel" -> "IBMForwardState" ;
+     "IBMForwardState" -> "IBMFallback" ;
+     "IBMFallback" -> "IBMSlackArg" ;
+     "IBMSlackArg" -> "IBMSlackState" ;
+     "IBMSlackState" -> "Final State" ;
+     "IBMForwardState" -> "IBMBackwardArg" ;
+     "IBMBackwardArg" -> "IBMBackwardState" ;
+     "IBMBackwardState" -> "IBMSlackArg" ;
+     "Final State" -> "End" ;
+}
