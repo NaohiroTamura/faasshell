@@ -83,8 +83,9 @@ main :-
            Error,
            (print_message(error, Error), halt(1))),
     https_options(HttpsOptions),
-    ( getenv('FAASSHELL_SVC_PORT', Port)
-      -> PortOption = [port(Port)]
+    ( ( getenv('FAASSHELL_SVC_PORT', PortAtom), PortAtom \== '')
+      -> atom_number(PortAtom, PortNum),
+         PortOption = [port(PortNum)]
       ;  PortOption = []
     ),
     merge_options(PortOption, HttpsOptions, Options),

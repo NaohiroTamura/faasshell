@@ -1,6 +1,7 @@
 #!/bin/bash
 docker run -it --rm -v /home:/home -u $(id -u):$(id -g) -w $PWD \
     -e HOME=${HOME} --net=host -v /tmp:/logs \
+    -e FAASSHELL_SVC_PORT=${FAASSHELL_SVC_PORT} \
     -e FAASSHELL_APIHOST=${FAASSHELL_APIHOST} \
     -e FAASSHELL_DB_APIHOST=${FAASSHELL_DB_APIHOST} \
     -e FAASSHELL_DB_AUTH=${FAASSHELL_DB_AUTH} \
