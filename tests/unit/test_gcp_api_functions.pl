@@ -60,13 +60,20 @@ test(hello_arg, (Code, R) = (200, _{payload:"Hello, GCP!"})) :-
     gcp_api_functions:faas:invoke(FRN, [status_code(Code)], _{name: "GCP"}, R).
 
 %% should not be error such as AWS, Azure
-test(hello_badarg, (Code, Error) = (400, _{cause:status_code(400),
-                                           error:'Bad Request\n'})) :-
+test(hello_badarg, (Code, ErrorMsg) = (400, 'Bad Request')) :-
     personal(Location, Project),
     atomic_list_concat([frn, gcp, functions, Location, Project, function, hello],
                        ':', FRN),
     catch(gcp_api_functions:faas:invoke(FRN, [status_code(Code)], '', _R),
           Error,
-          true).
+          true),
+    _{cause:status_code(Code), error: ErrorHtml } :< Error,
+    %% Error.error changed string to html
+    %% '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>Error</title>\n</head>\n<body>\n<pre>Bad Request</pre>\n</body>\n</html>\n'
+    setup_call_cleanup(
+            open_string(ErrorHtml, S),
+            load_html(S, ErrorDom , []),
+            close(S)),
+    xpath(ErrorDom, //(pre(normalize_space)), ErrorMsg).
 
 :- end_tests(invoke).
