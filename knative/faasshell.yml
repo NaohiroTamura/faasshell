@@ -1,0 +1,88 @@
+# Copyright 2017 FUJITSU LIMITED
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+---
+apiVersion: serving.knative.dev/v1alpha1
+kind: Service
+metadata:
+  name: faasshell-knative
+  namespace: default
+spec:
+  runLatest:
+    configuration:
+      revisionTemplate:
+        spec:
+          container:
+            image: docker.io/nao16t/faasshell-knative
+            env:
+            - name: FAASSHELL_DB_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: faasshell
+                  key: faasshell_db_auth
+            - name: FAASSHELL_DB_APIHOST
+              valueFrom:
+                secretKeyRef:
+                  name: faasshell
+                  key: faasshell_db_apihost
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: faasshell
+                  key: aws_access_key_id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: faasshell
+                  key: aws_secret_access_key
+            - name: GCP_APP_CRED
+              valueFrom:
+                secretKeyRef:
+                  name: faasshell
+                  key: gcp_app_cred
+            - name: AZURE_HOSTKEY
+              valueFrom:
+                secretKeyRef:
+                  name: faasshell
+                  key: azure_hostkey
+            - name: AZURE_TENANT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: faasshell
+                  key: azure_tenant_id
+            - name: AZURE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: faasshell
+                  key: azure_client_id
+            - name: AZURE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: faasshell
+                  key: azure_client_secret
+            - name: WSK_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: faasshell
+                  key: wsk_auth
+            - name: WSK_APIHOST
+              valueFrom:
+                secretKeyRef:
+                  name: faasshell
+                  key: wsk_apihost
+            - name: IFTTT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: faasshell
+                  key: ifttt_key
