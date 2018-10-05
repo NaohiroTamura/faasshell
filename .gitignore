@@ -11,4 +11,5 @@ Gemfile.lock
 vendor/
 demoCA/
 node_modules
+package-lock.json
 
