@@ -552,3 +552,31 @@ test(failed, Code = 200) :-
                 output: _{error: "The action did not return a dictionary."}} :< Dict).
 
 :- end_tests(task_timer).
+
+:- begin_tests(graphql, [blocked('requires openwhisk-runtime-prolog')]).
+
+test(post, Code = 200) :-
+    faasshell_api_host(Host), faasshell_api_key(ID-PW),
+    string_concat(Host,
+                  '/statemachine/commit_count_report.json?blocking=true',
+                  URL),
+    getenv('GITHUB_TOKEN', GITHUB_TOKEN),
+    term_json_dict(Json,
+                   _{input:
+                     _{ target: "fujitsu.com",
+                        github_token: GITHUB_TOKEN,
+                        owner: "\"naohirotamura\"",
+                        name: "\"faasshell\"",
+                        since: "\"2018-06-21T00:00:00+00:00\"",
+                        until: "\"2018-07-20T00:00:00+00:00\""
+                      }
+                    }),
+    http_post(URL, json(Json), Data,
+              [authorization(basic(ID, PW)), cert_verify_hook(cert_accept_any),
+               status_code(Code)]),
+    term_json_dict(Data, Dict),
+    _{asl: _, dsl: _, input: _, name: _, namespace: _,
+      output: _{payload: History}} :< Dict,
+    assertion(length(History,2)).
+
+:- end_tests(graphql).

@@ -26,4 +26,7 @@ docker run -it --rm -v /home:/home -u $(id -u):$(id -g) -w $PWD \
     -e FAASSHELL_MQ=${FAASSHELL_MQ} \
     -e CLASSPATH="${CLASSPATH}" \
     -e _JAVA_OPTIONS="${_JAVA_OPTIONS}" \
+    -e GITHUB_TOKEN=${GITHUB_TOKEN} \
+    -e docker_image_prefix=${docker_image_prefix} \
+    -e docker_image_tag=${docker_image_tag} \
 ${docker_image_prefix}/swipl7jpl swipl $@
