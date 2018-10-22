@@ -1,0 +1,26 @@
+{
+    "Comment": "Commit Count Report",
+    "StartAt": "GitHub",
+    "States": {
+        "GitHub": {
+            "Type": "Task",
+            "InputPath": "$.github",
+            "ResultPath": "$.github.output",
+            "Resource": "frn:wsk:functions:::function:graphql",
+            "Next": "GitHub2GSheet"
+        },
+        "GitHub2GSheet": {
+            "Type": "Pass",
+            "InputPath": "$.github.output.values",
+            "ResultPath": "$.gsheet.values",
+            "Next": "GSheet"
+        },
+        "GSheet": {
+            "Type": "Task",
+            "InputPath": "$.gsheet",
+            "ResultPath": "$.gsheet.output",
+            "Resource": "frn:gcp:functions:${gcp_location_id}:${gcp_project_id}:function:googlesheet",
+            "End": true
+        }
+    }
+}

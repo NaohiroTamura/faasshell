@@ -24,12 +24,14 @@ exports.googlesheets = (req, res) => {
     })
     .then( sheets => {
         console.log(`sheets: ${sheets}`);
+        const now = [Date()];
+        const data = req.body.values.map(e => now.concat(e));
         sheets.spreadsheets.values.append({
             spreadsheetId: req.body.sheetId,
-            range: 'Sheet1!A1:C1',
+            range: 'Sheet1!A1:A1',
             valueInputOption: 'USER_ENTERED',
             resource: {
-                values: req.body.values
+                values: data
             }
         }, (err, response) => {
             if (err) {
@@ -61,8 +63,10 @@ if (module === require.main) {
         body: {
             sheetId: '1ywCxG8xTKOYK89AEZIqgpTvbvpbrb1s4H_bMVvKV59I',
             values: [
-                    [Date(), 'Justin', 'Website'],
-                    [Date(), 'Node.js', 'Fun']
+                ["fujitsu.com", '"naohirotamura"', '"faasshell"',
+                 '"2018-06-21T00:00:00+00:00"', '"2018-07-20T00:00:00+00:00"', 2],
+                ["redhat.com", '"containers"', '"buildah"',
+                 '"2018-02-21T00:00:00+00:00"', '"2018-04-20T00:00:00+00:00"', 53]
             ]
         }
     };

@@ -224,10 +224,13 @@ filter(Target, Elm) :-
     %% git log --no-merges
     \+ sub_string(Elm.node.messageHeadline, 0, _, _, "Merge ").
 
-main(In, _{ payload: Out }) :-
+main(In, _{ values: [Values] }) :-
     first_query(In, NodeOut),
-    _{ target: Target } :< In,
-    include(filter(Target), NodeOut, Out).
+    _{ target: Target, owner: Owner, name: Name, since: Since, until: Until } :< In,
+    include(filter(Target), NodeOut, MergeOut),
+    length(MergeOut, Count),
+    Values = [Target, Owner, Name, Since, Until, Count].
+
 
 %%
 %% Tests
