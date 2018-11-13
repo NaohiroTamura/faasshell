@@ -93,7 +93,7 @@ ubuntu@trusty:~/faasshell[master]$ docker run -d -p 5984:5984 apache/couchdb
 
 ubuntu@trusty:~/faasshell[master]$ make -e docker_image_prefix=YOUR_PREFIX run
 
-ubuntu@trusty:~/faasshell[master]$ FAASSHELL_APIHOST=https://127.0.0.1:8443
+ubuntu@trusty:~/faasshell[master]$ FAASSHELL_APIHOST=http://127.0.0.1:8080
 
 ubuntu@trusty:~/faasshell[master]$ curl -ksLX GET ${FAASSHELL_APIHOST}/ -u $DEMO
 {"version":"$Id rev.YYYY-MM-DD.COMMITID $"}

@@ -35,21 +35,21 @@ test(direct) :-
 
 test(http_proxy) :-
     setenv('HTTP_PROXY', 'http://proxy.company.com:8080'),
-    setenv('HTTPS_PROXY', 'https://proxy.company.com:8433'),
+    setenv('HTTPS_PROXY', 'https://proxy.company.com:8443'),
     setenv('NO_PROXY', '127.0,0,1,localhost,172.17.0.1'),
     http_proxy('http://www.google.com', Options),
     assertion(Options = [proxy('proxy.company.com':8080)]).
 
 test(https_proxy) :-
     setenv('HTTP_PROXY', 'http://proxy.company.com:8080'),
-    setenv('HTTPS_PROXY', 'https://proxy.company.com:8433'),
+    setenv('HTTPS_PROXY', 'https://proxy.company.com:8443'),
     setenv('NO_PROXY', '127.0,0,1,localhost,172.17.0.1'),
     http_proxy('https://www.google.com', Options),
-    assertion(Options = [proxy('proxy.company.com':8433)]).
+    assertion(Options = [proxy('proxy.company.com':8443)]).
 
 test(http_auth_proxy) :-
     setenv('HTTP_PROXY', 'http://id:pw@proxy.company.com:8080'),
-    setenv('HTTPS_PROXY', 'https://id:pw@proxy.company.com:8433'),
+    setenv('HTTPS_PROXY', 'https://id:pw@proxy.company.com:8443'),
     setenv('NO_PROXY', '127.0,0,1,localhost,172.17.0.1'),
     http_proxy('http://www.google.com', Options),
     assertion(Options = [proxy_authorization(basic(id, pw)),
@@ -57,11 +57,11 @@ test(http_auth_proxy) :-
 
 test(https_auth_proxy) :-
     setenv('HTTP_PROXY', 'http://id:pw@proxy.company.com:8080'),
-    setenv('HTTPS_PROXY', 'https://id:pw@proxy.company.com:8433'),
+    setenv('HTTPS_PROXY', 'https://id:pw@proxy.company.com:8443'),
     setenv('NO_PROXY', '127.0,0,1,localhost,172.17.0.1'),
     http_proxy('https://www.google.com', Options),
     assertion(Options = [proxy_authorization(basic(id, pw)),
-                         proxy('proxy.company.com':8433)]).
+                         proxy('proxy.company.com':8443)]).
 
 test(http_bad_auth_proxy, [error(http_proxy('http://id-pw@proxy.company.com:8080'),
                             getenv)]) :-
@@ -79,21 +79,21 @@ test(https_bad_auth_proxy,
 
 test(http_noproxy) :-
     setenv('HTTP_PROXY', 'http://id:pw@proxy.company.com:8080'),
-    setenv('HTTPS_PROXY', 'https://id:pw@proxy.company.com:8433'),
+    setenv('HTTPS_PROXY', 'https://id:pw@proxy.company.com:8443'),
     setenv('NO_PROXY', '127.0,0,1,localhost,172.17.0.1'),
     http_proxy('http://172.17.0.1:8080', Options),
     assertion(Options = []).
 
 test(https_noproxy) :-
     setenv('HTTP_PROXY', 'http://id:pw@proxy.company.com:8080'),
-    setenv('HTTPS_PROXY', 'https://id:pw@proxy.company.com:8433'),
+    setenv('HTTPS_PROXY', 'https://id:pw@proxy.company.com:8443'),
     setenv('NO_PROXY', '127.0,0,1,localhost,172.17.0.1'),
     http_proxy('https://172.17.0.1:8080', Options),
     assertion(Options = []).
 
 test(https_noproxy_space) :-
     setenv('HTTP_PROXY', 'http://id:pw@proxy.company.com:8080'),
-    setenv('HTTPS_PROXY', 'https://id:pw@proxy.company.com:8433'),
+    setenv('HTTPS_PROXY', 'https://id:pw@proxy.company.com:8443'),
     setenv('NO_PROXY', '127.0,0,1, localhost, 172.17.0.1'),
     http_proxy('https://172.17.0.1:8080', Options),
     assertion(Options = []).

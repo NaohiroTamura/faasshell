@@ -126,7 +126,7 @@ only [AWS Lambda][1] but also functions in other FaaS Infrastructures.
       ```sh
       $ DEMO=ec29e90c-188d-11e8-bb72-00163ec1cd01:0b82fe63b6bd450519ade02c3cb8f77ee581f25a810db28f3910e6cdd9d041bf
 
-      $ FAASSHELL_APIHOST=https://127.0.0.1:8443
+      $ FAASSHELL_APIHOST=http://127.0.0.1:8080
       ```
 
     - Register "hello_world_task.json", then DSL is generated as the

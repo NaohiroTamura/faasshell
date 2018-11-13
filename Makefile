@@ -80,10 +80,11 @@ oc_build_image:
 
 oc_app_image:
 	@echo "create application image in OpenShift Online"
+	-oc delete route faasshell
 	sed -i "s/'\$$Id\$$'/'\$$Id $(shell git log -n 1 --date=short --format=format:"rev.%ad.%h" HEAD) \$$'/g" src/faasshell_version.pl
 	tar zcvf ../faasshell.tgz --exclude-vcs .
 	oc start-build faasshell --from-dir=../faasshell.tgz
-	-oc create route passthrough faasshell --service=faasshell --port=8443
+	oc create route edge faasshell --service=faasshell --port=8080
 	rm -f ../faasshell.tgz
 
 build_image:

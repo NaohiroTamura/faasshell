@@ -94,6 +94,7 @@ main :-
     server(Options).
 
 https_options(Options) :-
+    getenv('FAASSHELL_SVC_SSL', 'On'),
     https_file('server-key.pem', KeyFile),
     https_file('server-cert.pem', CertFile), !,
     ( https_file(password, PasswordFile)

@@ -36,7 +36,7 @@ $ docker run -d -p 5984:5984 apache/couchdb
 
 $ make -e docker_image_prefix=nao16t run
 
-$ FAASSHELL_APIHOST=https://127.0.0.1:8443
+$ FAASSHELL_APIHOST=http://127.0.0.1:8080
 
 $ DEMO=ec29e90c-188d-11e8-bb72-00163ec1cd01:0b82fe63b6bd450519ade02c3cb8f77ee581f25a810db28f3910e6cdd9d041bf
 ```

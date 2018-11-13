@@ -17,7 +17,7 @@ jobs:
             make oc_app_image
       - run:
           name: test with kafka
-          command: make test_with_kafka -e FAASSHELL_MQ=kafka -e FAASSHELL_APIHOST=https://127.0.0.1:8443
+          command: make test_with_kafka -e FAASSHELL_MQ=kafka -e FAASSHELL_APIHOST=http://127.0.0.1:8080
       - run:
           name: deploy
           command: >
