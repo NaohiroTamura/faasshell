@@ -39,6 +39,7 @@
 :- use_module(library(http/http_client)).
 :- use_module(library(http/html_write)).
 :- use_module(library(http/http_authenticate)).
+:- use_module(library(http/http_cors)).
 :- use_module(library(http/http_error)). % should be removed in puroduction
 
 /*******************************
@@ -77,7 +78,8 @@ user:file_search_path(config_https, faasshell('etc/server')).
 %%   ?- http_stop_server(8080,[]).
 %%
 main :-
-    set_setting(http:logfile,'/logs/httpd.log'), % docker volume /tmp
+    set_setting(http:logfile, '/logs/httpd.log'), % docker volume /tmp
+    set_setting(http:cors, [*]),
     catch( ( mq_utils:mq_init,
              cdb_api:db_init ),
            Error,
@@ -125,6 +127,7 @@ hup(_Signal) :-
 
 base(Request) :-
     http_log('~w~n', [request(Request)]),
+    cors_enable,
     option(faasshell_auth(nil), Request)
     -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
     ;  faasshell_version:git_commit_id(Version),
@@ -137,6 +140,7 @@ base(Request) :-
 
 executions(Request) :-
     http_log('~w~n', [request(Request)]),
+    cors_enable,
     option(faasshell_auth(nil), Request)
     -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
     ;  memberchk(method(Method), Request),
@@ -173,6 +177,7 @@ executions(get, Request) :-
 
 activity(Request) :-
     http_log('~w~n', [request(Request)]),
+    cors_enable,
     option(faasshell_auth(nil), Request)
     -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
     ;  memberchk(method(Method), Request),
@@ -245,6 +250,7 @@ activity(patch, Request) :-
 
 trigger(Request) :-
     http_log('~w~n', [request(Request)]),
+    cors_enable,
     option(faasshell_auth(nil), Request)
     -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
     ;  memberchk(method(Method), Request),
@@ -292,6 +298,7 @@ trigger(post, Request) :-
 
 faas(Request) :-
     http_log('~w~n', [request(Request)]),
+    cors_enable,
     option(faasshell_auth(nil), Request)
     -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
     ;  memberchk(method(Method), Request),
@@ -320,6 +327,7 @@ faas(get, Request) :-
 
 statemachine(Request) :-
     http_log('~w~n', [request(Request)]),
+    cors_enable,
     option(faasshell_auth(nil), Request)
     -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
     ;  memberchk(method(Method), Request),
@@ -482,6 +490,7 @@ statemachine(patch, Request) :-
 
 shell(Request) :-
     http_log('~w~n', [request(Request)]),
+    cors_enable,
     option(faasshell_auth(nil), Request)
     -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
     ;  memberchk(method(Method), Request),

@@ -35,17 +35,23 @@ test(auth_error, Code = 401) :-
     faasshell_api_host(Host),
     string_concat(Host, '/', URL),
     http_get(URL, Data, [authorization(basic(unknown, ng)),
-                         cert_verify_hook(cert_accept_any), status_code(Code)]),
+                         cert_verify_hook(cert_accept_any),
+                         status_code(Code),
+                         reply_header(Fields)]),
     term_json_dict(Data, Dict),
-    assertion(_{error: "Authentication Failure"} = Dict).
+    assertion(_{error: "Authentication Failure"} = Dict),
+    assertion(memberchk(access_control_allow_origin(*), Fields)).
 
 test(version, Code = 200) :-
     faasshell_api_host(Host), faasshell_api_key(ID-PW),
     string_concat(Host, '/', URL),
     http_get(URL, Data, [authorization(basic(ID, PW)),
-                         cert_verify_hook(cert_accept_any), status_code(Code)]),
+                         cert_verify_hook(cert_accept_any),
+                         status_code(Code),
+                         reply_header(Fields)]),
     term_json_dict(Data, Dict),
     read_version(Version),
-    assertion(_{version: Version} = Dict).
+    assertion(_{version: Version} = Dict),
+    assertion(memberchk(access_control_allow_origin(*), Fields)).
 
 :- end_tests(base).
