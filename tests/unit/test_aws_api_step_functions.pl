@@ -43,7 +43,7 @@ test(create, Code = 400) :-
             ':', ARN2),
     aws_api_step_functions:create_statemachine(ARN2, [status_code(Code)],
                                                Request, R),
-    assertion(_{message:"Invalid State Machine Definition: 'DUPLICATE_STATE_NAME at /'"} :<R).
+    assertion(_{message: "Invalid State Machine Definition: 'DUPLICATE_STATE_NAME: Duplicate State name: Sub2_1 at /States/Sub2_1'"} :<R).
 
 test(delete, Code = 200) :-
     personal(Region, Account),
