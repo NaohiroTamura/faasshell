@@ -79,7 +79,7 @@ user:file_search_path(config_https, faasshell('etc/server')).
 %%
 main :-
     set_setting(http:logfile, '/logs/httpd.log'), % docker volume /tmp
-    set_setting(http:cors, [*]),
+    set_setting(http:cors, [*]), % CORS header 'Access-Control-Allow-Origin: *'
     catch( ( mq_utils:mq_init,
              cdb_api:db_init ),
            Error,
@@ -124,15 +124,46 @@ hup(_Signal) :-
 
 %%
 %%
-:- http_handler('/', base, [methods([get]), authentication(faasshell)]).
+%:- http_handler('/', base, [methods([get, options]), authentication(faasshell)]).
+:- http_handler('/', base, [methods([get, options])]).
 
 base(Request) :-
     http_log('~w~n', [request(Request)]),
+    memberchk(method(Method), Request),
+    catch( base(Method, Request),
+           (Message, Code),
+           ( http_log('~w~n', [catch((Message, Code))]),
+             reply_json_dict(Message, [status(Code)])
+         )).
+
+base(options, Request) :-
+    http_log('CORS PreFlight /base~n', []),
+    % core_enable/2 has a bug to process headers list
+    % https://github.com/SWI-Prolog/packages-http/blob/dcd202477009264481a604d6fcd4867540d014fa/http_cors.pl#L166-L167
+    %
+    % 162 phrase(field_names(ReqHeaders), String),
+    % 167 format('Access-Control-Allow-Headers: ~s', String).
+    %                                                ^^^^^^
+    % "String" is not string, but code, the fix would be:
+    %
+    % 162 phrase(field_names(ReqHeaders), Code),
+    %     string_code(Code, String),
+    % 167 format('Access-Control-Allow-Headers: ~s', String).
+    %
+    cors_enable(Request,
+                [ methods([get,post,delete]) /*,
+                  headers([content_type, authorization]) */
+               ]),
+    format('~n'). % 200 with empty body
+
+base(get, Request) :-
     cors_enable,
-    option(faasshell_auth(nil), Request)
-    -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
-    ;  faasshell_version:git_commit_id(Version),
-       reply_json_dict(_{version: Version}).
+    http:authenticate(faasshell, Request, [faasshell_auth(Id)]),
+    ( Id = nil
+      -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
+      ;  faasshell_version:git_commit_id(Version),
+         reply_json_dict(_{version: Version})
+    ).
 
 %%
 %%
