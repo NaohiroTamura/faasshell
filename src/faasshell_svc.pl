@@ -151,7 +151,7 @@ base(options, Request) :-
     % 167 format('Access-Control-Allow-Headers: ~s', String).
     %
     cors_enable(Request,
-                [ methods([get,post,delete]) /*,
+                [ methods([get]) /*,
                   headers([content_type, authorization]) */
                ]),
     format('~n'). % 200 with empty body
@@ -348,26 +348,39 @@ faas(get, Request) :-
     ),
     reply_json_dict(Reply).
 
-%%    GET: get statemachine information
-%%    PUT: create statemachine
-%%   POST: execute statemachine
-%% DELETE: delete statemachine
-%% PATCH : create graph of statemachine
+%%     GET: get statemachine information
+%%     PUT: create statemachine
+%%    POST: execute statemachine
+%%  DELETE: delete statemachine
+%%   PATCH: create graph of statemachine
+%% OPTIONS: CORS preflight
 :- http_handler('/statemachine/', statemachine,
-                [methods([get, put, post, delete, patch]), prefix,
-                 authentication(faasshell)]).
+                [methods([get, put, post, delete, patch, options]), prefix]).
 
 statemachine(Request) :-
     http_log('~w~n', [request(Request)]),
     cors_enable,
-    option(faasshell_auth(nil), Request)
-    -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
-    ;  memberchk(method(Method), Request),
-       catch( statemachine(Method, Request),
-              (Message, Code),
-              ( http_log('~w~n', [catch((Message, Code))]),
-                reply_json_dict(Message, [status(Code)])
-              )).
+    ( memberchk(method(options), Request)
+      -> statemachine(options, Request)
+      ;  http:authenticate(faasshell, Request, FaasshellAuth),
+         merge_options(FaasshellAuth, Request, MergedRequest),
+         ( option(faasshell_auth(nil), MergedRequest)
+           -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
+           ;  memberchk(method(Method), MergedRequest),
+              catch( statemachine(Method, MergedRequest),
+                     (Message, Code),
+                     ( http_log('~w~n', [catch((Message, Code))]),
+                       reply_json_dict(Message, [status(Code)])
+                   ))
+         )
+    ).
+
+%% CORS prefight
+%% $ curl -vX OPTIONS localhost:8080/statemachine/
+statemachine(options, Request) :-
+    http_log('CORS PreFlight /statemachine~n', []),
+    cors_enable(Request, [methods([get, put, post, delete, patch, options])]),
+    format('~n'). % 200 with empty body
 
 %% get state machine information
 %% $ curl -sLX GET localhost:8080/statemachine/{statemachine}
@@ -673,33 +686,35 @@ debug_auth :- debug(http_authenticate > user_error).
        cached_auth/4. % cached_auth(User, Password, Id, Time)
 
 http:authenticate(faasshell, Request, [faasshell_auth(Id)]) :-
-    memberchk(authorization(Text), Request),
-    debug(http_authenticate, 'Authorization: ~w~n', [Text]),
-    http_authorization_data(Text, basic(User, PasswordCode)),
-    atom_codes(Password, PasswordCode),
-    debug(http_authenticate, 'User: ~w, Password: ~s~n', [User, Password]),
-    ( ( cached_auth(User, Password, Id, Time),
-        get_time(Now),
-        Now-Time =< 60
-      )
-      -> debug(http_authenticate, 'Hit Cache: ~w, ~w~n', [User, Time]),
-         http_log('Subject(cache): ~w, ~w~n', [User, Time])
-      ;  ( retract(cached_auth(User, Password, Id, Time))
-           -> debug(http_authenticate, 'retracted cache: ~w, ~w~n', [User, Time])
-           ;  debug(http_authenticate, 'cache not exist: ~w, ~w~n', [User, Time])
-         ),
-         atomic_list_concat([User, Password], ':', Credential),
-         debug(http_authenticate, 'check var: ~w, ~w~n', [Id, Credential]),
-         ( cdb_api:get_user(Id, Credential)
-           -> get_time(Updated),
-              assertz(cached_auth(User, Password, Id, Updated)),
-              debug(http_authenticate, 'asserted cache: ~w, ~w, ~w~n',
-                    [User, Time, Updated]),
-              http_log('Subject(refresh): ~w, ~w-~w~n', [User, Time, Updated])
-           ;  http_log('Authentication failed: ~w~n', [User]),
-              Id = nil
+    memberchk(authorization(Text), Request)
+    -> debug(http_authenticate, 'Authorization: ~w~n', [Text]),
+       http_authorization_data(Text, basic(User, PasswordCode)),
+       atom_codes(Password, PasswordCode),
+       debug(http_authenticate, 'User: ~w, Password: ~s~n', [User, Password]),
+       ( ( cached_auth(User, Password, Id, Time),
+           get_time(Now),
+           Now-Time =< 60
          )
-    ).
+         -> debug(http_authenticate, 'Hit Cache: ~w, ~w~n', [User, Time]),
+            http_log('Subject(cache): ~w, ~w~n', [User, Time])
+         ;  ( retract(cached_auth(User, Password, Id, Time))
+              -> debug(http_authenticate, 'retracted cache: ~w, ~w~n', [User, Time])
+              ;  debug(http_authenticate, 'cache not exist: ~w, ~w~n', [User, Time])
+            ),
+            atomic_list_concat([User, Password], ':', Credential),
+            debug(http_authenticate, 'check var: ~w, ~w~n', [Id, Credential]),
+            ( cdb_api:get_user(Id, Credential)
+              -> get_time(Updated),
+                 assertz(cached_auth(User, Password, Id, Updated)),
+                 debug(http_authenticate, 'asserted cache: ~w, ~w, ~w~n',
+                       [User, Time, Updated]),
+                 http_log('Subject(refresh): ~w, ~w-~w~n', [User, Time, Updated])
+              ;  http_log('Authentication failed: ~w~n', [User]),
+                 Id = nil
+            )
+       )
+    ;  http_log('Authentication failed: Authorization header not found~n', []),
+       Id = nil.
 
 %%
 %%
