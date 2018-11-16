@@ -359,10 +359,10 @@ faas(get, Request) :-
 
 statemachine(Request) :-
     http_log('~w~n', [request(Request)]),
-    cors_enable,
     ( memberchk(method(options), Request)
       -> statemachine(options, Request)
-      ;  http:authenticate(faasshell, Request, FaasshellAuth),
+      ;  cors_enable,
+         http:authenticate(faasshell, Request, FaasshellAuth),
          merge_options(FaasshellAuth, Request, MergedRequest),
          ( option(faasshell_auth(nil), MergedRequest)
            -> reply_json_dict(_{error: 'Authentication Failure'}, [status(401)])
