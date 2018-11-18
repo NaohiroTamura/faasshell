@@ -9,9 +9,10 @@
 ```sh
 ubuntu@xeniel:~/github/faasshell[master]$ wsk action create graphql samples/wsk/actions/graphql.pl --docker nao16t/swipl7action -i
 
+ubuntu@xeniel:~/github/faasshell[master]$ wsk action update graphql --param github_token $GITHUB_TOKEN
+
 ubuntu@xeniel:~/github/faasshell[master]$ wsk action invoke graphql -ir \
     -p target fujitsu.com \
-    -p github_token $GITHUB_TOKEN \
     -p owner '"naohirotamura"' \
     -p name '"faasshell"' \
     -p since '\"2018-06-21T00:00:00+00:00\"' \
@@ -48,7 +49,6 @@ ubuntu@xeniel:~/github/faasshell[master]$ curl -ksX POST ${FAASSHELL_APIHOST}/st
     -d "{\"input\": {
           \"github\": {
              \"target\": \"fujitsu.com\",
-             \"github_token\": \"$GITHUB_TOKEN\",
              \"owner\": \"\\\"naohirotamura\\\"\",
              \"name\": \"\\\"faasshell\\\"\",
              \"since\": \"\\\"2018-06-21T00:00:00+00:00\\\"\",
