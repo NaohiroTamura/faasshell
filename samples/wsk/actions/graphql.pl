@@ -153,12 +153,16 @@ first_query(Param, Out) :-
     term_json_dict(R1, D1),
     % format('~p~n', [D1]),
 
-    History = D1.data.repository.ref.target.history,
-    ( History.pageInfo.hasNextPage
-      -> atomic_list_concat(['"', History.pageInfo.endCursor, '"'], After),
-         next_query(Param, After, O1),
-         append(History.edges, O1, Out)
-      ;  Out = History.edges
+    ( get_dict(errors, D1, [Error|_])
+      -> % format('errors = ~p~n', [Error.message]),
+         throw(Error.message)
+      ;  History = D1.data.repository.ref.target.history,
+         ( History.pageInfo.hasNextPage
+           -> atomic_list_concat(['"', History.pageInfo.endCursor, '"'], After),
+              next_query(Param, After, O1),
+              append(History.edges, O1, Out)
+           ;  Out = History.edges
+         )
     ).
 
 next_query(Param, After, Out) :-
@@ -220,17 +224,37 @@ next_query(Param, After, Out) :-
     ).
 
 filter(Target, Elm) :-
-    sub_string(Elm.node.author.email, _, _, _, Target),
+    ( Target = ""
+      -> true
+      ;  sub_string(Elm.node.author.email, _, _, _, Target)
+    ),
     %% git log --no-merges
     \+ sub_string(Elm.node.messageHeadline, 0, _, _, "Merge ").
 
 main(In, _{ values: [Values] }) :-
-    first_query(In, NodeOut),
+    format(user_output, '~nIn = ~p~n', [In]),
     _{ target: Target, owner: Owner, name: Name, since: Since, until: Until } :< In,
-    include(filter(Target), NodeOut, MergeOut),
-    length(MergeOut, Count),
-    Values = [Target, Owner, Name, Since, Until, Count].
-
+    format(atom(Owner2), '"~w"', [Owner]),
+    format(atom(Name2), '"~w"', [Name]),
+    ( parse_time(Since, iso_8601, _)
+      -> format(atom(Since2), '"~w"', [Since])
+      ;  format_time(atom(Since2), '"%FT%T%:z"', 0)
+    ),
+    ( parse_time(Until, iso_8601, _)
+      -> format(atom(Until2), '"~w"', [Until])
+      ;  get_time(Now),
+         format_time(atom(Until2), '"%FT%T%:z"', Now)
+    ),
+    Param = In.put(_{ owner: Owner2, name: Name2, since: Since2, until: Until2 }),
+    format(user_output, '~nParam = ~p~n', [Param]),
+    catch( (first_query(Param, NodeOut),
+            include(filter(Target), NodeOut, MergeOut),
+            length(MergeOut, Count),
+            Values = [Target, Owner2, Name2, Since2, Until2, Count]
+           ),
+           Errors,
+           Values = [Target, Owner2, Name2, Since2, Until2, 0, Errors]
+         ).
 
 %%
 %% Tests
@@ -244,38 +268,58 @@ main(In, _{ values: [Values] }) :-
    $ wsk action invoke graphql -ir \
      -p target fujitsu.com \
      -p github_token $GITHUB_TOKEN \
-     -p owner '"naohirotamura"' \
-     -p name '"faasshell"' \
-     -p since '\"2018-06-21T00:00:00+00:00\"' \
-     -p until '\"2018-07-20T00:00:00+00:00\"'
+     -p owner "naohirotamura" \
+     -p name "faasshell" \
+     -p since "2018-06-21T00:00:00+00:00\" \
+     -p until "2018-07-20T00:00:00+00:00\"
 */
 
 test1(Out) :-
     getenv('GITHUB_TOKEN', GITHUB_TOKEN),
     main(_{ target: "fujitsu.com",
             github_token: GITHUB_TOKEN,
-            owner: '"naohirotamura"',
-            name: '"faasshell"',
-            since: '"2018-06-21T00:00:00+00:00"',
-            until: '"2018-07-20T00:00:00+00:00"'
+            owner: "naohirotamura",
+            name: "faasshell",
+            since: "2018-06-21T00:00:00+00:00",
+            until: "2018-07-20T00:00:00+00:00"
           }, Out).
 
 test2(Out) :-
     getenv('GITHUB_TOKEN', GITHUB_TOKEN),
     main(_{ target: "fujitsu.com",
             github_token: GITHUB_TOKEN,
-            owner: '"containers"',
-            name: '"buildah"',
-            since: '"2018-03-21T00:00:00+00:00"',
-            until: '"2018-04-20T00:00:00+00:00"'
+            owner: "containers",
+            name: "buildah",
+            since: "2018-03-21T00:00:00+00:00",
+            until: "2018-04-20T00:00:00+00:00"
           }, Out).
 
 test3(Out) :-
     getenv('GITHUB_TOKEN', GITHUB_TOKEN),
-    main(_{ target: "redhat.com",
+    main(_{ target: '',
             github_token: GITHUB_TOKEN,
-            owner: '"containers"',
-            name: '"buildah"',
-            since: '"2018-02-21T00:00:00+00:00"',
-            until: '"2018-04-20T00:00:00+00:00"'
+            owner: 'naohirotamura',
+            name: 'faasshell',
+            since: '',
+            until: ''
+          }, Out).
+
+test4(Out) :-
+    getenv('GITHUB_TOKEN', GITHUB_TOKEN),
+    main(_{ target: '',
+            github_token: GITHUB_TOKEN,
+            owner: '',
+            name: 'faasshell',
+            since: '',
+            until: ''
+          }, Out).
+
+test5(Out) :-
+    getenv('GITHUB_TOKEN', GITHUB_TOKEN),
+    main(_{ target: '',
+            github_token: GITHUB_TOKEN,
+            owner: 'naohirotamura',
+            name: '',
+            since: '',
+            until: ''
           }, Out).

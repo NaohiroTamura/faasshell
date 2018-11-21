@@ -13,10 +13,10 @@ ubuntu@xeniel:~/github/faasshell[master]$ wsk action update graphql --param gith
 
 ubuntu@xeniel:~/github/faasshell[master]$ wsk action invoke graphql -ir \
     -p target fujitsu.com \
-    -p owner '"naohirotamura"' \
-    -p name '"faasshell"' \
-    -p since '\"2018-06-21T00:00:00+00:00\"' \
-    -p until '\"2018-07-20T00:00:00+00:00\"'
+    -p owner naohirotamura \
+    -p name faasshell \
+    -p since '2018-06-21T00:00:00+00:00' \
+    -p until '2018-07-20T00:00:00+00:00'
 ```
 
 #### Google Sheets
@@ -46,16 +46,16 @@ ubuntu@xeniel:~/github/faasshell[master]$ envsubst < samples/common/asl/commit_c
 ```sh
 ubuntu@xeniel:~/github/faasshell[master]$ curl -ksX POST ${FAASSHELL_APIHOST}/statemachine/commit_count_report.json?blocking=true \
     -H 'Content-Type: application/json' \
-    -d "{\"input\": {
-          \"github\": {
-             \"target\": \"fujitsu.com\",
-             \"owner\": \"\\\"naohirotamura\\\"\",
-             \"name\": \"\\\"faasshell\\\"\",
-             \"since\": \"\\\"2018-06-21T00:00:00+00:00\\\"\",
-             \"until\": \"\\\"2018-07-20T00:00:00+00:00\\\"\"
+    -d '{"input": {
+          "github": {
+             "target": "fujitsu.com",
+             "owner": "naohirotamura",
+             "name": "faasshell",
+             "since": "2018-06-21T00:00:00+00:00",
+             "until": "2018-07-20T00:00:00+00:00"
           },
-          \"gsheet\": {
-             \"sheetId\": \"1ywCxG8xTKOYK89AEZIqgpTvbvpbrb1s4H_bMVvKV59I\"
+          "gsheet": {
+             "sheetId": "1ywCxG8xTKOYK89AEZIqgpTvbvpbrb1s4H_bMVvKV59I"
           }
-       }}" -u $DEMO
+       }}' -u $DEMO
 ```
