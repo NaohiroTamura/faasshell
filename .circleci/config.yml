@@ -8,26 +8,35 @@ jobs:
         - master
     steps:
       - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
       - run:
           name: setting up
-          command: >
-            oc login $OC_APIHOST -u $OC_ID -p $OC_PW ;
-            make undeploy ;
-            make oc_build_image ;
-            make oc_app_image
+          command: |
+            bx login -a https://api.eu-de.bluemix.net -u $BLUEMIX_USER -p $BLUEMIX_PASS -c $BLUEMIX_ACCOUNT
+            bx cs cluster-config decluster --admin
+            export KUBECONFIG=/root/.bluemix/plugins/container-service/clusters/decluster-admin/kube-config-par01-decluster.yml
+            make undeploy
+            echo  "$GCP_APP_CRED" > /root/credential.json
+            docker login -u $DOCKER_USER -p $DOCKER_PASS
+            make build_image
+            make app_image
       - run:
           name: test with kafka
           command: make test_with_kafka -e FAASSHELL_MQ=kafka -e FAASSHELL_APIHOST=http://127.0.0.1:8080
       - run:
           name: deploy
-          command: >
-            while ! (oc get pod | grep build | grep Completed); do sleep 5 && echo -n .; done;
-            make deploy -e docker_image_prefix=docker-registry.default.svc:5000/faasshell
+          command: |
+            export KUBECONFIG=/root/.bluemix/plugins/container-service/clusters/decluster-admin/kube-config-par01-decluster.yml
+            while (kubectl -n faasshell get pod | grep faasshell); do sleep 5 && echo -n .; done
+            make deploy
       - run:
           name: unit test
           command: make unit_test
       - run:
           name: functional test
-          command: >
-            while ! (oc get pod | grep -v build | grep Running); do sleep 5 && echo -n .; done;
+          command: |
+            export KUBECONFIG=/root/.bluemix/plugins/container-service/clusters/decluster-admin/kube-config-par01-decluster.yml
+            while ! (kubectl -n faasshell get pod | grep faasshell | grep Running); do sleep 5 && echo -n .; done
+            kubectl -n faasshell port-forward $(kubectl -n faasshell get pod | grep faasshell | awk '{print $1}') 8080:8080 > /dev/null &
             make functional_test

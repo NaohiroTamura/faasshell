@@ -17,6 +17,7 @@ docker run -it --rm -v /home:/home -u $(id -u):$(id -g) -w $PWD \
     -e gcp_location_id=${gcp_location_id} \
     -e gcp_project_id=${gcp_project_id} \
     -e GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS} \
+    -e "GCP_APP_CRED=$(cat $GOOGLE_APPLICATION_CREDENTIALS)" \
     -e WSK_AUTH=${WSK_AUTH} \
     -e WSK_APIHOST=${WSK_APIHOST} \
     -e IFTTT_KEY=${IFTTT_KEY} \

@@ -71,7 +71,7 @@ $ export FAASSHELL_MQ=kafka
 
 $ proj=/home/your_id/your_working_directory/faasshell/lib
 
-$ export CLASSPATH=${proj}/kafka-clients-0.11.0.2.jar:${proj}/slf4j-api-1.7.25.jar:${proj}/slf4j-log4j12-1.7.25.jar:${proj}/log4j-1.2.17.jar
+$ export CLASSPATH=${proj}/kafka-clients-0.11.0.3.jar:${proj}/slf4j-api-1.7.25.jar:${proj}/slf4j-log4j12-1.7.25.jar:${proj}/log4j-1.2.17.jar
 
 $ export _JAVA_OPTIONS="-Dconfig.location=file -Dlog4j.configuration=file://${proj}/log4j.properties"
 

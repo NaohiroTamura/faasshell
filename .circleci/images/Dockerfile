@@ -50,4 +50,8 @@ RUN curl -L https://mirror.openshift.com/pub/openshift-v3/clients/3.9.14/linux/o
 RUN curl -L https://github.com/openshift/source-to-image/releases/download/v1.1.9a/source-to-image-v1.1.9a-40ad911d-linux-amd64.tar.gz | tar zxvf - -C /usr/local/bin ./s2i
 RUN apt-get update && apt-get install -y iputils-ping iproute2 traceroute dnsutils tcpdump kafkacat socat net-tools vim-tiny gettext-base expect
 COPY http_ssl_plugin.pl /swipl/lib/swipl-7.5.15/library/http/http_ssl_plugin.pl
+RUN curl -L https://clis.ng.bluemix.net/download/bluemix-cli/latest/linux64 | tar zxvf - && ./Bluemix_CLI/install_bluemix_cli && rm -rf ./Bluemix_CLI && \
+    bx plugin install container-service -r Bluemix && \
+    bx config --check-version=false && \
+    bx config --usage-stats-collect false
 CMD ["swipl"]

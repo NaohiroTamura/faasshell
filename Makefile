@@ -22,7 +22,7 @@ unit_test_files := $(wildcard tests/unit/test_*.pl)
 functional_test_files := $(wildcard tests/functional/test_*.pl)
 
 JAR = /opt/kafka/libs
-CLASSPATH ?= $(JAR)/kafka-clients-0.11.0.2.jar:$(JAR)/slf4j-api-1.7.25.jar:$(JAR)/slf4j-log4j12-1.7.25.jar:$(JAR)/log4j-1.2.17.jar
+CLASSPATH ?= $(JAR)/kafka-clients-0.11.0.3.jar:$(JAR)/slf4j-api-1.7.25.jar:$(JAR)/slf4j-log4j12-1.7.25.jar:$(JAR)/log4j-1.2.17.jar
 _JAVA_OPTIONS ?= "-Dconfig.location=file -Dlog4j.configuration=file://$(PWD)/lib/log4j.properties"
 
 all: unit_test
@@ -104,8 +104,7 @@ build_image:
 # make -e docker_image_prefix=myprefix -e docker_image_tag=0.1 app_image
 app_image:
 	@echo "create application image in Docker"
-	rm src/faasshell_version.pl
-	git checkout src/faasshell_version.pl
+	sed -i "s/'\$$Id\$$'/'\$$Id $(shell git log -n 1 --date=short --format=format:"rev.%ad.%h" HEAD) \$$'/g" src/faasshell_version.pl
 	s2i build . $(docker_image_prefix)/s2i-swipl:$(docker_image_tag) $(docker_image_prefix)/faasshell:$(docker_image_tag) -c
 	docker push  $(docker_image_prefix)/faasshell:$(docker_image_tag)
 
@@ -144,7 +143,7 @@ run:
 	@echo "run app_image in docker"
 	if [ -v $(HTTP_PROXY) -a -v $(HTTPS_PROXY) ]; \
 	then \
-		docker run -d \
+		docker run -d --name faasshell \
 	           --net=host -v /tmp:/logs \
 		   -e FAASSHELL_DB_AUTH=$(FAASSHELL_DB_AUTH) \
 		   -e FAASSHELL_DB_APIHOST=$(FAASSHELL_DB_APIHOST) \
@@ -159,7 +158,7 @@ run:
 		   -e IFTTT_KEY=$(IFTTT_KEY) \
 	           $(docker_image_prefix)/faasshell:$(docker_image_tag) ; \
 	else \
-		docker run -d \
+		docker run -d --name faasshell \
 	           --net=host -v /tmp:/logs \
 		   -e FAASSHELL_DB_AUTH=$(FAASSHELL_DB_AUTH) \
 		   -e FAASSHELL_DB_APIHOST=$(FAASSHELL_DB_APIHOST) \
