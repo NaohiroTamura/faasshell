@@ -23,5 +23,5 @@ RUN rm /bin/sh && ln -s /bin/bash /bin/sh && \
     mkdir /logs && chmod 0777 /logs && \
     ln -s /dev/stderr /logs/httpd.log
 
-CMD if [ -e etc/server ]; then rm -rf etc/server ; fi && \
-    FAASSHELL_SVC_PORT=$PORT swipl -q -l src/faasshell_svc.pl -g main -t halt
+# The web process must listen for HTTP traffic on $PORT, which is set by Heroku.
+CMD FAASSHELL_SVC_PORT=$PORT swipl -q -l src/faasshell_svc.pl -g main -t halt
