@@ -13,11 +13,7 @@ jobs:
       - run:
           name: setting up
           command: |
-            bx login -a https://api.eu-de.bluemix.net -u $BLUEMIX_USER -p $BLUEMIX_PASS -c $BLUEMIX_ACCOUNT
-            bx cs cluster-config decluster --admin
-            export KUBECONFIG=/root/.bluemix/plugins/container-service/clusters/decluster-admin/kube-config-par01-decluster.yml
-            make undeploy
-            echo  "$GCP_APP_CRED" > /root/credential.json
+            echo "$GCP_APP_CRED" > /root/credential.json
             docker login -u $DOCKER_USER -p $DOCKER_PASS
             make build_image
             make app_image
@@ -27,16 +23,14 @@ jobs:
       - run:
           name: deploy
           command: |
-            export KUBECONFIG=/root/.bluemix/plugins/container-service/clusters/decluster-admin/kube-config-par01-decluster.yml
-            while (kubectl -n faasshell get pod | grep faasshell); do sleep 5 && echo -n .; done
-            make deploy
+            pushd /root/project/heroku
+            heroku container:login
+            heroku container:push web --app protected-depths-49487
+            heroku container:release web --app protected-depths-49487
+            popd
       - run:
           name: unit test
           command: make unit_test
       - run:
           name: functional test
-          command: |
-            export KUBECONFIG=/root/.bluemix/plugins/container-service/clusters/decluster-admin/kube-config-par01-decluster.yml
-            while ! (kubectl -n faasshell get pod | grep faasshell | grep Running); do sleep 5 && echo -n .; done
-            kubectl -n faasshell port-forward $(kubectl -n faasshell get pod | grep faasshell | awk '{print $1}') 8080:8080 > /dev/null &
-            make functional_test
+          command: make functional_test

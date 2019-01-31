@@ -46,12 +46,9 @@ ENV LANG C.UTF-8
 ENV LD_LIBRARY_PATH /usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/lib/amd64/server:/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/lib/amd64
 RUN curl -L https://download.docker.com/linux/static/stable/x86_64/docker-17.12.1-ce.tgz | tar zxvf - --strip 1 -C /usr/local/bin docker/docker
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod 0755 kubectl && mv kubectl /usr/local/bin
-RUN curl -L https://mirror.openshift.com/pub/openshift-v3/clients/3.9.14/linux/oc.tar.gz | tar zxvf - -C /usr/local/bin
-RUN curl -L https://github.com/openshift/source-to-image/releases/download/v1.1.9a/source-to-image-v1.1.9a-40ad911d-linux-amd64.tar.gz | tar zxvf - -C /usr/local/bin ./s2i
-RUN apt-get update && apt-get install -y iputils-ping iproute2 traceroute dnsutils tcpdump kafkacat socat net-tools vim-tiny gettext-base expect
+RUN curl -L https://mirror.openshift.com/pub/openshift-v3/clients/3.11.76/linux/oc.tar.gz | tar zxvf - -C /usr/local/bin
+RUN curl -L https://github.com/openshift/source-to-image/releases/download/v1.1.13/source-to-image-v1.1.13-b54d75d3-linux-amd64.tar.gz | tar zxvf - -C /usr/local/bin ./s2i
+RUN apt-get update && apt-get install -y iputils-ping iproute2 traceroute dnsutils tcpdump kafkacat socat net-tools vim-tiny gettext-base expect telnet gnutls-bin netcat
 COPY http_ssl_plugin.pl /swipl/lib/swipl-7.5.15/library/http/http_ssl_plugin.pl
-RUN curl -L https://clis.ng.bluemix.net/download/bluemix-cli/latest/linux64 | tar zxvf - && ./Bluemix_CLI/install_bluemix_cli && rm -rf ./Bluemix_CLI && \
-    bx plugin install container-service -r Bluemix && \
-    bx config --check-version=false && \
-    bx config --usage-stats-collect false
+RUN curl -L https://cli-assets.heroku.com/heroku-linux-x64.tar.gz | tar zxvf - -C /usr/local && ln -s /usr/local/heroku/bin/heroku /usr/local/bin/heroku
 CMD ["swipl"]
