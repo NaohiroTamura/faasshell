@@ -24,14 +24,23 @@ exports.googlesheets = (req, res) => {
     })
     .then( sheets => {
         console.log(`sheets: ${sheets}`);
-        const now = [Date()];
-        const data = req.body.values.map(e => now.concat(e));
-        sheets.spreadsheets.values.append({
+        sheets.spreadsheets.batchUpdate({
             spreadsheetId: req.body.sheetId,
-            range: 'Sheet1!A1:A1',
-            valueInputOption: 'USER_ENTERED',
-            resource: {
-                values: data
+            requestBody: {
+                includeSpreadsheetInResponse: true,
+                requests: [
+                    {
+                        insertDimension: {
+                            range: {
+                                sheetId: 0,
+                                dimension: 'ROWS',
+                                startIndex: 0,
+                                endIndex: 1
+                            },
+                            inheritFromBefore: false
+                        }
+                    }
+                ]
             }
         }, (err, response) => {
             if (err) {
@@ -41,10 +50,29 @@ exports.googlesheets = (req, res) => {
                 }
             }
             else {
-                console.log(response.data);
-                if(res) {
-                    res.status(200).send(response.data);
-                }
+                const now = [Date()];
+                const data = req.body.values.map(e => now.concat(e));
+                sheets.spreadsheets.values.append({
+                    spreadsheetId: req.body.sheetId,
+                    range: 'Sheet1!A1:A1',
+                    valueInputOption: 'USER_ENTERED',
+                    resource: {
+                        values: data
+                    }
+                }, (err, response) => {
+                    if (err) {
+                        console.error(err.errors);
+                        if(res) {
+                            res.status(500).send({error: err.errors});
+                        }
+                    }
+                    else {
+                        console.log(response.data);
+                        if(res) {
+                            res.status(200).send(response.data);
+                        }
+                    }
+                });
             }
         });
     })
@@ -65,8 +93,8 @@ if (module === require.main) {
             values: [
                 ["fujitsu.com", '"naohirotamura"', '"faasshell"',
                  '"2018-06-21T00:00:00+00:00"', '"2018-07-20T00:00:00+00:00"', 2],
-                ["redhat.com", '"containers"', '"buildah"',
-                 '"2018-02-21T00:00:00+00:00"', '"2018-04-20T00:00:00+00:00"', 53]
+                //["redhat.com", '"containers"', '"buildah"',
+                // '"2018-02-21T00:00:00+00:00"', '"2018-04-20T00:00:00+00:00"', 53]
             ]
         }
     };
