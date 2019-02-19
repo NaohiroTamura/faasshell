@@ -16,11 +16,16 @@ exports.googlesheets = (req, res) => {
     })
     .then( client => {
         console.log(`client: ${client}`);
-        const sheets = google.sheets({
+        return google.sheets({
             version: 'v4',
             auth: client
         });
-        return(sheets);
+    })
+    .catch( err => {
+        console.error(err);
+        if(res) {
+            res.status(401).send({error: 'Unauthorized'});
+        }
     })
     .then( sheets => {
         console.log(`sheets: ${sheets}`);
@@ -42,45 +47,38 @@ exports.googlesheets = (req, res) => {
                     }
                 ]
             }
-        }, (err, response) => {
-            if (err) {
-                console.error(err.errors);
-                if(res) {
-                    res.status(500).send({error: err.errors});
-                }
+        })
+        .catch( err => {
+            console.error(err.errors);
+            if(res) {
+                res.status(500).send({error: err.errors});
             }
-            else {
-                const now = [Date()];
-                const data = req.body.values.map(e => now.concat(e));
-                sheets.spreadsheets.values.append({
-                    spreadsheetId: req.body.sheetId,
-                    range: 'Sheet1!A1:A1',
-                    valueInputOption: 'USER_ENTERED',
-                    resource: {
-                        values: data
-                    }
-                }, (err, response) => {
-                    if (err) {
-                        console.error(err.errors);
-                        if(res) {
-                            res.status(500).send({error: err.errors});
-                        }
-                    }
-                    else {
-                        console.log(response.data);
-                        if(res) {
-                            res.status(200).send(response.data);
-                        }
-                    }
-                });
+        })
+        .then( response => {
+            console.log(response.data);
+            const now = [Date()];
+            const data = req.body.values.map(e => now.concat(e));
+            return sheets.spreadsheets.values.append({
+                spreadsheetId: req.body.sheetId,
+                range: 'Sheet1!A1:A1',
+                valueInputOption: 'USER_ENTERED',
+                resource: {
+                    values: data
+                }
+            })
+        })
+        .catch( err => {
+            console.error(err.errors);
+            if(res) {
+                res.status(500).send({error: err.errors});
+            }
+        })
+        .then( response => {
+            console.log(response.data);
+            if(res) {
+                res.status(200).send(response.data);
             }
         });
-    })
-    .catch( e => {
-        console.error(e);
-        if(res) {
-            res.status(401).send({error: 'Unauthorized'});
-        }
     });
 };
 
