@@ -1,5 +1,5 @@
 #
-# Copyright 2017 FUJITSU LIMITED
+# Copyright 2017-2020 FUJITSU LIMITED
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,12 +15,12 @@
 #
 
 #
-# $ docker build -f Dockerfile.kafka -t nao16t/swipl7jpl-kafka .
+# $ docker build -f Dockerfile.kafka -t nao16t/swipl8jpl-kafka .
 #
-FROM nao16t/swipl7jpl
+FROM nao16t/swipl8jpl
 
 RUN mkdir -p /logs /opt/kafka
-RUN curl -O http://ftp.jaist.ac.jp/pub/apache/kafka/0.11.0.3/kafka_2.11-0.11.0.3.tgz
+RUN curl -O https://archive.apache.org/dist/kafka/0.11.0.3/kafka_2.11-0.11.0.3.tgz
 RUN tar zxvf kafka_2.11-0.11.0.3.tgz --strip 1 -C /opt/kafka && rm -f kafka_2.11-0.11.0.3.tgz
 RUN echo '\n\
 \n\

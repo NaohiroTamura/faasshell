@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: nao16t/swipl7jpl-kafka
+      - image: nao16t/swipl8jpl-kafka
     branches:
       only:
         - master

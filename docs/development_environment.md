@@ -52,7 +52,7 @@
     ```sh
     $ pushd .circleci/images
 
-    $ docker build -t YOUR_PREFIX/swipl7jpl .
+    $ docker build -t YOUR_PREFIX/swipl8jpl .
 
     $ popd
     ```

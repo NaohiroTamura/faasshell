@@ -1,4 +1,4 @@
-# Copyright 2017 FUJITSU LIMITED
+# Copyright 2017-2020 FUJITSU LIMITED
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -16,9 +16,9 @@
 #
 # $ docker build -t s2i-swipl .
 #
-# JPL enabled SWI Prolog 7.5.15
-# https://github.com/NaohiroTamura/docker-swipl/tree/swi-7.5.15-jpl
-FROM nao16t/swipl7jpl
+# JPL enabled SWI Prolog 8.0.3
+# https://github.com/NaohiroTamura/docker-swipl/tree/swi-8.0.3-jpl
+FROM nao16t/swipl8jpl
 
 LABEL io.k8s.description="Platform for building and running SWI Prolog apps" \
       io.k8s.display-name="swipl" \
