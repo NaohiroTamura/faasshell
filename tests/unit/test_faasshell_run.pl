@@ -408,10 +408,10 @@ test(failed, Code = 502 ) :-
 :- begin_tests(task_timeout,
                [setup(( update_action("delay",
                                        'samples/wsk/actions/delay.js',
-                                       "nodejs:6", []),
+                                       "nodejs:10", []),
                         update_lambda('delay',
                                       'samples/aws/lambda/delay.js',
-                                      'nodejs6.10')
+                                      'nodejs12.x')
                      ))
               ]).
 
