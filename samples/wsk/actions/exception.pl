@@ -1,6 +1,6 @@
 %% -*- mode: prolog; coding: utf-8; -*-
 %%
-%% Copyright 2017 FUJITSU LIMITED
+%% Copyright 2017-2020 FUJITSU LIMITED
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 %%
 
 %% $ wsk action create exception exception.pl \
-%%   --docker ${docker_image_prefix}swipl7action -i
+%%   --docker ${docker_image_prefix}swipl8action -i
 %%
 %% $ wsk action invoke exception -ir
 %% {

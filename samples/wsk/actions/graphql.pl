@@ -1,6 +1,6 @@
 %% -*- mode: prolog; coding: utf-8; -*-
 %%
-%% Copyright 2017 FUJITSU LIMITED
+%% Copyright 2017-2020 FUJITSU LIMITED
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -261,7 +261,7 @@ main(In, _{ values: [Values] }) :-
 %%
 /*
    $ wsk action create graphql graphql.pl \
-     --docker ${docker_image_prefix}/swipl7action -i
+     --docker ${docker_image_prefix}/swipl8action -i
 */
 
 /*
@@ -270,8 +270,8 @@ main(In, _{ values: [Values] }) :-
      -p github_token $GITHUB_TOKEN \
      -p owner "naohirotamura" \
      -p name "faasshell" \
-     -p since "2018-06-21T00:00:00+00:00\" \
-     -p until "2018-07-20T00:00:00+00:00\"
+     -p since "2018-06-21T00:00:00+00:00" \
+     -p until "2018-07-20T00:00:00+00:00"
 */
 
 test1(Out) :-

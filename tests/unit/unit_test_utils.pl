@@ -1,6 +1,6 @@
 %% -*- mode: prolog; coding: utf-8; -*-
 %%
-%% Copyright 2017 FUJITSU LIMITED
+%% Copyright 2017-2020 FUJITSU LIMITED
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -119,4 +119,4 @@ faas_test_setup :-
     update_action("sleep", 'samples/wsk/actions/sleep.py', "python:2", []),
     update_action("sns", 'samples/wsk/actions/sns.py', "python:2", []),
     update_action("exception", 'samples/wsk/actions/exception.pl', "blackbox",
-                  [image("nao16t/swipl7action")]).
+                  [image("nao16t/swipl8action")]).
