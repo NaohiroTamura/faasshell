@@ -26,7 +26,7 @@ RUN mkdir -p /usr/share/man/man1 && \
     libsqlite3-0 \
     libserd-0-0 \
     libraptor2-0 \
-    openjdk-8-jdk junit zip unzip curl binutils git openssh-client make procps \
+    openjdk-8-jdk junit zip unzip curl wget binutils git openssh-client make procps \
     iputils-ping iproute2 traceroute dnsutils tcpdump kafkacat socat net-tools vim-tiny gettext-base expect && \
     rm -rf /usr/share/man/man1 && \
     dpkgArch="$(dpkg --print-architecture)" && \
@@ -35,7 +35,7 @@ RUN mkdir -p /usr/share/man/man1 && \
 RUN set -eux; \
     SWIPL_VER=8.0.3; \
     SWIPL_CHECKSUM=cee59c0a477c8166d722703f6e52f962028f3ac43a5f41240ecb45dbdbe2d6ae; \
-    BUILD_DEPS='cmake gcc g++ wget git autoconf libarchive-dev libgmp-dev libossp-uuid-dev libpcre3-dev libreadline-dev libedit-dev libssl-dev zlib1g-dev libdb-dev unixodbc-dev libsqlite3-dev libserd-dev libraptor2-dev libgeos++-dev libspatialindex-dev'; \
+    BUILD_DEPS='cmake gcc g++ autoconf libarchive-dev libgmp-dev libossp-uuid-dev libpcre3-dev libreadline-dev libedit-dev libssl-dev zlib1g-dev libdb-dev unixodbc-dev libsqlite3-dev libserd-dev libraptor2-dev libgeos++-dev libspatialindex-dev'; \
     dpkgArch="$(dpkg --print-architecture)"; \
     [ "$dpkgArch" = 'armhf' ] || [ "$dpkgArch" = 'armel' ] || BUILD_DEPS="$BUILD_DEPS librocksdb-dev"; \
     apt-get update; apt-get install -y --no-install-recommends $BUILD_DEPS; rm -rf /var/lib/apt/lists/*; \
