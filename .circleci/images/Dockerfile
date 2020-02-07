@@ -80,4 +80,5 @@ RUN curl -L https://github.com/openshift/source-to-image/releases/download/v1.2.
 ENV LANG C.UTF-8
 ENV LD_LIBRARY_PATH /usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/lib/amd64/server:/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/lib/amd64
 COPY http_ssl_plugin.pl http_dispatch.pl /usr/lib/swipl/library/http/
+RUN curl -L https://cli-assets.heroku.com/heroku-linux-x64.tar.gz | tar zxvf - -C /usr/local && ln -s /usr/local/heroku/bin/heroku /usr/local/bin/heroku
 CMD ["swipl"]
