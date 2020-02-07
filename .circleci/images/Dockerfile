@@ -79,5 +79,5 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s
 RUN curl -L https://github.com/openshift/source-to-image/releases/download/v1.2.0/source-to-image-v1.2.0-2a579ecd-linux-amd64.tar.gz | tar zxvf - -C /usr/local/bin ./s2i
 ENV LANG C.UTF-8
 ENV LD_LIBRARY_PATH /usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/lib/amd64/server:/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/lib/amd64
-COPY http_ssl_plugin.pl /usr/lib/swipl/library/http/http_ssl_plugin.pl
+COPY http_ssl_plugin.pl http_dispatch.pl /usr/lib/swipl/library/http/
 CMD ["swipl"]
