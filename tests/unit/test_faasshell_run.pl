@@ -370,7 +370,7 @@ test(task, O = [_{task1:_{payload:"Hello, Parallel!"}},
                [setup(( update_action("hello",
                                       'samples/wsk/actions/hello.js', "nodejs:6", []),
                         update_action("job",
-                                      'samples/wsk/actions/job.py', "python:2", [])))
+                                      'samples/wsk/actions/job.py', "python:3", [])))
               ]).
 
 test(succeeded, O = _{payload:"Hello, Poller!"}) :-
@@ -387,7 +387,7 @@ test(failed, O = _{cause:"AWS Batch Job Failed",
 
 :- begin_tests(task_timer,
                [setup(update_action("sns",
-                                    'samples/wsk/actions/sns.py', "python:2", []))
+                                    'samples/wsk/actions/sns.py', "python:3", []))
                ]).
 
 test(succeeded, Code = 200) :-

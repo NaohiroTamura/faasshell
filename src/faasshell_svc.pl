@@ -580,7 +580,7 @@ shell(get, Request) :-
 %%        -H 'Content-Type: text/plain' -d @shell.dsl
 shell(put, Request) :-
     http_read_data(Request, DslStr, [text/plain]),
-    http_log('~w~n', [put(Dsl)]),
+    http_log('~w~n', [put(DslStr)]),
     ( memberchk(path_info(File), Request),
       option(faasshell_auth(NS), Request)
       -> ( term_string(Dsl, DslStr),

@@ -114,9 +114,9 @@ faas_test_setup :-
     update_action("delay", 'samples/wsk/actions/delay.js', "nodejs:6", []),
     update_action("error", 'samples/wsk/actions/error.js', "nodejs:6", []),
     update_action("hello", 'samples/wsk/actions/hello.js', "nodejs:6", []),
-    update_action("job", 'samples/wsk/actions/job.py', "python:2", []),
-    update_action("raise", 'samples/wsk/actions/raise.py', "python:2", []),
-    update_action("sleep", 'samples/wsk/actions/sleep.py', "python:2", []),
-    update_action("sns", 'samples/wsk/actions/sns.py', "python:2", []),
+    update_action("job", 'samples/wsk/actions/job.py', "python:3", []),
+    update_action("raise", 'samples/wsk/actions/raise.py', "python:3", []),
+    update_action("sleep", 'samples/wsk/actions/sleep.py', "python:3", []),
+    update_action("sns", 'samples/wsk/actions/sns.py', "python:3", []),
     update_action("exception", 'samples/wsk/actions/exception.pl', "blackbox",
                   [image("nao16t/swipl8action")]).

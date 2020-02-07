@@ -95,7 +95,7 @@ test(scenarios) :-
                [setup(( update_action("error",
                                       'samples/wsk/actions/error.js', "nodejs:6", []),
                         update_action("raise",
-                                      'samples/wsk/actions/raise.py', "python:2", []),
+                                      'samples/wsk/actions/raise.py', "python:3", []),
                         update_action("exception",
                                       'samples/wsk/actions/exception.pl', "blackbox",
                                       [image("nao16t/swipl8action")])))
